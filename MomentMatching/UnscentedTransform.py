@@ -23,6 +23,7 @@ class KalmanFilterSmoother:
         self.moment_matching = moment_matching
 
     def predict(self, mean, covariance):
+
         return pred_mean, pred_covariance
 
     def correct(self, observation):
@@ -39,6 +40,10 @@ class TransitionModel:
         self.moment_matching = moment_matching
         self.Q = noise_covariance
 
+    def predict_gaussian_and_cross_covariance(self, mean, covariance):
+
+        return pred_mean, pred_cross_covariance, pred_covariance
+
 
 class MomentMatching:
 
@@ -53,5 +58,6 @@ class MomentMatching:
     def _covariance(self, approximate_mean, mean, covariance):
         return approximate_cross_covariance, approximate_covariance
 
-    def predict(self, mean, covariance):
-        return pred_mean, pred_cross_covariance, pred_covariance
+    def get_moments(self, mean, covariance):
+        return NotImplementedError
+        #return pred_mean, pred_cross_covariance, pred_covariance
