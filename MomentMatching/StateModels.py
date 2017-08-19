@@ -29,6 +29,15 @@
 
 import numpy as np
 
+def natural_to_moment(precision, shift):
+    cov = np.linalg.inv(precision)
+    mean = np.dot(cov, shift)
+    return mean, cov
+
+def moment_to_natural(mean, cov):
+    precision = np.linalg.inv(cov)
+    shift = np.dot(precision, mean)
+    return precision, shift
 
 class GaussianState:
     """
@@ -103,19 +112,33 @@ class GaussianState:
         return self._shift
 
     def __mul__(self, other):
-        # Make sure that other is also a
+        # Make sure that other is also a GaussianState class
         assert isinstance(other, GaussianState)
         precision = self.precision + other.precision
         shift = self.shift + other.shift
-        cov = np.linalg.inv(precision)
-        mean = np.dot(cov, shift)
+        mean, cov  = natural_to_moment(precision, shift)
         return GaussianState(mean, cov)
 
     def __truediv__(self, other):
         # Make sure that 'other' is also a GaussianState class
+        # TODO: Replace assert with a custom Error
         assert isinstance(other, GaussianState)
         precision = self.precision - other.precision
         shift = self.shift - other.shift
-        cov = np.linalg.inv(precision)
-        mean = np.dot(cov, shift)
+        mean, cov = natural_to_moment(precision, shift)
         return GaussianState(mean, cov)
+
+    def __pow__(self, power, modulo=None):
+        precision = power * self.precision
+        shift = power * self.shift
+        mean, cov = natural_to_moment(precision, shift)
+        return GaussianState(mean, cov)
+
+    def __eq__(self, other):
+        # Make sure that 'other' is also a GaussianState class
+        # TODO: Replace assert with a custom Error
+        assert isinstance(other, GaussianState)
+        mean_equal = np.allclose(self.mean, other.mean)
+        cov_equal = np.allclose(self.cov, other.cov)
+
+        return mean_equal and cov_equal
