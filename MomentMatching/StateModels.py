@@ -29,15 +29,18 @@
 
 import numpy as np
 
+
 def natural_to_moment(precision, shift):
     cov = np.linalg.inv(precision)
     mean = np.dot(cov, shift)
     return mean, cov
 
+
 def moment_to_natural(mean, cov):
     precision = np.linalg.inv(cov)
     shift = np.dot(precision, mean)
     return precision, shift
+
 
 class GaussianState:
     """

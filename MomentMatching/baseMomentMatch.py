@@ -13,3 +13,36 @@
 # limitations under the License.
 
 
+# Moment matching function should return integral of the form \int f(x) q (x) dx
+
+
+class MomentMatching:
+    params = {}  # Dictionary containing parameters for the moment matching approximation
+
+    def __init__(self, approximation_method=None):
+        self.method = approximation_method
+
+    def project(self, nonlinear_func, distribution):
+        """
+        Returns the gaussian approximation the integral
+        \int f(x) q (x) dx, where q(x) is the distribution and f(x) is the non-linear function
+        The result is exact when f(x) is a linear function.
+        :param nonlinear_func:
+        :param distribution: object of type GaussianState for example
+        :return:
+        same object as the type of distribution.
+        """
+        return NotImplementedError
+
+    def predict(self, nonlinear_func, distribution):
+        """
+        Mainly to be used with Kalman Filtering
+        Returns the gaussian approximation the integral
+        \int f(x) q (x) dx, where q(x) is the distribution and f(x) is the non-linear function
+        The result is exact when f(x) is a linear function.
+        :param nonlinear_func:
+        :param distribution: object of type GaussianState for example
+        :return: distribution of y =  \int f(x) q (x) dx in the form of a tuple
+        mean (y), variance (yyT), cross_covariance(xyT)
+        """
+        return NotImplementedError

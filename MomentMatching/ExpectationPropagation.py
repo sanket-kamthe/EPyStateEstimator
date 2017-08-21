@@ -14,7 +14,8 @@
 
 
 import numpy as np
-
+from .StateModels import GaussianState
+from .baseMomentMatch import MomentMatching
 
 # class GaussianState(object):
 #     def __init__(self, mean, variance):
@@ -30,14 +31,13 @@ import numpy as np
 #     mean = np.dot(variance, scaled_mean)
 #     return GaussianState(mean, variance)
 
-
 class BaseNode(object):
     """
     Factory to create nodes
     """
     FACTORS = ['Fwd', 'Measurement', 'Back']
-    def __init__(self, state, factors=None):
 
+    def __init__(self, state, factors=None):
         self.state = state
         if factors is None:
             factors = self.FACTORS
@@ -53,7 +53,7 @@ class BeginNode(BaseNode):
     def __init__(self, state, factors):
         super(BeginNode, self).__init__(state, factors)
 
-    def ep_update(self, factor):
+    def ep_update(self, factor, power=None, damping=None):
         """
         Psuedo code
 
@@ -69,5 +69,11 @@ class BeginNode(BaseNode):
         #
     #def
     # def _forward_update(self, mean, variance):
+        marginal = self.state
+        tilted_marginal = marginal / factor   # PowerEP equation 20
+        projected_marginal = project(f(x), tilted_marginal)  # PowerEP equation 21
+        new_factor = factor * ((projected_marginal / marginal) ** damping)  # PowerEP equation 22
+        new_marginal = marginal * ((projected_marginal/marginal) ** (power * damping))  # PowerEP equation 23
+
 
 
