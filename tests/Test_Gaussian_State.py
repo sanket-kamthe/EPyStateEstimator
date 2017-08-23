@@ -26,9 +26,10 @@ class Test1DGaussianStateModel(unittest.TestCase):
         self.state = GaussianState(mean_vec=self.mean, cov_matrix=self.cov)
 
     def test_1d_instantiation_dim(self):
+
         self.assertEqual(self.state.dim, self.dim, 'Dimension value read incorrectly')
-        self.assertEqual(self.state.mean, self.mean, 'mean value read incorrectly')
-        self.assertEqual(self.state.cov, self.cov, 'Cov value read incorrectly')
+        np.testing.assert_allclose(self.state.mean, self.mean, err_msg='mean value read incorrectly')
+        np.testing.assert_allclose(self.state.cov, self.cov, err_msg='Cov value read incorrectly')
 
     def test_1d_precision_shift_areNone(self):
         self.assertIsNone(self.state._precision)
@@ -80,7 +81,6 @@ class TestGaussianParamsTransform(unittest.TestCase):
         test_mean, test_cov = natural_to_moment(self.state.precision, self.state.shift)
         np.testing.assert_allclose(test_cov, self.state.cov)
         np.testing.assert_allclose(test_cov, self.cov)
-
 
 
 class TestGaussianStateModelArithmetic(unittest.TestCase):
