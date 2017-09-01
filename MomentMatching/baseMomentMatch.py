@@ -128,6 +128,7 @@ class UnscentedTransform(MomentMatching):
         pred_mean = pred_mean.reshape([distribution.dim, 1])
         gofx_minus_mean = transformed_points - pred_mean
         p_s = np.matmul(gofx_minus_mean, np.transpose(gofx_minus_mean))
+        res = np.einsum('ij,jk->ikj', gofx_minus_mean, gofx_minus_mean.T)
         # pred_sigma = np.sum(np.multiply( np.matmul( gofx_minus_mean, gofx_minus_mean.transpose()) , w_m ))
         return pred_mean, p_s
         # pass
