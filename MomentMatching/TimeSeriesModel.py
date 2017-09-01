@@ -14,7 +14,6 @@
 
 import numpy as np
 from scipy.stats import multivariate_normal
-import matplotlib.pyplot as plt
 import itertools
 
 
@@ -24,7 +23,7 @@ def f(x, t):
     Transition function: x_(t+1) = f(x_t, t)
     x_out = x/2 + 25x/(1+x^2) + 8 cos(1.2*t)
     """
-    x_out = 0.5 * (x) + (25 * x) / (1 + x ** 2) + (8 * np.cos(1.2 * t))
+    x_out = 0.5 * x + ((25 * x) / (1 + x ** 2)) + (8 * np.cos(1.2 * t))
     return x_out
 
 
@@ -89,9 +88,9 @@ class TimeSeriesModel(SystemModel):
     def system_simulation(self, N, x_zero=None, t=0):
         return list(itertools.islice(self._system_sim(x_zero=x_zero, t=t), N))
 
-
-
 if __name__ == '__main__':
+
+    import matplotlib.pyplot as plt
 
     demo = TimeSeriesModel(1, 1, transition_function=f, measurement_function=h)
     data = demo.system_simulation(50)

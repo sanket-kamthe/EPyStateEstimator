@@ -150,8 +150,8 @@ class UnscentedTransform(MomentMatching):
         if y_observation is None:  # if are only dealing with transition probability
             return pred_mean, pred_cov
         else:
-            gofz_minus_mean = transformed_points - y_observation
-            res = np.einsum('ij,jk->ikj', gofx_minus_mean, gofz_minus_mean.T)
+            gofy_minus_mean = sigma_points - distribution.mean
+            res = np.einsum('ij,jk->ikj', gofy_minus_mean, gofx_minus_mean.T)
             res_mul = res * w_c[np.newaxis, :, :]
             pred_cross_cov = np.einsum('ijk->ij', res_mul)
 
