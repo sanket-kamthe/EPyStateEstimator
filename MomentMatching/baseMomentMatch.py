@@ -129,8 +129,10 @@ class UnscentedTransform(MomentMatching):
         gofx_minus_mean = transformed_points - pred_mean
         p_s = np.matmul(gofx_minus_mean, np.transpose(gofx_minus_mean))
         res = np.einsum('ij,jk->ikj', gofx_minus_mean, gofx_minus_mean.T)
-        # pred_sigma = np.sum(np.multiply( np.matmul( gofx_minus_mean, gofx_minus_mean.transpose()) , w_m ))
-        return pred_mean, p_s
+        res_mul = res * w_c[np.newaxis, :, :]
+        pred_cov = np.einsum('ijk->ij', res_mul)
+
+        return GaussianState(pred_mean, pred_cov)
         # pass
 
 
@@ -150,11 +152,21 @@ if __name__ == '__main__':
     xx_mean = np.array([[0.0], [0]])
     xx_sigma = np.array([[1, 0], [0, 1]])
     distribution = GaussianState(xx_mean, xx_sigma)
+    a = 5
+    b = 3
 
-    def f(x):
-        return 2 * x + 1
+    def f(x, a=a, b=b):
+        return a * x + b
 
 
     print(unscented_transform.method)
 
-    unscented_transform.project(f, distribution)
+    res = unscented_transform.project(f, distribution)
+
+    print(f"The transformed mean is {res.mean} and the expected mean is {a * xx_mean + b}")
+
+    print(f"The transformed cov is {res.cov} and the expected cov is {a * xx_sigma * a}")
+
+
+
+
