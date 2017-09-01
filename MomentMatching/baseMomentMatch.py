@@ -51,7 +51,7 @@ class MomentMatching:
         """
         return NotImplementedError
 
-    def predict(self, nonlinear_func, distribution):
+    def predict(self, nonlinear_func, distribution, y_observation = None):
         """
         Mainly to be used with Kalman Filtering
         Returns the gaussian approximation the integral
@@ -133,6 +133,29 @@ class UnscentedTransform(MomentMatching):
         pred_cov = np.einsum('ijk->ij', res_mul)
 
         return GaussianState(pred_mean, pred_cov)
+
+    def predict(self, nonlinear_func, distribution, y_observation=None):
+        assert isinstance(distribution, GaussianState)
+
+        sigma_points, w_m, w_c = self._get_sigma_points(distribution.mean, distribution.cov, n=distribution.dim)
+
+        transformed_points = nonlinear_func(sigma_points)
+        pred_mean = np.sum(np.multiply(transformed_points, w_m), axis=1)
+        pred_mean = pred_mean.reshape([distribution.dim, 1])
+        gofx_minus_mean = transformed_points - pred_mean
+
+        res = np.einsum('ij,jk->ikj', gofx_minus_mean, gofx_minus_mean.T)
+        res_mul = res * w_c[np.newaxis, :, :]
+        pred_cov = np.einsum('ijk->ij', res_mul)
+        if y_observation is None:  # if are only dealing with transition probability
+            return pred_mean, pred_cov
+        else:
+            gofz_minus_mean = transformed_points - y_observation
+            res = np.einsum('ij,jk->ikj', gofx_minus_mean, gofz_minus_mean.T)
+            res_mul = res * w_c[np.newaxis, :, :]
+            pred_cross_cov = np.einsum('ijk->ij', res_mul)
+
+            return pred_mean, pred_cov, pred_cross_cov
         # pass
 
 
