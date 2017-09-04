@@ -15,7 +15,7 @@
 import numpy as np
 from scipy.stats import multivariate_normal
 import itertools
-
+from .StateModels import GaussianState
 
 def f(x, t):
     """
@@ -50,7 +50,8 @@ class TimeSeriesModel(SystemModel):
                  transition_function,
                  measurement_function,
                  transition_noise=None,
-                 measurement_noise=None):
+                 measurement_noise=None,
+                 init_dist=None):
 
         def make_multivariate_random_sampler_of_dimension(D, sigma=1):
             mean = np.zeros((D,), dtype=float)
@@ -68,7 +69,8 @@ class TimeSeriesModel(SystemModel):
                          transition_function=transition_function,
                          measurement_function=measurement_function,
                          Q=transition_noise,
-                         R=measurement_noise)
+                         R=measurement_noise,
+                         init_dist=init_dist)
 
     def _system_sim(self, x_zero=None, t=0):
 
@@ -88,12 +90,29 @@ class TimeSeriesModel(SystemModel):
     def system_simulation(self, N, x_zero=None, t=0):
         return list(itertools.islice(self._system_sim(x_zero=x_zero, t=t), N))
 
+
+class UniformNonlinearGrowthModel(TimeSeriesModel):
+    """
+
+    """
+    def __init__(self):
+        init_dist = GaussianState(mean_vec=np.array([0.0]), cov_matrix=np.eye(1)*0.1)
+        super().__init__(1, 1, transition_function=f, measurement_function=h, init_dist=init_dist)
+
 if __name__ == '__main__':
 
     import matplotlib.pyplot as plt
+    import os
+    import sys
 
-    demo = TimeSeriesModel(1, 1, transition_function=f, measurement_function=h)
-    data = demo.system_simulation(50)
+    module_path = os.path.abspath(os.path.join('..'))
+    if module_path not in sys.path:
+        sys.path.append(module_path)
+    from MomentMatching.StateModels import GaussianState
+
+    # demo = TimeSeriesModel(1, 1, transition_function=f, measurement_function=h)
+    ungm = UniformNonlinearGrowthModel()
+    data = ungm.system_simulation(50)
     x_true, x_noisy, y_true, y_noisy = zip(*data)
 
     plt.plot(x_true)
