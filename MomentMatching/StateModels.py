@@ -155,3 +155,11 @@ class GaussianState:
         from scipy.stats import multivariate_normal
 
         return -multivariate_normal(mean=self.mean, cov=self.cov).logpdf(x)
+
+    def rmse(self, x):
+        """
+        Root Mean Squared Error
+        :param x:
+        :return:
+        """
+        return np.sqrt(np.sum(np.square(self.mean - x)))
