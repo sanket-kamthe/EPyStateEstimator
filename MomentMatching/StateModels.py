@@ -145,3 +145,13 @@ class GaussianState:
         cov_equal = np.allclose(self.cov, other.cov)
 
         return mean_equal and cov_equal
+
+    def nll(self, x):
+        """
+        Find the negative log likelihood of x
+        :param x:
+        :return: -ve of logpdf (x, mean=self.mean, cov=self.cov)
+        """
+        from scipy.stats import multivariate_normal
+
+        return -multivariate_normal(mean=self.mean, cov=self.cov).logpdf(x)
