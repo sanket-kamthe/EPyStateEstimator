@@ -16,7 +16,7 @@
 # Moment matching function should return integral of the form \int f(x) q (x) dx
 
 import numpy as np
-from .StateModels import GaussianState
+from MomentMatching.StateModels import GaussianState
 from functools import partial
 
 class MomentMatching:
@@ -119,7 +119,7 @@ class UnscentedTransform(MomentMatching):
 
         return sigma_points, w_m, w_c
 
-    def project(self, nonlinear_func, distribution):
+    def project(self, nonlinear_func, distribution, *args):
         assert isinstance(distribution, GaussianState)
 
         sigma_points, w_m, w_c = self._get_sigma_points(distribution.mean, distribution.cov, n=distribution.dim)
@@ -135,7 +135,7 @@ class UnscentedTransform(MomentMatching):
 
         return GaussianState(pred_mean, pred_cov)
 
-    def predict(self, nonlinear_func, distribution, *args, y_observation=None):
+    def predict(self, nonlinear_func, distribution, *args):
         assert isinstance(distribution, GaussianState)
 
         # if args is not tuple:
@@ -148,19 +148,18 @@ class UnscentedTransform(MomentMatching):
         pred_mean = np.sum(np.multiply(transformed_points, w_m), axis=1)
         pred_mean = pred_mean.reshape([distribution.dim, 1])
         gofx_minus_mean = transformed_points - pred_mean
+        scaled_gofx_minus_mean = w_c * gofx_minus_mean
 
-        res = np.einsum('ij,jk->ikj', gofx_minus_mean, gofx_minus_mean.T)
-        res_mul = res * w_c[np.newaxis, :, :]
-        pred_cov = np.einsum('ijk->ij', res_mul)
-        if y_observation is None:  # if are only dealing with transition probability
-            return pred_mean, pred_cov
-        else:
-            gofy_minus_mean = sigma_points - distribution.mean
-            res = np.einsum('ij,jk->ikj', gofy_minus_mean, gofx_minus_mean.T)
-            res_mul = res * w_c[np.newaxis, :, :]
-            pred_cross_cov = np.einsum('ijk->ij', res_mul)
+        res = np.einsum('ij,jk->ikj', gofx_minus_mean, scaled_gofx_minus_mean.T)
+        # res_mul = res * w_c[np.newaxis, :, :]
+        pred_cov = np.einsum('ijk->ij', res)
 
-            return pred_mean, pred_cov, pred_cross_cov
+        gofy_minus_mean = sigma_points - distribution.mean
+        res_cross = np.einsum('ij,jk->ikj', gofy_minus_mean, scaled_gofx_minus_mean.T)
+        # res_mul = res * w_c[np.newaxis, :, :]
+        pred_cross_cov = np.einsum('ijk->ij', res_cross)
+
+        return pred_mean, pred_cov, pred_cross_cov
         # pass
 
 
