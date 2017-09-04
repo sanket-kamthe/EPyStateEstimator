@@ -15,8 +15,9 @@
 
 # Moment matching function should return integral of the form \int f(x) q (x) dx
 
-# import numpy as np
-# from .StateModels import GaussianState
+import numpy as np
+from .StateModels import GaussianState
+from functools import partial
 
 class MomentMatching:
     params = {}  # Dictionary containing parameters for the moment matching approximation
@@ -51,7 +52,7 @@ class MomentMatching:
         """
         return NotImplementedError
 
-    def predict(self, nonlinear_func, distribution, y_observation = None):
+    def predict(self, nonlinear_func, distribution, *args, y_observation = None):
         """
         Mainly to be used with Kalman Filtering
         Returns the gaussian approximation the integral
@@ -134,12 +135,16 @@ class UnscentedTransform(MomentMatching):
 
         return GaussianState(pred_mean, pred_cov)
 
-    def predict(self, nonlinear_func, distribution, y_observation=None):
+    def predict(self, nonlinear_func, distribution, *args, y_observation=None):
         assert isinstance(distribution, GaussianState)
+
+        # if args is not tuple:
+        #     args = (args, )
+        frozen_nonlinear_func = partial(nonlinear_func, *args)
 
         sigma_points, w_m, w_c = self._get_sigma_points(distribution.mean, distribution.cov, n=distribution.dim)
 
-        transformed_points = nonlinear_func(sigma_points)
+        transformed_points = frozen_nonlinear_func(sigma_points)
         pred_mean = np.sum(np.multiply(transformed_points, w_m), axis=1)
         pred_mean = pred_mean.reshape([distribution.dim, 1])
         gofx_minus_mean = transformed_points - pred_mean
