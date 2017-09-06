@@ -31,6 +31,7 @@ from .baseMomentMatch import MomentMatching
 #     mean = np.dot(variance, scaled_mean)
 #     return GaussianState(mean, variance)
 
+
 class BaseNode(object):
     """
     Factory to create nodes

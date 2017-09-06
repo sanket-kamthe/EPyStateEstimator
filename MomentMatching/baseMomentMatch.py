@@ -107,7 +107,7 @@ class UnscentedTransform(MomentMatching):
         w_m = np.zeros([1, 2 * n + 1], dtype=np.float)
         w_c = np.zeros([1, 2 * n + 1], dtype=np.float)
 
-        print(par_lambda)
+        # print(par_lambda)
 
         # weights w_m are for computing mean and weights w_c are
         # used for covarince calculation
