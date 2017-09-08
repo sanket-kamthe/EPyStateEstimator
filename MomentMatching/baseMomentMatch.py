@@ -18,15 +18,17 @@
 import numpy as np
 from MomentMatching.StateModels import GaussianState
 from functools import partial
+from scipy.stats import multivariate_normal
 
 class MomentMatching:
-    params = {}  # Dictionary containing parameters for the moment matching approximation
+
 
     def __init__(self, approximation_method=None, **kwargs):
+        self.params = {}  # Dictionary containing parameters for the moment matching approximation
 
         self.method = approximation_method
         self.params.update(kwargs)
-        print(self.params)
+        # print(self.params)
         for key in self.params:
             self.__setattr__(key, self.params[key])
 
@@ -100,7 +102,7 @@ class UnscentedTransform(MomentMatching):
         par_lambda = alpha * alpha * (n + kappa) - n
         sqrt_n_plus_lambda = np.sqrt(n + par_lambda)
 
-        sigma_points[:, 0:1] = x_mean
+        sigma_points[:, 0:1] = x_mean[:, np.newaxis]
         sigma_points[:, 1:n + 1] = x_mean + sqrt_n_plus_lambda * L
         sigma_points[:, n + 1:2 * n + 1] = x_mean - sqrt_n_plus_lambda * L
 
@@ -124,7 +126,7 @@ class UnscentedTransform(MomentMatching):
 
         sigma_points, w_m, w_c = self._get_sigma_points(distribution.mean, distribution.cov, n=distribution.dim)
 
-        transformed_points = nonlinear_func(sigma_points)
+        transformed_points = nonlinear_func(sigma_points, *args)
         pred_mean = np.sum(np.multiply(transformed_points, w_m), axis=1)
         pred_mean = pred_mean.reshape([distribution.dim, 1])
         gofx_minus_mean = transformed_points - pred_mean
@@ -162,6 +164,25 @@ class UnscentedTransform(MomentMatching):
         return pred_mean, pred_cov, pred_cross_cov
         # pass
 
+class MonteCarloTransform(MomentMatching):
+    def __init__(self, dimension_of_state=1, number_of_samples=None):
+        super().__init__(approximation_method='Monte Carlo Sampling',
+                         dimension_of_state=dimension_of_state,
+                         number_of_samples=number_of_samples)
+
+    def predict(self, nonlinear_func, distribution, *args, y_observation=None):
+
+        assert isinstance(distribution, GaussianState)
+        frozen_nonlinear_func = partial(nonlinear_func, *args)
+
+        samples = distribution.sample(self.number_of_samples)
+        propagated_samples = frozen_nonlinear_func(samples)
+        pred_mean = np.mean(propagated_samples, axis=0)
+        pred_cov = np.cov(propagated_samples.T)
+        pred_cross_cov = np.cov(samples.T, propagated_samples.T )
+        return pred_cross_cov
+
+
 
 if __name__ == '__main__':
 
@@ -176,8 +197,8 @@ if __name__ == '__main__':
     from MomentMatching.StateModels import GaussianState
     unscented_transform = UnscentedTransform()
 
-    xx_mean = np.array([[0.0], [0]])
-    xx_sigma = np.array([[1, 0], [0, 1]])
+    xx_mean = np.array([0.0, 0.0], dtype=float)
+    xx_sigma = np.array([[1, 0], [0, 1]], dtype=float)
     distribution = GaussianState(xx_mean, xx_sigma)
     a = 5
     b = 3
@@ -194,6 +215,11 @@ if __name__ == '__main__':
 
     print(f"The transformed cov is {res.cov} and the expected cov is {a * xx_sigma * a}")
 
+    mct = MonteCarloTransform(1, number_of_samples=1000)
 
+    res2 = mct.predict(f, distribution)
+    print(f"The MCT transformed mean is {res2} and the expected mean is {a * xx_mean + b}")
+
+    print(f"The transformed cov is {res2} and the expected cov is {a * xx_sigma * a}")
 
 

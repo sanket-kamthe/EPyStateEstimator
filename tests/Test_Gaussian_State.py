@@ -16,7 +16,7 @@ import unittest
 import random
 import numpy as np
 from ..MomentMatching.StateModels import GaussianState, moment_to_natural, natural_to_moment
-
+# from scipy.stats import multivariate_normal
 
 class Test1DGaussianStateModel(unittest.TestCase):
     def setUp(self):
@@ -86,11 +86,11 @@ class TestGaussianParamsTransform(unittest.TestCase):
 class TestGaussianStateModelArithmetic(unittest.TestCase):
     def setUp(self):
         self.dim = random.randint(3, 7)
-        self.mean = np.random.randn(self.dim, 1)
+        self.mean = np.random.randn(self.dim)
         temp = np.random.randn(self.dim, self.dim)
         self.cov = temp.T @ temp
         self.state1 = GaussianState(mean_vec=self.mean, cov_matrix=self.cov)
-        self.mean = np.random.randn(self.dim, 1)
+        self.mean = np.random.randn(self.dim)
         temp = np.random.randn(self.dim, self.dim)
         self.cov = temp.T @ temp
         self.state2 = GaussianState(mean_vec=self.mean, cov_matrix=self.cov)
@@ -114,7 +114,7 @@ class TestGaussianStateModelArithmetic(unittest.TestCase):
 class TestGaussianStatePower(unittest.TestCase):
     def setUp(self):
         self.dim = random.randint(3, 7)
-        self.mean = np.random.randn(self.dim, 1)
+        self.mean = np.random.randn(self.dim)
         temp = np.random.randn(self.dim, self.dim)
         self.cov = temp.T @ temp
         self.state1 = GaussianState(mean_vec=self.mean, cov_matrix=self.cov)
@@ -136,6 +136,25 @@ class TestGaussianStatePower(unittest.TestCase):
         np.testing.assert_allclose(self.state_pow.cov, self.state2.cov)
         np.testing.assert_allclose(self.state_pow.mean, self.state2.mean)
         # assert (self.state2 == self.state_pow)
+
+class TestGaussianSamples(unittest.TestCase):
+    def setUp(self):
+        self.dim = random.randint(1, 3)
+        self.mean = np.random.randn(self.dim)
+        temp = np.random.randn(self.dim, self.dim)
+        self.cov = temp.T @ temp
+        self.state = GaussianState(mean_vec=self.mean, cov_matrix=self.cov)
+
+    def test_samples(self):
+
+        # print(self.mean.shape)
+        N = 100
+        # rd= multivariate_normal(mean=self.mean, cov=self.cov)
+        samples = self.state.sample(N)
+        sample_mean = np.mean(samples, axis=0)
+        np.testing.assert_allclose(samples.shape, (N, self.mean.shape[0]))
+
+
 
 
 

@@ -16,6 +16,9 @@
 import numpy as np
 from .StateModels import GaussianState
 from .baseMomentMatch import MomentMatching
+from collections import  namedtuple
+import itertools
+from collections.abc import MutableSequence
 
 # class GaussianState(object):
 #     def __init__(self, mean, variance):
@@ -74,6 +77,33 @@ class BeginNode(BaseNode):
         projected_marginal = project(f(x), tilted_marginal)  # PowerEP equation 21
         new_factor = factor * ((projected_marginal / marginal) ** damping)  # PowerEP equation 22
         new_marginal = marginal * ((projected_marginal/marginal) ** (power * damping))  # PowerEP equation 23
+
+
+class EPNodes(MutableSequence):
+    def __init__(self, N, marginal_init=None, factors_init=None):
+        self._Node = []
+
+    def validate_input(self, value):
+        pass
+
+    def __len__(self): return len(self._Node)
+
+    def __getitem__(self, key): return self._Node[key]
+
+    def __delitem__(self, key): del self._Node[key]
+
+    def __setitem__(self, key, value):
+        self.validate_input(value)
+        self._Node[key] = value
+
+    def insert(self, index, value):
+
+        self.validate_input(value)
+        self._Node.insert(index, value)
+
+    def __repr__(self):
+
+        return f'EP Nodes with list ' + repr(self._Node)
 
 
 
