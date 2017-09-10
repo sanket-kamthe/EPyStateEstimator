@@ -173,4 +173,4 @@ class GaussianState:
         samples = np.random.multivariate_normal(mean=self.mean,
                                              cov=self.cov,
                                              size=number_of_samples)
-        return samples
+        return samples.T

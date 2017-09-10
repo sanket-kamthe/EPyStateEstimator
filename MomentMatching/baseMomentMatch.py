@@ -18,7 +18,9 @@
 import numpy as np
 from MomentMatching.StateModels import GaussianState
 from functools import partial
-from scipy.stats import multivariate_normal
+# from scipy.stats import multivariate_normal
+EPS = 1e-4
+
 
 class MomentMatching:
 
@@ -148,15 +150,15 @@ class UnscentedTransform(MomentMatching):
 
         transformed_points = frozen_nonlinear_func(sigma_points)
         pred_mean = np.sum(np.multiply(transformed_points, w_m), axis=1)
-        pred_mean = pred_mean.reshape([distribution.dim, 1])
-        gofx_minus_mean = transformed_points - pred_mean
+        # pred_mean = pred_mean.reshape([distribution.dim, 1])
+        gofx_minus_mean = transformed_points - pred_mean[:, np.newaxis]
         scaled_gofx_minus_mean = w_c * gofx_minus_mean
 
         res = np.einsum('ij,jk->ikj', gofx_minus_mean, scaled_gofx_minus_mean.T)
         # res_mul = res * w_c[np.newaxis, :, :]
         pred_cov = np.einsum('ijk->ij', res)
 
-        gofy_minus_mean = sigma_points - distribution.mean
+        gofy_minus_mean = sigma_points - distribution.mean[:, np.newaxis]
         res_cross = np.einsum('ij,jk->ikj', gofy_minus_mean, scaled_gofx_minus_mean.T)
         # res_mul = res * w_c[np.newaxis, :, :]
         pred_cross_cov = np.einsum('ijk->ij', res_cross)
@@ -176,11 +178,43 @@ class MonteCarloTransform(MomentMatching):
         frozen_nonlinear_func = partial(nonlinear_func, *args)
 
         samples = distribution.sample(self.number_of_samples)
+
         propagated_samples = frozen_nonlinear_func(samples)
         pred_mean = np.mean(propagated_samples, axis=0)
         pred_cov = np.cov(propagated_samples.T)
         pred_cross_cov = np.cov(samples.T, propagated_samples.T )
-        return pred_cross_cov
+        return pred_mean, pred_cov, pred_cross_cov
+
+
+class TaylorTransform(MomentMatching):
+    def __init__(self, dimension_of_state=1, eps=EPS):
+        super().__init__(approximation_method='Taylor 1st Order',
+                         dimension_of_state=dimension_of_state,
+                         eps=eps)
+
+    @staticmethod
+    def numerical_jacobian(f, x, eps=EPS):
+        z = f(x)
+        #     jacobian  = np.zeros((m,n), dtype=float)
+        jacobian = []
+        x_list = x.tolist()
+        for i, data in enumerate(x_list):
+            x1 = x.tolist()
+            x1[i] = data + eps
+            x1 = np.array(x1)
+            jacobian.append((f(x1) - z) / eps)
+
+        return np.array(jacobian).T
+    # def _jacobian(self, ):
+
+    def predict(self, nonlinear_func, distribution, *args, y_observation = None):
+        assert isinstance(distribution, GaussianState)
+        frozen_nonlinear_func = partial(nonlinear_func, *args)
+        J_t = self.numerical_jacobian(frozen_nonlinear_func, distribution.mean)
+        pred_mean = frozen_nonlinear_func(distribution.mean)
+        pred_cov = J_t @ distribution.cov @ J_t.T
+        pred_cross_cov = distribution.cov @ J_t.T
+        return pred_mean, pred_cov, pred_cross_cov
 
 
 
