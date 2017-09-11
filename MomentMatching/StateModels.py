@@ -62,6 +62,8 @@ class GaussianState:
         :param cov_matrix:
         """
         dim = mean_vec.shape[0]
+        self._mean = None
+        self._cov = None
         self.dim = dim
         self.mean = mean_vec
         self.cov = cov_matrix
@@ -173,4 +175,4 @@ class GaussianState:
         samples = np.random.multivariate_normal(mean=self.mean,
                                              cov=self.cov,
                                              size=number_of_samples)
-        return samples.T
+        return samples
