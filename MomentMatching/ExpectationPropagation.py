@@ -91,18 +91,143 @@ class BeginNode(BaseNode):
 
 
 class TimeSeriesNodeForEP:
-    def __init__(self, t, marginal=None, factors=None):
-        self.t = t
-        self.marginal = marginal
-        self.factors = factors
+    def __init__(self, t, state_dim=1, marginal_init=None, factor_init=None):
 
+        self.t = t
+
+        if marginal_init is None:
+            self.marginal = self.marginal_init(state_dim)
+        else:
+            self.marginal = marginal_init
+
+        if factor_init is None:
+            self.measurement_factor, self.back_factor, self.forward_factor = self.initialise_factors(state_dim)
+        else:
+            self.measurement_factor, self.back_factor, self.forward_factor = factor_init
+
+
+
+    # @property
+    # def back_factor(self):
+    #     return self._back_factor
+    #
+    # @back_factor.setter
+    # def back_factor(self, value):
+    #     assert isinstance(value, GaussianState)
+    #     self._back_factor = value
+    #
+    # @property
+    # def forward_factor(self):
+    #     return self._forward_factor
+    #
+    # @forward_factor.setter
+    # def forward_factor(self, value):
+    #     assert isinstance(value, GaussianState)
+    #     self._forward_factor = value
+    #
+    # @property
+    # def measurement_factor(self):
+    #     return self._measurement_factor
+    #
+    # @measurement_factor.setter
+    # def measurement_factor(self, value):
+    #     assert isinstance(value, GaussianState)
+    #     self._measurement_factor = value
+    #
+    #
+    @staticmethod
+    def marginal_init(state_dim):
+        mean = np.zeros((state_dim,), dtype=float)
+        cov = 100000 * np.eye(state_dim, dtype=float)
+        return GaussianState(mean_vec=mean, cov_matrix=cov)
+
+    # @staticmethod
+    # def factor_init(state_dim):
+    #
+    #     return GaussianState(mean_vec=mean, cov_matrix=cov)
+
+    @staticmethod
+    def initialise_factors(state_dim):
+        mean = np.zeros((state_dim,), dtype=float)
+        cov = 9999 * np.eye(state_dim, dtype=float)
+        # self.measurement_factor = self.factor_init(state_dim)
+        # self.back_factor = self.factor_init(state_dim)
+        # self.forward_factor = self.factor_init(state_dim)
+        return tuple(GaussianState(mean_vec=mean, cov_matrix=cov),
+                     GaussianState(mean_vec=mean, cov_matrix=cov),
+                     GaussianState(mean_vec=mean, cov_matrix=cov))
+
+
+class EPbase:
+
+    def __init__(self):
+        self.me = 'cool'
+
+    def forward_update(self, previous_node, node):
+        """
+        forward_cavity_distribution = node_marginal / forward_factor  # q(x_t) / q_fwd(x_t)
+        back_cavity_distribution = previous_node_marginal / previous_back_factor # q(x_t-1) / q_back(x_t-1)
+
+        new_fwd_factor = moment matching with back_cavity_distribution, transition function and noise Q  #proj op
+
+        new_node_marginal = forward_cavity_distribution * new_fwd_factor
+
+        return new_fwd_factor
+        """
+        assert isinstance(node, TimeSeriesNodeForEP)
+        assert isinstance(previous_node, TimeSeriesNodeForEP)
+
+        forward_cavity_distribution = node.marginal / node.forward_factor  # q(x_t) / q_fwd(x_t)
+        back_cavity_distribution = previous_node.marginal / previous_node.back_factor  # q(x_t-1) / q_back(x_t-1)
+
+        new_node = node
+
+        new_node.fwd_factor = self.moment_matching(self.transition, back_cavity_distribution, self.Q)  # proj op
+
+        new_node.marginal = forward_cavity_distribution * new_node.fwd_factor
+
+        return new_node
+
+    def measurement_update(self, node, measurement):
+        """
+        measurement cavity distribution = node_marginal / measurement_factor  # q(x_t) / q_up(x_t)
+
+        new marginal = moment matching with measurement cavity distribution
+
+        new_measurment factor = new_marginal / measurement cavity distribution
+
+        return new_measurement_factor
+        """
+        assert isinstance(node, TimeSeriesNodeForEP)
+
+        measurement_cavity_distribution = node.marginal / node.measurement_factor  # q(x_t) / q_up(x_t)
+
+        new_node = node
+
+        new_node.marginal = self.moment_matching(self.measurement, measurement_cavity_distribution, self.R, measurement)
+
+        new_node.measurement_factor = new_node.marginal / measurement_cavity_distribution
+
+        return new_node
+
+    def backward_update(momentmatching, transition_function):
+        """
+        back_cavity_distribution = node_marginal / back_factor # q(x_t) / q_back(x_t)
+        forward_cavity_distribution = next_node_marginal / next_forward_factor  # q(x_t) / q_fwd(x_t)
+
+        new_marginal = moment matching with back cavity distribution
+
+        return new_back_factor
+        """
+        
 
 class EPNodes(MutableSequence):
     def __init__(self, N, marginal_init=None, factors_init=None):
         self._Node = []
-        for i in range(N):
-            self._Node.append(TimeSeriesNodeForEP(i, marginal=marginal_init,
-                                                  factors=factors_init)
+        for t in range(N):
+            self._Node.append(TimeSeriesNodeForEP(t=t,
+                                                  marginal_init=marginal_init,
+                                                  factor_init=factors_init)
                               )
         # self._Node = list(itertools.repeat(init_node, N))
         self.mode_select = [1, 1, 1]
