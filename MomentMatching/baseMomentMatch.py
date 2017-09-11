@@ -72,10 +72,9 @@ class MomentMatching:
 
 class UnscentedTransform(MomentMatching):
     """
-
+    
     """
-
-    def __init__(self, n = 2, alpha= 0.5, beta = 2, kappa = 10 ):
+    def __init__(self, n=2, alpha=0.5, beta=2, kappa=10):
         #
         # default_params = {
         #     'n' : 2,
@@ -84,12 +83,23 @@ class UnscentedTransform(MomentMatching):
         #     'kappa': 10
         # }
         super().__init__(approximation_method='Unscented Transform',
-                         n=2,
-                         alpha=0.5,
-                         beta=2,
-                         kappa=10)
+                         n=n,
+                         alpha=alpha,
+                         beta=beta,
+                         kappa=kappa)
 
     def _get_sigma_points(self, x_mean, x_cov, n):
+        """
+
+        Args:
+            x_mean:
+            x_cov:
+            n:
+
+        Returns:
+
+        """
+
 
         # n = self.n  # TODO: check whether we actually need this or we use distribution.dim
         alpha = self.alpha
@@ -124,6 +134,16 @@ class UnscentedTransform(MomentMatching):
         return sigma_points, w_m, w_c
 
     def project(self, nonlinear_func, distribution, *args):
+        """
+
+        Args:
+            nonlinear_func:
+            distribution:
+            *args:
+
+        Returns:
+
+        """
         assert isinstance(distribution, GaussianState)
 
         sigma_points, w_m, w_c = self._get_sigma_points(distribution.mean, distribution.cov, n=distribution.dim)
