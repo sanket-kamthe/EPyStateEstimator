@@ -61,7 +61,6 @@ class TransitionModel:
         self.Q = noise_covariance
 
 
-
     def _check_tranistion_function(self, transition_function):
         """
         This function checks whether the transition function is valid

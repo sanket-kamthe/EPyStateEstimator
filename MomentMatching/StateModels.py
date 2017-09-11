@@ -163,3 +163,14 @@ class GaussianState:
         :return:
         """
         return np.sqrt(np.sum(np.square(self.mean - x)))
+
+    def sample(self, number_of_samples):
+
+        # from scipy.stats import multivariate_normal
+
+        # return multivariate_normal(mean=self.mean, cov=self.cov).rvs(number_of_samples)
+
+        samples = np.random.multivariate_normal(mean=self.mean,
+                                             cov=self.cov,
+                                             size=number_of_samples)
+        return samples.T
