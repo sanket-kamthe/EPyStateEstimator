@@ -134,6 +134,7 @@ class GaussianState:
         return GaussianState(mean, cov)
 
     def __pow__(self, power, modulo=None):
+
         precision = power * self.precision
         shift = power * self.shift
         mean, cov = natural_to_moment(precision, shift)

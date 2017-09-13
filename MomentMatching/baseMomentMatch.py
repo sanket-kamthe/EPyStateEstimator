@@ -220,7 +220,7 @@ class TaylorTransform(MomentMatching):
         x_list = x.tolist()
         for i, data in enumerate(x_list):
             x1 = x.tolist()
-            x1[i] = data + eps
+            x1[i] = np.array(data) + eps
             x1 = np.array(x1)
             jacobian.append((f(x1) - z) / eps)
 
