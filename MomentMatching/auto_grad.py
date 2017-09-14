@@ -40,7 +40,7 @@ def covgrad(x, mean, cov, allow_singular=False):
                 "differentiable w.r.t. a singular covariance matix")
     # I think once we have Cholesky we can make this nicer.
     solved = np.linalg.solve(cov, (x - mean).T).T
-    return lower_half(np.linalg.inv(cov) - generalized_outer_product(solved))
+    return 0.5 * (np.linalg.inv(cov) - generalized_outer_product(solved))
 
 def solve(allow_singular):
     if allow_singular:

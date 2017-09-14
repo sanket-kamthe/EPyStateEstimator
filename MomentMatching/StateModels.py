@@ -30,6 +30,9 @@
 import numpy as np
 
 
+RTOL, ATOL = 1e-3, 1e-5
+
+
 def natural_to_moment(precision, shift):
     cov = np.linalg.inv(precision)
     mean = np.dot(cov, shift)
@@ -121,7 +124,7 @@ class GaussianState:
         assert isinstance(other, GaussianState)
         precision = self.precision + other.precision
         shift = self.shift + other.shift
-        mean, cov  = natural_to_moment(precision, shift)
+        mean, cov = natural_to_moment(precision, shift)
         return GaussianState(mean, cov)
 
     def __truediv__(self, other):
@@ -144,8 +147,8 @@ class GaussianState:
         # Make sure that 'other' is also a GaussianState class
         # TODO: Replace assert with a custom Error
         assert isinstance(other, GaussianState)
-        mean_equal = np.allclose(self.mean, other.mean)
-        cov_equal = np.allclose(self.cov, other.cov)
+        mean_equal = np.allclose(self.mean, other.mean, rtol=RTOL, atol=RTOL)
+        cov_equal = np.allclose(self.cov, other.cov, rtol=RTOL, atol=RTOL)
 
         return mean_equal and cov_equal
 
