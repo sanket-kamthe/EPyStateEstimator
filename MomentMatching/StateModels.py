@@ -180,3 +180,7 @@ class GaussianState:
                                              cov=self.cov,
                                              size=number_of_samples)
         return samples
+
+    def __repr__(self):
+
+        return str.format('GaussianState \n mean=\n {}, \n cov=\n{})', self.mean, self.cov)
