@@ -101,7 +101,7 @@ class TimeSeriesNodeForEP:
             self.marginal = marginal_init
 
         if factor_init is None:
-            self.measurement_factor, self.back_factor, self.forward_factor = self.initialise_factors(state_dim)
+            self.measurement_factor, self.back_factor, self.forward_factor = (self.initialise_factors(state_dim))
         else:
             self.measurement_factor, self.back_factor, self.forward_factor = factor_init
 
@@ -153,7 +153,7 @@ class TimeSeriesNodeForEP:
         # self.measurement_factor = self.factor_init(state_dim)
         # self.back_factor = self.factor_init(state_dim)
         # self.forward_factor = self.factor_init(state_dim)
-        return tuple(GaussianState(mean_vec=mean, cov_matrix=cov),
+        return (GaussianState(mean_vec=mean, cov_matrix=cov),
                      GaussianState(mean_vec=mean, cov_matrix=cov),
                      GaussianState(mean_vec=mean, cov_matrix=cov))
 
@@ -219,16 +219,18 @@ class EPbase:
 
         return new_back_factor
         """
-        
+
 
 class EPNodes(MutableSequence):
-    def __init__(self, N, marginal_init=None, factors_init=None):
+    def __init__(self, dimension_of_state=1, N=None, marginal_init=None, factors_init=None):
         self._Node = []
-        for t in range(N):
-            self._Node.append(TimeSeriesNodeForEP(t=t,
-                                                  marginal_init=marginal_init,
-                                                  factor_init=factors_init)
-                              )
+        if N is not None:
+            for t in range(N):
+                self._Node.append(TimeSeriesNodeForEP(t=t,
+                                                      state_dim=dimension_of_state,
+                                                      marginal_init=marginal_init,
+                                                      factor_init=factors_init)
+                                  )
         # self._Node = list(itertools.repeat(init_node, N))
         self.mode_select = [1, 1, 1]
 
@@ -270,6 +272,13 @@ class EPNodes(MutableSequence):
             mode = itertools.compress(node.factors, mode_select)
             for factor in mode:
                 print(f'In Node{node.t} {factor} factor')
+
+
+    def filter_iter(self):
+
+        previous_node, next_node = itertools.tee(self._Node)
+        next(next_node, None)
+        return zip(previous_node, next_node)
 
 
 
