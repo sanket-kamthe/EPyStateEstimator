@@ -17,7 +17,10 @@
 
 import numpy as np
 from MomentMatching.StateModels import GaussianState
+from autograd import jacobian
 from functools import partial
+from .auto_grad import logpdf
+
 # from scipy.stats import multivariate_normal
 EPS = 1e-4
 
@@ -235,6 +238,22 @@ class TaylorTransform(MomentMatching):
         pred_cov = J_t @ distribution.cov @ J_t.T
         pred_cross_cov = distribution.cov @ J_t.T
         return pred_mean, pred_cov, pred_cross_cov
+
+    def _data_likelihood(self, nonlinear_func, distribution, data=None):
+        meanz = nonlinear_func(distribution.mean)  # z = f(x)
+        linear_C = jacobian(nonlinear_func)(distribution.mean)  # linear factor A
+        covz = linear_C @ distribution.cov @ linear_C.T  # predictive covariance sz = var(f(x)) = A * Sigma * A^T
+        logZi = logpdf(data, meanz, covz)
+
+        return logZi
+
+    def project(self, nonlinear_func, distribution, data=None):
+
+        logZi = self._data_likelihood(nonlinear_func, distribution, data)
+        dlogZidMz = jacobian(self._data_likelihood, argnum=1)(nonlinear_func, distribution, data)
+        dlogZidSz = jacobian(self._data_likelihood, argnum=2)(nonlinear_func, distribution, data)
+
+        return logZi, dlogZidMz, dlogZidSz
 
 
 
