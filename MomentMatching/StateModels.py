@@ -184,3 +184,6 @@ class GaussianState:
     def __repr__(self):
 
         return str.format('GaussianState \n mean=\n {}, \n cov=\n{})', self.mean, self.cov)
+
+    def copy(self):
+        return GaussianState(self.mean, self.cov)
