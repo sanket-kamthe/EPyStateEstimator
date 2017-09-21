@@ -27,7 +27,6 @@ EPS = 1e-4
 
 class MomentMatching:
 
-
     def __init__(self, approximation_method=None, **kwargs):
         self.params = {}  # Dictionary containing parameters for the moment matching approximation
 
@@ -71,6 +70,41 @@ class MomentMatching:
         mean (y), variance (yyT), cross_covariance(xyT)
         """
         return NotImplementedError
+
+    def _data_likelihood(self, nonlinear_func, distribution, data=None):
+        meanz, covz, _ = self.predict(nonlinear_func=nonlinear_func,
+                                      distribution=distribution)
+        logZi = logpdf(data, meanz, covz)
+
+        return logZi
+
+    def _moment_matching(self, cavity_distribution, dlogZidMz, dlogZidSz):
+        mx = cavity_distribution.mean + np.dot(cavity_distribution.cov, dlogZidMz.T)
+        vx = cavity_distribution.cov - cavity_distribution.cov @ (
+        np.outer(dlogZidMz, dlogZidMz) - 2 * dlogZidSz) @ cavity_distribution.cov.T
+
+        return GaussianState(mx, vx)
+
+    def __call__(self, nonlinear_func, distribution, match_with, *args, **kwargs):
+        """
+
+        Parameters
+        ----------
+        nonlinear_func
+        distribution
+        match_with
+        args
+        kwargs
+
+        Returns
+        -------
+
+        """
+
+        state = self._moment_matching(distribution, dlogZidMz, dlogZidSz)
+
+        return state
+
 
 
 class UnscentedTransform(MomentMatching):
