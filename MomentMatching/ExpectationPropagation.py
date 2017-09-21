@@ -176,7 +176,7 @@ class EPbase:
     def __init__(self):
         self.me = 'cool'
 
-    def forward_update(self, previous_node, node):
+    def forward_update(self,  node, previous_node):
         """
         forward_cavity_distribution = node_marginal / forward_factor  # q(x_t) / q_fwd(x_t)
         back_cavity_distribution = previous_node_marginal / previous_back_factor # q(x_t-1) / q_back(x_t-1)
@@ -193,9 +193,9 @@ class EPbase:
         forward_cavity_distribution = node.marginal / node.forward_factor  # q(x_t) / q_fwd(x_t)
         back_cavity_distribution = previous_node.marginal / previous_node.back_factor  # q(x_t-1) / q_back(x_t-1)
 
-        new_node = node
+        new_node = node.copy()
 
-        new_node.fwd_factor = self.moment_matching(self.transition, back_cavity_distribution, self.Q)  # proj op
+        new_node.fwd_factor = self.moment_matching(self.transition, back_cavity_distribution)  # proj op
 
         new_node.marginal = forward_cavity_distribution * new_node.fwd_factor
 
@@ -215,7 +215,7 @@ class EPbase:
 
         measurement_cavity_distribution = node.marginal / node.measurement_factor  # q(x_t) / q_up(x_t)
 
-        new_node = node
+        new_node = node.copy()
 
         new_node.marginal = self.moment_matching(self.measurement, measurement_cavity_distribution, self.R, measurement)
 
@@ -223,7 +223,7 @@ class EPbase:
 
         return new_node
 
-    def backward_update(momentmatching, transition_function):
+    def backward_update(self, node, next_node):
         """
         back_cavity_distribution = node_marginal / back_factor # q(x_t) / q_back(x_t)
         forward_cavity_distribution = next_node_marginal / next_forward_factor  # q(x_t) / q_fwd(x_t)
@@ -232,6 +232,17 @@ class EPbase:
 
         return new_back_factor
         """
+
+        back_cavity_distribution = node.marginal / node.back_factor  # q(x_t) / q_back(x_t)
+        forward_cavity_distribution = next_node.marginal / next_node.forward_factor  # q(x_t+1) / q_fwd(x_t+1)
+
+        new_node = node.copy()
+
+        new_node.marginal = self.moment_matching(self.transition, back_cavity_distribution, forward_cavity_distribution)
+
+        new_node.measurement_factor = new_node.marginal / back_cavity_distribution
+
+        return new_node
 
 
 class EPNodes(MutableSequence):
@@ -286,12 +297,16 @@ class EPNodes(MutableSequence):
             for factor in mode:
                 print(f'In Node{node.t} {factor} factor')
 
-
     def filter_iter(self):
-
         previous_node, next_node = itertools.tee(self._Node)
         next(next_node, None)
         return zip(previous_node, next_node)
+
+    def smoother_iter(self):
+        node, next_node = itertools.tee(reversed(self._Node))
+        next(node, None)
+        return zip(node, next_node)
+
 
 
 
