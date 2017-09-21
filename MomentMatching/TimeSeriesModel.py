@@ -15,7 +15,63 @@
 import numpy as np
 from scipy.stats import multivariate_normal
 import itertools
-from .StateModels import GaussianState
+from collections import namedtuple
+from MomentMatching.StateModels import GaussianState
+
+
+
+class NoiseModel:
+    def __init__(self, dimension, params):
+        self.dimension = dimension
+        self.params = params
+
+    def sample(self):
+        return NotImplementedError
+
+
+class GaussianNoiseModel(NoiseModel):
+    def __init__(self, dimension, cov, mean=None):
+        GaussianNoise = namedtuple('GaussianNoise', ['Q'])
+        params = GaussianNoise(Q=cov)
+        self.dimension = dimension
+        if mean is None:
+            self.mean = np.zeros((dimension,), dtype=float )
+
+        super().__init__(dimension=dimension,
+                         params=params)
+
+    def sample(self):
+        return np.random.multivariate_normal(mean=self.mean, cov=self.params.Q)
+
+
+class DynamicSystemModel:
+    def __init__(self, system_dim, measurement_dim, transition, measurement, system_noise, measurement_noise):
+        self.system_dim = system_dim
+        self.measurement_dim = measurement_dim
+
+        assert isinstance(system_noise, NoiseModel)
+        assert isinstance(system_noise, NoiseModel)
+
+        assert (system_noise.dimension == system_dim)
+        assert (measurement_noise.dimension == measurement_dim)
+
+        self.transition = transition
+        self.measurement = measurement
+        self.system_noise = system_noise
+        self.measurement_noise = measurement_noise
+
+    def transition_sample(self, x, u, t):
+        return self.transition(x, u, t) + self.system_noise.sample()
+
+    def transition_function(self, x, u, t):
+        return self.transition(x, u, t)
+
+    def measurement_sample(self, x, u, t):
+        return self.transition(x, u, t) + self.system_noise.sample()
+
+    def measurement_function(self, x, u, t):
+        return self.transition(x, u, t)
+
 
 def f(x, t):
     """
