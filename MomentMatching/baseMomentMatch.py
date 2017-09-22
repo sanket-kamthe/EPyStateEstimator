@@ -19,10 +19,13 @@ import numpy as np
 from MomentMatching.StateModels import GaussianState
 from autograd import jacobian
 from functools import partial
-from .auto_grad import logpdf
+from MomentMatching.auto_grad import logpdf
 
 # from scipy.stats import multivariate_normal
 EPS = 1e-4
+
+
+
 
 
 class MomentMatching:
@@ -71,14 +74,29 @@ class MomentMatching:
         """
         return NotImplementedError
 
+    def _data_lik(self, nonlinear_func, mean1, cov1, mean2, cov2=0.0):
+        mean, cov, _ = self.predict(nonlinear_func=nonlinear_func,
+                                    distribution=GaussianState(mean_vec=mean1, cov_matrix=cov1))
+        logZi = logpdf(mean2, mean, cov + cov2)
+
+        return logZi
+
     def _data_likelihood(self, nonlinear_func, distribution, data=None):
-        meanz, covz, _ = self.predict(nonlinear_func=nonlinear_func,
+        mean, cov, _ = self.predict(nonlinear_func=nonlinear_func,
                                       distribution=distribution)
-        logZi = logpdf(data, meanz, covz)
+        logZi = logpdf(data, mean, cov)
+
+        return logZi
+
+    def _density_likelihood(self, nonlinear_func, distribution, matching_distribution):
+        mean, cov, _ = self.predict(nonlinear_func=nonlinear_func,
+                                      distribution=distribution)
+        logZi = logpdf(matching_distribution.mean, mean, cov + matching_distribution.cov)
 
         return logZi
 
     def _moment_matching(self, cavity_distribution, dlogZidMz, dlogZidSz):
+
         mx = cavity_distribution.mean + np.dot(cavity_distribution.cov, dlogZidMz.T)
         vx = cavity_distribution.cov - cavity_distribution.cov @ (
         np.outer(dlogZidMz, dlogZidMz) - 2 * dlogZidSz) @ cavity_distribution.cov.T
@@ -100,6 +118,13 @@ class MomentMatching:
         -------
 
         """
+        if isinstance(match_with, GaussianState):
+            args_tuple = (nonlinear_func, distribution.mean, distribution.cov, match_with.mean, match_with.cov)
+        else:
+            args_tuple = (nonlinear_func, distribution.mean, distribution.cov, match_with)
+
+        dlogZidMz = jacobian(self._data_lik, argnum=1)(*args_tuple)
+        dlogZidSz = jacobian(self._data_lik, argnum=2)(*args_tuple)
 
         state = self._moment_matching(distribution, dlogZidMz, dlogZidSz)
 
