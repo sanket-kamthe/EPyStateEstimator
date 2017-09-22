@@ -308,5 +308,50 @@ class EPNodes(MutableSequence):
         return zip(node, next_node)
 
 
+class TopEP:
+    def __init__(self, system_model, moment_matching):
+        self.system_model = system_model
+        self.moment_matching = moment_matching
+        # self.node = node
 
+    def forward_update(self, node, prev_node):
+        forward_cavity = node.marginal / node.forward_factor
+        back_cavity = prev_node.marginal / prev_node.back_factor
+
+        result_node = node.copy()
+
+        result_node.forward_factor = self.moment_matching(nonlinear_func=self.system_model.transition,
+                                                          distribution=back_cavity)
+
+        result_node.marginal = forward_cavity * result_node.forward_factor
+
+        return result_node
+
+    def measurement_update(self, node, obs):
+        measurement_cavity = node.marginal / node.measurement_factor
+
+        result_node = node.copy()
+
+        result_node.marginal = self.moment_matching(nonlinear_func=self.system_model.measurement,
+                                                    distribution=measurement_cavity,
+                                                    match_with=obs)
+
+        result_node.measurement_factor = result_node.marginal / measurement_cavity
+
+        return result_node
+
+    def backward_update(self, node, next_node):
+        back_cavity = node.marginal / node.back_factor
+        forward_cavity = next_node.marginal / next_node.forward_factor
+
+        result_node = node.copy()
+
+        result_node.marginal = self.moment_matching(nonlinear_func=self.system_model.transition,
+                                                    distribution=back_cavity,
+                                                    match_with=forward_cavity)
+
+        result_node.back_factor = result_node.marginal / back_cavity
+        # result_node.marginal = forward_cavity * result_node.forward_factor
+
+        return result_node
 
