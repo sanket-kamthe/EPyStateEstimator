@@ -13,9 +13,9 @@
 # limitations under the License.
 
 
-import numpy as np
-from .StateModels import GaussianState
-from .baseMomentMatch import MomentMatching
+import autograd.numpy as np
+from MomentMatching.StateModels import GaussianState
+from MomentMatching.baseMomentMatch import MomentMatching
 from collections import  namedtuple
 import itertools
 from collections.abc import MutableSequence
@@ -138,7 +138,7 @@ class TimeSeriesNodeForEP:
     @staticmethod
     def marginal_init(state_dim):
         mean = np.zeros((state_dim,), dtype=float)
-        cov = 100000 * np.eye(state_dim, dtype=float)
+        cov = 10000 * np.eye(state_dim, dtype=float)
         return GaussianState(mean_vec=mean, cov_matrix=cov)
 
     # @staticmethod
@@ -314,44 +314,72 @@ class TopEP:
         self.moment_matching = moment_matching
         # self.node = node
 
-    def forward_update(self, node, prev_node):
+    def forward_update(self, node, prev_node, fargs):
         forward_cavity = node.marginal / node.forward_factor
         back_cavity = prev_node.marginal / prev_node.back_factor
 
         result_node = node.copy()
 
-        result_node.forward_factor = self.moment_matching(nonlinear_func=self.system_model.transition,
-                                                          distribution=back_cavity)
+        result_node.forward_factor = self.moment_matching(nonlinear_func=self.system_model.transition_function,
+                                                          distribution=back_cavity,
+                                                          fargs=fargs)
 
         result_node.marginal = forward_cavity * result_node.forward_factor
 
         return result_node
 
-    def measurement_update(self, node, obs):
+    def measurement_update(self, node, obs, fargs):
         measurement_cavity = node.marginal / node.measurement_factor
 
-        result_node = node.copy()
+        result = node.copy()
 
-        result_node.marginal = self.moment_matching(nonlinear_func=self.system_model.measurement,
-                                                    distribution=measurement_cavity,
-                                                    match_with=obs)
+        result.marginal = self.moment_matching(nonlinear_func=self.system_model.measurement_function,
+                                               distribution=measurement_cavity,
+                                               match_with=obs, fargs=None)
 
-        result_node.measurement_factor = result_node.marginal / measurement_cavity
+        result.measurement_factor = result.marginal / measurement_cavity
 
-        return result_node
+        return result
 
-    def backward_update(self, node, next_node):
+    def backward_update(self, node, next_node, fargs):
         back_cavity = node.marginal / node.back_factor
         forward_cavity = next_node.marginal / next_node.forward_factor
 
         result_node = node.copy()
 
-        result_node.marginal = self.moment_matching(nonlinear_func=self.system_model.transition,
+        result_node.marginal = self.moment_matching(nonlinear_func=self.system_model.transition_function,
                                                     distribution=back_cavity,
-                                                    match_with=forward_cavity)
+                                                    match_with=forward_cavity, fargs=fargs)
 
         result_node.back_factor = result_node.marginal / back_cavity
         # result_node.marginal = forward_cavity * result_node.forward_factor
 
         return result_node
 
+if __name__ == '__main__':
+
+    from MomentMatching.StateModels import GaussianState
+    from MomentMatching.baseMomentMatch import UnscentedTransform, TaylorTransform, MonteCarloTransform
+    from MomentMatching.auto_grad import logpdf
+    from MomentMatching.ExpectationPropagation import TimeSeriesNodeForEP, EPbase, EPNodes
+    from MomentMatching.TimeSeriesModel import UniformNonlinearGrowthModel, SimpleSinTest
+
+    ungm = SimpleSinTest()
+    data = ungm.system_simulation(15)
+    x_true, x_noisy, y_true, y_noisy = list(zip(*data))
+    TT = TaylorTransform(dimension_of_state=1)
+
+    All_nodes = EPNodes(dimension_of_state=1, N=16)
+
+    TestEP = TopEP(system_model=ungm, moment_matching=TT.moment_matching)
+    # prior =
+    # All_nodes[0] = prior
+    prior = All_nodes[0].copy()
+    prior.marginal = GaussianState(mean_vec=np.array([0.1]),
+                          cov_matrix=1 * np.eye(1, dtype=float))
+
+
+    fwd = TestEP.forward_update(All_nodes[0], prior, 0.0)
+    meas = TestEP.measurement_update(fwd, y_noisy[1], fargs=0.0)
+    print(meas.marginal)
+    print(x_true[1])
