@@ -18,7 +18,7 @@ import itertools
 from collections import namedtuple
 from MomentMatching.StateModels import GaussianState
 
-
+#TODO: Refactor the whole thing !!
 
 class NoiseModel:
     def __init__(self, dimension, params):
