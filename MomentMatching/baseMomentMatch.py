@@ -15,7 +15,7 @@
 
 # Moment matching function should return integral of the form \int f(x) q (x) dx
 
-import numpy as np
+import autograd.numpy as np
 from MomentMatching.StateModels import GaussianState
 from autograd import jacobian
 from functools import partial
@@ -61,7 +61,7 @@ class MomentMatching:
         """
         return NotImplementedError
 
-    def predict(self, nonlinear_func, distribution, *args, y_observation = None):
+    def predict(self, nonlinear_func, distribution, fargs=None):
         """
         Mainly to be used with Kalman Filtering
         Returns the gaussian approximation the integral
@@ -74,36 +74,36 @@ class MomentMatching:
         """
         return NotImplementedError
 
-    def _data_lik(self, nonlinear_func, mean1, cov1, mean2, cov2=0.0):
+    def _data_lik(self, nonlinear_func, mean1, cov1, mean2, cov2=None, fargs=None):
         mean, cov, _ = self.predict(nonlinear_func=nonlinear_func,
-                                    distribution=GaussianState(mean_vec=mean1, cov_matrix=cov1))
-        logZi = logpdf(mean2, mean, cov + cov2)
-
+                                    distribution=GaussianState(mean_vec=mean1, cov_matrix=cov1), fargs=fargs)
+        if cov2 is None:
+            logZi = logpdf(mean2, mean, cov)
+        else:
+            logZi = logpdf(mean2, mean, cov + cov2)
         return logZi
 
     def _data_likelihood(self, nonlinear_func, distribution, data=None):
-        mean, cov, _ = self.predict(nonlinear_func=nonlinear_func,
-                                      distribution=distribution)
+        mean, cov, _ = self.predict(nonlinear_func=nonlinear_func, distribution=distribution)
         logZi = logpdf(data, mean, cov)
 
         return logZi
 
     def _density_likelihood(self, nonlinear_func, distribution, matching_distribution):
-        mean, cov, _ = self.predict(nonlinear_func=nonlinear_func,
-                                      distribution=distribution)
+        mean, cov, _ = self.predict(nonlinear_func=nonlinear_func, distribution=distribution)
         logZi = logpdf(matching_distribution.mean, mean, cov + matching_distribution.cov)
 
         return logZi
 
-    def _moment_matching(self, cavity_distribution, dlogZidMz, dlogZidSz):
+    def gaussian_moment_matching(self, cavity_distribution, dlogZidMz, dlogZidSz):
 
         mx = cavity_distribution.mean + np.dot(cavity_distribution.cov, dlogZidMz.T)
         vx = cavity_distribution.cov - cavity_distribution.cov @ (
-        np.outer(dlogZidMz, dlogZidMz) - 2 * dlogZidSz) @ cavity_distribution.cov.T
+        np.outer(dlogZidMz, dlogZidMz) - 2 * dlogZidSz) @ cavity_distribution.cov.T + 1e-6
 
         return GaussianState(mx, vx)
 
-    def __call__(self, nonlinear_func, distribution, match_with, *args, **kwargs):
+    def moment_matching(self, nonlinear_func, distribution, match_with=None, fargs=None, **kwargs):
         """
 
         Parameters
@@ -111,25 +111,32 @@ class MomentMatching:
         nonlinear_func
         distribution
         match_with
-        args
+        fargs
         kwargs
 
         Returns
         -------
 
         """
-        if isinstance(match_with, GaussianState):
-            args_tuple = (nonlinear_func, distribution.mean, distribution.cov, match_with.mean, match_with.cov)
-        else:
-            args_tuple = (nonlinear_func, distribution.mean, distribution.cov, match_with)
+        if match_with is None:
+            mean, cov, _ = self.predict(nonlinear_func=nonlinear_func,
+                                        distribution=GaussianState(mean_vec=distribution.mean,
+                                                                   cov_matrix=distribution.cov),
+                                        fargs=fargs)
+            return GaussianState(mean, cov)
 
+        if isinstance(match_with, GaussianState):
+            args_tuple = (nonlinear_func, distribution.mean, distribution.cov, match_with.mean, match_with.cov, fargs)
+        else:
+            args_tuple = (nonlinear_func, distribution.mean, distribution.cov, match_with, fargs)
+
+        logZi = self._data_lik(*args_tuple)
         dlogZidMz = jacobian(self._data_lik, argnum=1)(*args_tuple)
         dlogZidSz = jacobian(self._data_lik, argnum=2)(*args_tuple)
 
-        state = self._moment_matching(distribution, dlogZidMz, dlogZidSz)
+        state = self.gaussian_moment_matching(distribution, dlogZidMz, dlogZidSz)
 
         return state
-
 
 
 class UnscentedTransform(MomentMatching):
@@ -221,12 +228,12 @@ class UnscentedTransform(MomentMatching):
 
         return GaussianState(pred_mean, pred_cov)
 
-    def predict(self, nonlinear_func, distribution, *args):
+    def predict(self, nonlinear_func, distribution, fargs=None):
         assert isinstance(distribution, GaussianState)
 
         # if args is not tuple:
         #     args = (args, )
-        frozen_nonlinear_func = partial(nonlinear_func, *args)
+        frozen_nonlinear_func = partial(nonlinear_func, fargs)
 
         sigma_points, w_m, w_c = self._get_sigma_points(distribution.mean, distribution.cov, n=distribution.dim)
 
@@ -254,10 +261,10 @@ class MonteCarloTransform(MomentMatching):
                          dimension_of_state=dimension_of_state,
                          number_of_samples=number_of_samples)
 
-    def predict(self, nonlinear_func, distribution, *args, y_observation=None):
+    def predict(self, nonlinear_func, distribution, fargs=None, y_observation=None):
 
         assert isinstance(distribution, GaussianState)
-        frozen_nonlinear_func = partial(nonlinear_func, *args)
+        frozen_nonlinear_func = partial(nonlinear_func, *fargs)
 
         samples = distribution.sample(self.number_of_samples)
 
@@ -289,10 +296,11 @@ class TaylorTransform(MomentMatching):
         return np.array(jacobian).T
     # def _jacobian(self, ):
 
-    def predict(self, nonlinear_func, distribution, *args, y_observation = None):
+    def predict(self, nonlinear_func, distribution, fargs=None, y_observation=None):
         assert isinstance(distribution, GaussianState)
-        frozen_nonlinear_func = partial(nonlinear_func, *args)
-        J_t = self.numerical_jacobian(frozen_nonlinear_func, distribution.mean)
+        frozen_nonlinear_func = partial(nonlinear_func, t=fargs)
+        # J_t = self.numerical_jacobian(frozen_nonlinear_func, distribution.mean)
+        J_t = jacobian(frozen_nonlinear_func)(distribution.mean)
         pred_mean = frozen_nonlinear_func(distribution.mean)
         pred_cov = J_t @ distribution.cov @ J_t.T
         pred_cross_cov = distribution.cov @ J_t.T

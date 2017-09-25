@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import numpy as np
+import autograd.numpy as np
 from scipy.stats import multivariate_normal
 import itertools
 from collections import namedtuple
@@ -154,6 +154,15 @@ class UniformNonlinearGrowthModel(TimeSeriesModel):
     def __init__(self):
         init_dist = GaussianState(mean_vec=np.array([0.1]), cov_matrix=np.eye(1)*1.0)
         super().__init__(1, 1, transition_function=f, measurement_function=h, init_dist=init_dist)
+
+def dummy_sin(x, t):
+    return np.sin(x)
+
+class SimpleSinTest(TimeSeriesModel):
+    def __init__(self):
+        init_dist = GaussianState(mean_vec=np.array([0.0]), cov_matrix=np.eye(1)*1.0)
+        super().__init__(1, 1, transition_function=dummy_sin, measurement_function=lambda x, t: x**2, init_dist=init_dist)
+
 
 if __name__ == '__main__':
 
