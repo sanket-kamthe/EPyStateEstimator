@@ -316,6 +316,22 @@ class TopEP:
         self.R = self.system_model.R.cov
         # self.node = node
 
+    def kalman_filter(self, node, prev_node, obs, fargs):
+        pred_state = self.forward_update(node=node, prev_node=prev_node, fargs=fargs)
+        result_node = self.measurement_update(node=pred_state, obs=obs, fargs=fargs)
+        return result_node
+
+    def kalman_smoother(self, node, next_node, fargs):
+        result_node = self.backward_update(node=node, next_node=next_node, fargs=fargs)
+        return result_node
+
+    def ep_update(self, node, prev_node, next_node, obs, fargs):
+        pred_state = self.forward_update(node=node, prev_node=prev_node, fargs=fargs)
+        corrected_state = self.measurement_update(node=pred_state, obs=obs, fargs=fargs)
+        result_node = self.backward_update(node=corrected_state, next_node=next_node, fargs=fargs)
+        return result_node
+
+
     def forward_update(self, node, prev_node, fargs):
         forward_cavity = node.marginal / node.forward_factor
         back_cavity = prev_node.marginal / prev_node.back_factor
@@ -371,9 +387,10 @@ if __name__ == '__main__':
     from MomentMatching.ExpectationPropagation import TimeSeriesNodeForEP, EPbase, EPNodes
     from MomentMatching.TimeSeriesModel import UniformNonlinearGrowthModel, SimpleSinTest
 
-    # np.random.seed(seed=10)
+    np.random.seed(seed=10)
 
-    ungm = SimpleSinTest()
+    # ungm = SimpleSinTest()
+    ungm =UniformNonlinearGrowthModel()
     data = ungm.system_simulation(5)
 
     Q = ungm.Q.cov
@@ -387,11 +404,12 @@ if __name__ == '__main__':
     print('#'*10 + '  x_noisy  '+ '#'*10)
     print(x_noisy)
     print('#' * 30)
-    TT = TaylorTransform(dimension_of_state=1)
+    # transform = TaylorTransform(dimension_of_state=1)
+    transform = UnscentedTransform(n=1)
 
     All_nodes = EPNodes(dimension_of_state=1, N=16)
 
-    TestEP = TopEP(system_model=ungm, moment_matching=TT.moment_matching)
+    TestEP = TopEP(system_model=ungm, moment_matching=transform.moment_matching_KF)
     # prior =
     # All_nodes[0] = prior
     prior = All_nodes[0].copy()
@@ -407,15 +425,22 @@ if __name__ == '__main__':
     # print(meas.marginal.mean)
     # print(x_true[0])
 
-    fwd2 = TestEP.forward_update(All_nodes[1], meas, 0.0)
+    fwd2 = TestEP.forward_update(All_nodes[1], meas, fargs=1.0)
     print('prediction')
     print(f'RMSE: {fwd2.marginal.rmse(x_true[1])}')
     print(f'NLL: {fwd2.marginal.nll(x_true[1])}')
 
-    meas2 = TestEP.measurement_update(fwd2, y_noisy[1], fargs=0.0)
+    meas2 = TestEP.measurement_update(fwd2, y_noisy[1], fargs=1.0)
     print('correction')
     print(f'RMSE: {meas2.marginal.rmse(x_true[1])}')
     print(f'NLL: {meas2.marginal.nll(x_true[1])}')
     print(meas2.marginal.rmse(x_true[1]))
     print(x_true[1])
+
+    state_1 = TestEP.kalman_filter(All_nodes[1], meas, y_noisy[1], fargs=1.0)
+    print('Filter')
+    print(f'RMSE: {state_1.marginal.rmse(x_true[1])}')
+    print(f'NLL: {state_1.marginal.nll(x_true[1])}')
+
+
 
