@@ -312,6 +312,8 @@ class TopEP:
     def __init__(self, system_model, moment_matching):
         self.system_model = system_model
         self.moment_matching = moment_matching
+        self.Q = self.system_model.Q.cov
+        self.R = self.system_model.R.cov
         # self.node = node
 
     def forward_update(self, node, prev_node, fargs):
@@ -322,6 +324,7 @@ class TopEP:
 
         result_node.forward_factor = self.moment_matching(nonlinear_func=self.system_model.transition_function,
                                                           distribution=back_cavity,
+                                                          Q=self.Q,
                                                           fargs=fargs)
 
         result_node.marginal = forward_cavity * result_node.forward_factor
@@ -335,7 +338,9 @@ class TopEP:
 
         result.marginal = self.moment_matching(nonlinear_func=self.system_model.measurement_function,
                                                distribution=measurement_cavity,
-                                               match_with=obs, fargs=None)
+                                               Q=self.R,
+                                               match_with=obs,
+                                               fargs=None)
 
         result.measurement_factor = result.marginal / measurement_cavity
 
@@ -349,7 +354,9 @@ class TopEP:
 
         result_node.marginal = self.moment_matching(nonlinear_func=self.system_model.transition_function,
                                                     distribution=back_cavity,
-                                                    match_with=forward_cavity, fargs=fargs)
+                                                    Q=self.R,
+                                                    match_with=forward_cavity,
+                                                    fargs=fargs)
 
         result_node.back_factor = result_node.marginal / back_cavity
         # result_node.marginal = forward_cavity * result_node.forward_factor
@@ -366,6 +373,9 @@ if __name__ == '__main__':
 
     ungm = SimpleSinTest()
     data = ungm.system_simulation(15)
+
+    Q = ungm.Q.cov
+    print(Q)
     x_true, x_noisy, y_true, y_noisy = list(zip(*data))
     TT = TaylorTransform(dimension_of_state=1)
 

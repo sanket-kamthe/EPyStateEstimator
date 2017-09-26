@@ -29,10 +29,10 @@ class NoiseModel:
         return NotImplementedError
 
 
-class GaussianNoiseModel(NoiseModel):
+class GaussianNoise(NoiseModel):
     def __init__(self, dimension, cov, mean=None):
-        GaussianNoise = namedtuple('GaussianNoise', ['Q'])
-        params = GaussianNoise(Q=cov)
+        Gaussian = namedtuple('Gaussian', ['Q'])
+        params = Gaussian(Q=cov)
         self.dimension = dimension
         if mean is None:
             self.mean = np.zeros((dimension,), dtype=float )
