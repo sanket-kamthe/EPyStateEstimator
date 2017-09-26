@@ -96,7 +96,7 @@ class SystemModel:
         for attribute, value in kwargs.items():
             self.__setattr__(attribute, value)
 
-            print("The value of {} is {}".format(attribute, value))
+            # print("The value of {} is {}".format(attribute, value))
 
 
 class TimeSeriesModel(SystemModel):
@@ -109,7 +109,7 @@ class TimeSeriesModel(SystemModel):
                  measurement_noise=None,
                  init_dist=None):
 
-        def make_multivariate_random_sampler_of_dimension(D, sigma=1):
+        def make_multivariate_random_sampler_of_dimension(D, sigma=0.1):
             mean = np.zeros((D,), dtype=float)
             cov = sigma * np.eye(D, dtype=float)
             return multivariate_normal(mean=mean, cov=cov)
@@ -156,12 +156,12 @@ class UniformNonlinearGrowthModel(TimeSeriesModel):
         super().__init__(1, 1, transition_function=f, measurement_function=h, init_dist=init_dist)
 
 def dummy_sin(x, t):
-    return np.sin(x)
+    return 2*np.sin(x)
 
 class SimpleSinTest(TimeSeriesModel):
     def __init__(self):
         init_dist = GaussianState(mean_vec=np.array([0.0]), cov_matrix=np.eye(1)*1.0)
-        super().__init__(1, 1, transition_function=dummy_sin, measurement_function=lambda x, t: x**2, init_dist=init_dist)
+        super().__init__(1, 1, transition_function=dummy_sin, measurement_function=lambda x, t: x, init_dist=init_dist)
 
 
 if __name__ == '__main__':
@@ -176,12 +176,14 @@ if __name__ == '__main__':
     from MomentMatching.StateModels import GaussianState
 
     # demo = TimeSeriesModel(1, 1, transition_function=f, measurement_function=h)
-    ungm = UniformNonlinearGrowthModel()
-    data = ungm.system_simulation(50)
+    # ungm = UniformNonlinearGrowthModel()
+    N = 100
+    ungm = SimpleSinTest()
+    data = ungm.system_simulation(N)
     x_true, x_noisy, y_true, y_noisy = zip(*data)
 
     plt.plot(x_true)
 
-    plt.scatter(list(range(50)), x_noisy)
+    plt.scatter(list(range(N)), x_noisy)
     plt.plot(y_noisy)
     plt.show()
