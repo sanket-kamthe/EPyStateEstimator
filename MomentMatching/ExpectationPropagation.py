@@ -371,12 +371,22 @@ if __name__ == '__main__':
     from MomentMatching.ExpectationPropagation import TimeSeriesNodeForEP, EPbase, EPNodes
     from MomentMatching.TimeSeriesModel import UniformNonlinearGrowthModel, SimpleSinTest
 
+    # np.random.seed(seed=10)
+
     ungm = SimpleSinTest()
-    data = ungm.system_simulation(15)
+    data = ungm.system_simulation(5)
 
     Q = ungm.Q.cov
     print(Q)
     x_true, x_noisy, y_true, y_noisy = list(zip(*data))
+
+    print('#'*10 + '  x_true  '+ '#'*10)
+    print(x_true)
+    print('#' * 30)
+
+    print('#'*10 + '  x_noisy  '+ '#'*10)
+    print(x_noisy)
+    print('#' * 30)
     TT = TaylorTransform(dimension_of_state=1)
 
     All_nodes = EPNodes(dimension_of_state=1, N=16)
@@ -390,6 +400,22 @@ if __name__ == '__main__':
 
 
     fwd = TestEP.forward_update(All_nodes[0], prior, 0.0)
-    meas = TestEP.measurement_update(fwd, y_noisy[1], fargs=0.0)
-    print(meas.marginal)
+    meas = TestEP.measurement_update(fwd, y_noisy[0], fargs=0.0)
+
+    print(f'RMSE: {meas.marginal.rmse(x_true[0])}')
+    print(f'NLL: {meas.marginal.nll(x_true[0])}')
+    # print(meas.marginal.mean)
+    # print(x_true[0])
+
+    fwd2 = TestEP.forward_update(All_nodes[1], meas, 0.0)
+    print('prediction')
+    print(f'RMSE: {fwd2.marginal.rmse(x_true[1])}')
+    print(f'NLL: {fwd2.marginal.nll(x_true[1])}')
+
+    meas2 = TestEP.measurement_update(fwd2, y_noisy[1], fargs=0.0)
+    print('correction')
+    print(f'RMSE: {meas2.marginal.rmse(x_true[1])}')
+    print(f'NLL: {meas2.marginal.nll(x_true[1])}')
+    print(meas2.marginal.rmse(x_true[1]))
     print(x_true[1])
+

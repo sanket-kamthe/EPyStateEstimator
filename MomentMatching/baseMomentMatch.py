@@ -84,7 +84,7 @@ class MomentMatching:
         else:
             logZi = logpdf(mean2, mean, cov + cov2)
         return logZi
-    
+
     @staticmethod
     def gaussian_moment_matching(cavity_distribution, dlogZidMz, dlogZidSz):
 
