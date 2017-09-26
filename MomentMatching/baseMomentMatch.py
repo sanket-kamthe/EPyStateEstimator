@@ -134,6 +134,70 @@ class MomentMatching:
 
         return state
 
+    def moment_matching_KF(self, nonlinear_func, distribution, Q=None, match_with=None, fargs=None, **kwargs):
+        """
+
+        Parameters
+        ----------
+        nonlinear_func
+        distribution
+        match_with
+        fargs
+        kwargs
+
+        Returns
+        -------
+
+        """
+        if match_with is None:
+            mean, cov, _ = self.predict(nonlinear_func=nonlinear_func,
+                                        distribution=distribution,
+                                        fargs=fargs)
+            cov = cov + Q
+            return GaussianState(mean, cov)
+
+        LikelihoodArgs = namedtuple('LikelihoodArgs',
+                                    ['nonlinear_func', 'mean1', 'cov1', 'mean2', 'cov2', 'Q', 'fargs'])
+        if isinstance(match_with, GaussianState):
+            args = LikelihoodArgs(nonlinear_func=nonlinear_func, mean1=distribution.mean, cov1=distribution.cov,
+                                  mean2=match_with, cov2=match_with.cov, Q=Q, fargs=fargs)
+            # Forward pre1diction
+            xx_mean, xx_cov, xx_cross_cov, = self.predict(nonlinear_func, distribution)
+
+            # Add transition Noise Q_t
+            xx_cov = xx_cov + Q
+
+            # calculate smoother gain J_t
+            J = np.matmul(xx_cross_cov, np.linalg.inv(xx_cov))
+
+            smoothed_mean = distribution.mean + np.dot(J, (match_with.mean - xx_mean))
+            smoothed_cov = distribution.cov + J @ (match_with.cov - xx_cov) @ J.T
+            smoothed_distribution = GaussianState(smoothed_mean, smoothed_cov)
+            return smoothed_distribution
+
+        else:
+            args = LikelihoodArgs(nonlinear_func=nonlinear_func, mean1=distribution.mean, cov1=distribution.cov,
+                                  mean2=match_with, cov2=None, Q=Q, fargs=fargs)
+            z_mean, z_cov, xz_cross_cov = self.predict(nonlinear_func, distribution)
+            # Add measurement Noise R_t
+            z_cov = z_cov + Q# + self.system_model.R.cov
+
+            K = np.matmul(xz_cross_cov, np.linalg.inv(z_cov))
+
+            corrected_mean = distribution.mean + np.dot(K, ( match_with - z_mean))  # equation 15  in Marc's ACC paper
+            corrected_cov = distribution.cov - np.dot(K, np.transpose(xz_cross_cov))
+
+            filtered_distribution = GaussianState(corrected_mean, corrected_cov)
+            return filtered_distribution
+
+        # logZi = self._data_lik(*args)
+        # dlogZidMz = jacobian(self._data_lik, argnum=1)(*args)
+        # dlogZidSz = jacobian(self._data_lik, argnum=2)(*args)
+        #
+        # state = self.gaussian_moment_matching(distribution, dlogZidMz, dlogZidSz)
+        #
+        # return state
+
 
 class UnscentedTransform(MomentMatching):
     """
@@ -229,7 +293,7 @@ class UnscentedTransform(MomentMatching):
 
         # if args is not tuple:
         #     args = (args, )
-        frozen_nonlinear_func = partial(nonlinear_func, fargs)
+        frozen_nonlinear_func = partial(nonlinear_func, t=fargs)
 
         sigma_points, w_m, w_c = self._get_sigma_points(distribution.mean, distribution.cov, n=distribution.dim)
 
