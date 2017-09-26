@@ -89,8 +89,8 @@ class MomentMatching:
     def gaussian_moment_matching(cavity_distribution, dlogZidMz, dlogZidSz):
 
         mx = cavity_distribution.mean + np.dot(cavity_distribution.cov, dlogZidMz.T)
-        vx = cavity_distribution.cov - cavity_distribution.cov @ (
-        np.outer(dlogZidMz, dlogZidMz) - 2 * dlogZidSz) @ cavity_distribution.cov.T + 1e-6
+        vx = cavity_distribution.cov + cavity_distribution.cov @ (
+        - np.outer(dlogZidMz, dlogZidMz) + 2 * dlogZidSz) @ cavity_distribution.cov.T + 1e-6
 
         return GaussianState(mx, vx)
 

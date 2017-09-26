@@ -371,10 +371,11 @@ if __name__ == '__main__':
     from MomentMatching.ExpectationPropagation import TimeSeriesNodeForEP, EPbase, EPNodes
     from MomentMatching.TimeSeriesModel import UniformNonlinearGrowthModel, SimpleSinTest
 
-    # np.random.seed(seed=10)
+    np.random.seed(seed=100)
 
     ungm = SimpleSinTest()
-    data = ungm.system_simulation(5)
+    ungm = UniformNonlinearGrowthModel()
+    data = ungm.system_simulation(x_zero=0.1, N=5)
 
     Q = ungm.Q.cov
     print(Q)
@@ -396,26 +397,26 @@ if __name__ == '__main__':
     # All_nodes[0] = prior
     prior = All_nodes[0].copy()
     prior.marginal = GaussianState(mean_vec=np.array([0.1]),
-                          cov_matrix=1 * np.eye(1, dtype=float))
+                          cov_matrix=0.1 * np.eye(1, dtype=float))
 
 
     fwd = TestEP.forward_update(All_nodes[0], prior, 0.0)
     meas = TestEP.measurement_update(fwd, y_noisy[0], fargs=0.0)
 
     print(f'RMSE: {meas.marginal.rmse(x_true[0])}')
-    print(f'NLL: {meas.marginal.nll(x_true[0])}')
+    # print(f'NLL: {meas.marginal.nll(x_true[0])}')
     # print(meas.marginal.mean)
     # print(x_true[0])
 
-    fwd2 = TestEP.forward_update(All_nodes[1], meas, 0.0)
+    fwd2 = TestEP.forward_update(All_nodes[1], meas, 1.0)
     print('prediction')
     print(f'RMSE: {fwd2.marginal.rmse(x_true[1])}')
-    print(f'NLL: {fwd2.marginal.nll(x_true[1])}')
+    # print(f'NLL: {fwd2.marginal.nll(x_true[1])}')
 
     meas2 = TestEP.measurement_update(fwd2, y_noisy[1], fargs=0.0)
     print('correction')
     print(f'RMSE: {meas2.marginal.rmse(x_true[1])}')
-    print(f'NLL: {meas2.marginal.nll(x_true[1])}')
+    # print(f'NLL: {meas2.marginal.nll(x_true[1])}')
     print(meas2.marginal.rmse(x_true[1]))
     print(x_true[1])
 
