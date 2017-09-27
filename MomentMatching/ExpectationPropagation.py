@@ -316,6 +316,18 @@ class TopEP:
         self.R = self.system_model.R.cov
         # self.node = node
 
+    def kalman_filter(self, Nodes, observations, fargs_list):
+        prior = Nodes[0].copy()
+        prior.marginal = self.system_model.init_dist
+            # GaussianState(mean_vec=np.array([0.1]),
+            #                            cov_matrix=0.1 * np.eye(1, dtype=float))
+
+        for node, obs, fargs in zip(Nodes, observations, fargs_list):
+            pred_state = self.forward_update(node=node, prev_node=prior, fargs=fargs)
+            corrected_state = self.measurement_update(pred_state, obs, fargs)
+            yield corrected_state
+            prior = corrected_state
+
     def forward_update(self, node, prev_node, fargs):
         forward_cavity = node.marginal / node.forward_factor
         back_cavity = prev_node.marginal / prev_node.back_factor
