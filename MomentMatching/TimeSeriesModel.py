@@ -109,7 +109,7 @@ class TimeSeriesModel(SystemModel):
                  measurement_noise=None,
                  init_dist=None):
 
-        def make_multivariate_random_sampler_of_dimension(D, sigma=0.1):
+        def make_multivariate_random_sampler_of_dimension(D, sigma=3.0):
             mean = np.zeros((D,), dtype=float)
             cov = sigma * np.eye(D, dtype=float)
             return multivariate_normal(mean=mean, cov=cov)

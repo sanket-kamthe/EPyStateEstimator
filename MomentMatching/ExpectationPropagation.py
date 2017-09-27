@@ -354,7 +354,7 @@ class TopEP:
 
         result_node.marginal = self.moment_matching(nonlinear_func=self.system_model.transition_function,
                                                     distribution=back_cavity,
-                                                    Q=self.R,
+                                                    Q=self.Q,
                                                     match_with=forward_cavity,
                                                     fargs=fargs)
 
@@ -392,7 +392,7 @@ if __name__ == '__main__':
 
     All_nodes = EPNodes(dimension_of_state=1, N=16)
 
-    TestEP = TopEP(system_model=ungm, moment_matching=TT.moment_matching)
+    TestEP = TopEP(system_model=ungm, moment_matching=TT.moment_matching_KF)
     # prior =
     # All_nodes[0] = prior
     prior = All_nodes[0].copy()
@@ -404,19 +404,26 @@ if __name__ == '__main__':
     meas = TestEP.measurement_update(fwd, y_noisy[0], fargs=0.0)
 
     print(f'RMSE: {meas.marginal.rmse(x_true[0])}')
-    # print(f'NLL: {meas.marginal.nll(x_true[0])}')
+    print(f'NLL: {meas.marginal.nll(x_true[0])}')
     # print(meas.marginal.mean)
     # print(x_true[0])
 
     fwd2 = TestEP.forward_update(All_nodes[1], meas, 1.0)
     print('prediction')
     print(f'RMSE: {fwd2.marginal.rmse(x_true[1])}')
-    # print(f'NLL: {fwd2.marginal.nll(x_true[1])}')
+    print(f'NLL: {fwd2.marginal.nll(x_true[1])}')
 
     meas2 = TestEP.measurement_update(fwd2, y_noisy[1], fargs=0.0)
     print('correction')
     print(f'RMSE: {meas2.marginal.rmse(x_true[1])}')
-    # print(f'NLL: {meas2.marginal.nll(x_true[1])}')
+    print(f'NLL: {meas2.marginal.nll(x_true[1])}')
     print(meas2.marginal.rmse(x_true[1]))
     print(x_true[1])
+
+    sms = TestEP.backward_update(node=meas, next_node=meas2, fargs=0.0)
+    print('Smoothing')
+    print(f'RMSE: {sms.marginal.rmse(x_true[0])}')
+    print(f'NLL: {sms.marginal.nll(x_true[0])}')
+
+
 

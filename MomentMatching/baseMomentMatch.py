@@ -162,7 +162,7 @@ class MomentMatching:
             args = LikelihoodArgs(nonlinear_func=nonlinear_func, mean1=distribution.mean, cov1=distribution.cov,
                                   mean2=match_with, cov2=match_with.cov, Q=Q, fargs=fargs)
             # Forward pre1diction
-            xx_mean, xx_cov, xx_cross_cov, = self.predict(nonlinear_func, distribution)
+            xx_mean, xx_cov, xx_cross_cov, = self.predict(nonlinear_func, distribution, fargs=fargs)
 
             # Add transition Noise Q_t
             xx_cov = xx_cov + Q
@@ -178,7 +178,7 @@ class MomentMatching:
         else:
             args = LikelihoodArgs(nonlinear_func=nonlinear_func, mean1=distribution.mean, cov1=distribution.cov,
                                   mean2=match_with, cov2=None, Q=Q, fargs=fargs)
-            z_mean, z_cov, xz_cross_cov = self.predict(nonlinear_func, distribution)
+            z_mean, z_cov, xz_cross_cov = self.predict(nonlinear_func, distribution, fargs=fargs)
             # Add measurement Noise R_t
             z_cov = z_cov + Q# + self.system_model.R.cov
 
