@@ -19,7 +19,13 @@ from MomentMatching.baseMomentMatch import MomentMatching
 from collections import  namedtuple
 import itertools
 from collections.abc import MutableSequence
+import logging
 
+# FORMAT = "[%(filename)s:%(lineno)s - %(funcName)20s() ] %(message)s"
+FORMAT = "[ %(funcName)10s() ] %(message)s"
+
+logging.basicConfig(filename='Expectation_Propagation.log', level=logging.DEBUG, format=FORMAT)
+logger = logging.getLogger(__name__)
 # class GaussianState(object):
 #     def __init__(self, mean, variance):
 #         self.mean = mean
@@ -138,7 +144,7 @@ class TimeSeriesNodeForEP:
     @staticmethod
     def marginal_init(state_dim):
         mean = np.zeros((state_dim,), dtype=float)
-        cov = 1000000 * np.eye(state_dim, dtype=float)
+        cov = 1e12 * np.eye(state_dim, dtype=float)
         return GaussianState(mean_vec=mean, cov_matrix=cov)
 
     # @staticmethod
@@ -149,7 +155,7 @@ class TimeSeriesNodeForEP:
     @staticmethod
     def initialise_factors(state_dim):
         mean = np.zeros((state_dim,), dtype=float)
-        cov = 999999 * np.eye(state_dim, dtype=float)
+        cov = (1e12-1) * np.eye(state_dim, dtype=float)
         # self.measurement_factor = self.factor_init(state_dim)
         # self.back_factor = self.factor_init(state_dim)
         # self.forward_factor = self.factor_init(state_dim)
@@ -329,6 +335,7 @@ class TopEP:
             prior = corrected_state.copy()
 
     def forward_update(self, node, prev_node, fargs):
+
         forward_cavity = node.marginal / node.forward_factor
         back_cavity = prev_node.marginal / prev_node.back_factor
 
@@ -338,9 +345,12 @@ class TopEP:
                                                           distribution=back_cavity,
                                                           Q=self.Q,
                                                           fargs=fargs)
-        if (state.cov > 0) and (state.cov < 10000):
+        logger.debug('time {} mean={}, cov={}'.format(node.t, node.marginal.mean, node.marginal.cov))
+        print(state.cov)
+        if (state.cov > 0) and (state.cov < 100):
             result_node.forward_factor = state.copy()
             result_node.marginal = forward_cavity * result_node.forward_factor
+
 
         return result_node
 
@@ -349,6 +359,11 @@ class TopEP:
 
         result = node.copy()
 
+        if measurement_cavity.cov < 0:
+            print(node.t)
+            print(node)
+            print(measurement_cavity)
+
         state = self.moment_matching(nonlinear_func=self.system_model.measurement_function,
                                                distribution=measurement_cavity,
                                                Q=self.R,
@@ -356,7 +371,8 @@ class TopEP:
                                                fargs=None)
 
 
-        if (state.cov > 0) and (state.cov < 10000):
+
+        if (state.cov > 0) and (state.cov < 100):
             result.marginal = state.copy()
 
             result.measurement_factor = result.marginal / measurement_cavity
@@ -375,7 +391,7 @@ class TopEP:
                                                     match_with=forward_cavity,
                                                     fargs=fargs)
 
-        if (state.cov>0) and (state.cov<10000):
+        if (state.cov>0) and (state.cov<100):
             # print(state.cov)
 
             result_node.marginal = state.copy()
@@ -393,7 +409,7 @@ if __name__ == '__main__':
     from MomentMatching.ExpectationPropagation import TimeSeriesNodeForEP, EPbase, EPNodes
     from MomentMatching.TimeSeriesModel import UniformNonlinearGrowthModel, SimpleSinTest
 
-    np.random.seed(seed=100)
+    np.random.seed(seed=101)
 
     ungm = SimpleSinTest()
     ungm = UniformNonlinearGrowthModel()
@@ -410,8 +426,8 @@ if __name__ == '__main__':
     print('#'*10 + '  x_noisy  '+ '#'*10)
     print(x_noisy)
     print('#' * 30)
-    TT = TaylorTransform(dimension_of_state=1)
-
+    # TT = TaylorTransform(dimension_of_state=1)
+    TT = UnscentedTransform(n=1)
     All_nodes = EPNodes(dimension_of_state=1, N=16)
 
     TestEP = TopEP(system_model=ungm, moment_matching=TT.moment_matching_KF)
@@ -419,7 +435,7 @@ if __name__ == '__main__':
     # All_nodes[0] = prior
     prior = All_nodes[0].copy()
     prior.marginal = GaussianState(mean_vec=np.array([0.1]),
-                          cov_matrix=0.1 * np.eye(1, dtype=float))
+                          cov_matrix=1 * np.eye(1, dtype=float))
 
 
     fwd = TestEP.forward_update(All_nodes[0], prior, 0.0)

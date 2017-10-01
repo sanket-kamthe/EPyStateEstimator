@@ -56,6 +56,7 @@ class TestDiagGaussianStateModel(unittest.TestCase):
         shift = np.dot(np.linalg.inv(self.cov), self.mean)
         np.testing.assert_allclose(self.state.shift, shift)
 
+
 class TestGaussianParamsTransform(unittest.TestCase):
     def setUp(self):
         self.dim = random.randint(2, 5)
@@ -111,6 +112,7 @@ class TestGaussianStateModelArithmetic(unittest.TestCase):
         np.testing.assert_allclose(self.state5.cov, self.state1.cov)
         np.testing.assert_allclose(self.state5.mean, self.state1.mean)
 
+
 class TestGaussianStatePower(unittest.TestCase):
     def setUp(self):
         self.dim = random.randint(3, 7)
@@ -137,6 +139,7 @@ class TestGaussianStatePower(unittest.TestCase):
         np.testing.assert_allclose(self.state_pow.mean, self.state2.mean)
         # assert (self.state2 == self.state_pow)
 
+
 class TestGaussianSamples(unittest.TestCase):
     def setUp(self):
         self.dim = random.randint(1, 3)
@@ -153,11 +156,6 @@ class TestGaussianSamples(unittest.TestCase):
         samples = self.state.sample(N)
         sample_mean = np.mean(samples, axis=0)
         np.testing.assert_allclose(samples.shape, (N, self.mean.shape[0]))
-
-
-
-
-
 
 
 if __name__ == '__main__':
