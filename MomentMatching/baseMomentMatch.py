@@ -21,12 +21,15 @@ from autograd import jacobian
 from functools import partial
 from MomentMatching.auto_grad import logpdf
 from collections import namedtuple
+import logging
+FORMAT = "[ %(funcName)10s() ] %(message)s"
 
 # from scipy.stats import multivariate_normal
 EPS = 1e-4
 
 
-
+logging.basicConfig(filename='Expectation_Propagation.log', level=logging.DEBUG, format=FORMAT)
+logger = logging.getLogger(__name__)
 
 
 class MomentMatching:
@@ -149,6 +152,7 @@ class MomentMatching:
         -------
 
         """
+        logger.debug('{distribution}')
         if match_with is None:
             mean, cov, _ = self.predict(nonlinear_func=nonlinear_func,
                                         distribution=distribution,
@@ -211,11 +215,64 @@ class UnscentedTransform(MomentMatching):
         #     'beta': 2,
         #     'kappa': 10
         # }
+        self.w_m, self.W = self._weights(n, alpha, beta, kappa)
+        self.param_lambda = alpha * alpha * (n + kappa) - n
         super().__init__(approximation_method='Unscented Transform',
                          n=n,
                          alpha=alpha,
                          beta=beta,
                          kappa=kappa)
+
+
+
+    def _sigma_points(self, mean, cov, *args):
+        # n = mean.shape[0]
+        # alpha = self.alpha
+        # kappa = self.kappa
+        # beta = self.beta
+        # n = self.n
+        #
+        # par_lambda = alpha * alpha * (n + kappa) - n
+        sqrt_n_plus_lambda = np.sqrt(self.n + self.param_lambda)
+        # print(sqrt_n_plus_lambda)
+        L = np.linalg.cholesky(cov)
+        scaledL = sqrt_n_plus_lambda * L
+        mean_plus_L = mean + scaledL
+        mean_minus_L = mean - scaledL
+        list_sigma_points = [mean.tolist()] + mean_plus_L.tolist() + mean_minus_L.tolist()
+
+        return list_sigma_points
+    @staticmethod
+    def _weights(n, alpha, beta, kappa):
+        # alpha = self.alpha
+        # kappa = self.kappa
+        # beta = self.beta
+        # n = self.n
+
+        param_lambda = alpha * alpha * (n + kappa) - n
+        n_plus_lambda = n + param_lambda
+
+        w_m = np.zeros([2 * n + 1], dtype=np.float)
+        w_c = np.zeros([2 * n + 1], dtype=np.float)
+
+        # print(par_lambda)
+
+        # weights w_m are for computing mean and weights w_c are
+        # used for covarince calculation
+
+        w_m = w_m + 1 / (2 * (n + param_lambda))
+        w_c = w_c + w_m
+        w_m[0] = param_lambda / (n + param_lambda)
+        w_c[0] = w_m[0] + (1 - alpha * alpha + beta)
+
+        # Wm = [param_lambda/n_plus_lambda] + (np.ones((2*n, 1), dtype=float)/ (2* n_plus_lambda)).tolist()
+        # Wc = Wm.copy()
+
+        # Wc[0] = Wc[0] + (1 - alpha * alpha + beta)
+        w_left = np.eye(2 * n +1) - np.array(w_m)
+        W = w_left.T @ np.diag(w_c) @ w_left
+
+        return w_m, W
 
     def _get_sigma_points(self, x_mean, x_cov, n):
         """
@@ -228,7 +285,6 @@ class UnscentedTransform(MomentMatching):
         Returns:
 
         """
-
 
         # n = self.n  # TODO: check whether we actually need this or we use distribution.dim
         alpha = self.alpha
@@ -288,7 +344,7 @@ class UnscentedTransform(MomentMatching):
 
         return GaussianState(pred_mean, pred_cov)
 
-    def predict(self, nonlinear_func, distribution, fargs=None):
+    def _predict(self, nonlinear_func, distribution, fargs=None):
         assert isinstance(distribution, GaussianState)
 
         # if args is not tuple:
@@ -313,6 +369,26 @@ class UnscentedTransform(MomentMatching):
         pred_cross_cov = np.einsum('ijk->ij', res_cross)
 
         return pred_mean, pred_cov, pred_cross_cov
+
+    def predict(self, nonlinear_func, distribution, fargs):
+        frozen_func = partial(nonlinear_func, t=fargs)
+
+        sigma_pts = self._sigma_points(distribution.mean, distribution.cov)
+        # print(sigma_pts)
+        Xi = []
+        for x in sigma_pts:
+            x = np.asanyarray(x)
+            Xi.append(frozen_func(x))
+        # Xi = list(map(frozen_func, sigma_pts))
+        Y = np.asarray(Xi)
+
+        pred_mean =   self.w_m @ Y
+        pred_cov = Y.T @ self.W @ Y
+        pred_cross_cov = np.asarray(sigma_pts).T @ self.W @ Y
+
+        return pred_mean, pred_cov, pred_cross_cov
+
+
         # pass
 
 class MonteCarloTransform(MomentMatching):
