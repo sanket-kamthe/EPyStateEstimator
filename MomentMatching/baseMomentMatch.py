@@ -203,7 +203,7 @@ class UnscentedTransform(MomentMatching):
     """
     
     """
-    def __init__(self, n=2, alpha=0.5, beta=2, kappa=10):
+    def __init__(self, n=1, alpha=1, beta=0, kappa=2):
         #
         # default_params = {
         #     'n' : 2,

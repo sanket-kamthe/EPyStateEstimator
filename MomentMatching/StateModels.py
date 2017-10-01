@@ -28,6 +28,7 @@
 # Import Statements
 
 import numpy as np
+import warnings
 
 
 RTOL, ATOL = 1e-3, 1e-5
@@ -132,6 +133,11 @@ class GaussianState:
         # TODO: Replace assert with a custom Error
         assert isinstance(other, GaussianState)
         precision = self.precision - other.precision
+        if precision < 0:
+            warnings.warn('Negative Precision!!!')
+            # print(precision)
+            # precision + 1e-6
+
         shift = self.shift - other.shift
         mean, cov = natural_to_moment(precision, shift)
         return GaussianState(mean, cov)

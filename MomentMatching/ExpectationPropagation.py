@@ -138,7 +138,7 @@ class TimeSeriesNodeForEP:
     @staticmethod
     def marginal_init(state_dim):
         mean = np.zeros((state_dim,), dtype=float)
-        cov = 10000 * np.eye(state_dim, dtype=float)
+        cov = 1000000 * np.eye(state_dim, dtype=float)
         return GaussianState(mean_vec=mean, cov_matrix=cov)
 
     # @staticmethod
@@ -149,7 +149,7 @@ class TimeSeriesNodeForEP:
     @staticmethod
     def initialise_factors(state_dim):
         mean = np.zeros((state_dim,), dtype=float)
-        cov = 9999 * np.eye(state_dim, dtype=float)
+        cov = 999999 * np.eye(state_dim, dtype=float)
         # self.measurement_factor = self.factor_init(state_dim)
         # self.back_factor = self.factor_init(state_dim)
         # self.forward_factor = self.factor_init(state_dim)
@@ -326,7 +326,7 @@ class TopEP:
             pred_state = self.forward_update(node=node, prev_node=prior, fargs=fargs)
             corrected_state = self.measurement_update(pred_state, obs, fargs)
             yield corrected_state
-            prior = corrected_state
+            prior = corrected_state.copy()
 
     def forward_update(self, node, prev_node, fargs):
         forward_cavity = node.marginal / node.forward_factor
@@ -334,12 +334,13 @@ class TopEP:
 
         result_node = node.copy()
 
-        result_node.forward_factor = self.moment_matching(nonlinear_func=self.system_model.transition_function,
+        state = self.moment_matching(nonlinear_func=self.system_model.transition_function,
                                                           distribution=back_cavity,
                                                           Q=self.Q,
                                                           fargs=fargs)
-
-        result_node.marginal = forward_cavity * result_node.forward_factor
+        if (state.cov > 0) and (state.cov < 10000):
+            result_node.forward_factor = state.copy()
+            result_node.marginal = forward_cavity * result_node.forward_factor
 
         return result_node
 
@@ -348,13 +349,17 @@ class TopEP:
 
         result = node.copy()
 
-        result.marginal = self.moment_matching(nonlinear_func=self.system_model.measurement_function,
+        state = self.moment_matching(nonlinear_func=self.system_model.measurement_function,
                                                distribution=measurement_cavity,
                                                Q=self.R,
                                                match_with=obs,
                                                fargs=None)
 
-        result.measurement_factor = result.marginal / measurement_cavity
+
+        if (state.cov > 0) and (state.cov < 10000):
+            result.marginal = state.copy()
+
+            result.measurement_factor = result.marginal / measurement_cavity
 
         return result
 
@@ -364,13 +369,18 @@ class TopEP:
 
         result_node = node.copy()
 
-        result_node.marginal = self.moment_matching(nonlinear_func=self.system_model.transition_function,
+        state = self.moment_matching(nonlinear_func=self.system_model.transition_function,
                                                     distribution=back_cavity,
                                                     Q=self.Q,
                                                     match_with=forward_cavity,
                                                     fargs=fargs)
 
-        result_node.back_factor = result_node.marginal / back_cavity
+        if (state.cov>0) and (state.cov<10000):
+            # print(state.cov)
+
+            result_node.marginal = state.copy()
+
+            result_node.back_factor = result_node.marginal / back_cavity
         # result_node.marginal = forward_cavity * result_node.forward_factor
 
         return result_node
