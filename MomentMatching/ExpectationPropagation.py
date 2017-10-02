@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 #         self.variance = variance
 #         self.precision = np.linalg.solve(variance, np.eye(3, dtype=float))
 # #         TODO: Add checks for the variance and mean shapes
-#
+#WIDTH
 #
 # def gauss_divide(numerator, denominator, n_alpha=None, damping_factor=None):
 #     variance = np.linalg.inv(numerator.precision - denominator.precision)
@@ -335,7 +335,7 @@ class TopEP:
 
         for node, obs, fargs in zip(Nodes, observations, fargs_list):
 
-            logger.debug('[obs={}][filter: t = {}]'.format(obs, fargs, width=WIDTH, precision=PRECISION))
+            logger.debug('[obs={}][filter: t = {}]'.format(obs, fargs))
             logger.debug('[prior:: t={} mean={} cov={}]]'.format(node.t, node.marginal.mean,node.marginal.cov))
 
             pred_state = self.forward_update(node=node, prev_node=prior, fargs=fargs)
