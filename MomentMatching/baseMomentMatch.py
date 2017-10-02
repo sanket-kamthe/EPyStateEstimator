@@ -152,7 +152,7 @@ class MomentMatching:
         -------
 
         """
-        logger.debug('{distribution}')
+        # logger.debug('{distribution}')
         if match_with is None:
             mean, cov, _ = self.predict(nonlinear_func=nonlinear_func,
                                         distribution=distribution,
@@ -172,7 +172,7 @@ class MomentMatching:
             xx_cov = xx_cov + Q
 
             # calculate smoother gain J_t
-            J = np.matmul(xx_cross_cov, np.linalg.inv(xx_cov))
+            J = xx_cross_cov @ np.linalg.pinv(xx_cov)
 
             smoothed_mean = distribution.mean + np.dot(J, (match_with.mean - xx_mean))
             smoothed_cov = distribution.cov + J @ (match_with.cov - xx_cov) @ J.T
@@ -397,10 +397,10 @@ class MonteCarloTransform(MomentMatching):
                          dimension_of_state=dimension_of_state,
                          number_of_samples=number_of_samples)
 
-    def predict(self, nonlinear_func, distribution, fargs=None, y_observation=None):
+    def predict(self, nonlinear_func, distribution, fargs=None):
 
         assert isinstance(distribution, GaussianState)
-        frozen_nonlinear_func = partial(nonlinear_func, *fargs)
+        frozen_nonlinear_func = partial(nonlinear_func, **fargs)
 
         samples = distribution.sample(self.number_of_samples)
 
