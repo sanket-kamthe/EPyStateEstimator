@@ -83,7 +83,7 @@ class TestUnscentedTransform(unittest.TestCase):
         np.random.seed(seed=SEED)
         self.dim = 1
         self.mean = np.random.randn(self.dim) * 0.0
-        self.cov = 2 * np.eye(self.dim)
+        self.cov = 0.25 * np.eye(self.dim)
         self.transform = UnscentedTransform(n=self.dim)
         self.test_functions= TestFunctions(self.dim)
         self.x_state = GaussianState(self.mean, self.cov)
@@ -104,14 +104,14 @@ class TestUnscentedTransform(unittest.TestCase):
         result_under_test = self.transform.predict(self.test_functions.sinusoidal, self.x_state, fargs=None)
         pred_mean, pred_cov, pred_cross_cov = result_under_test
         np.testing.assert_allclose(pred_mean, self.mean)
-        np.testing.assert_array_almost_equal(pred_cov, self.cov)
+        np.testing.assert_allclose(pred_cov, self.cov, rtol=EPS, atol=1e-2)
 
 
-    # def test_predict_softplus(self):
-    #     result_under_test = self.transform.predict(self.test_functions.softplus, self.x_state, fargs=None)
-    #     pred_mean, pred_cov, pred_cross_cov = result_under_test
-    #     np.testing.assert_allclose(pred_mean, self.mean)
-    #     np.testing.assert_allclose(pred_cov, self.cov, rtol=EPS)
+    def test_predict_softplus(self):
+        result_under_test = self.transform.predict(self.test_functions.softplus, self.x_state, fargs=None)
+        pred_mean, pred_cov, pred_cross_cov = result_under_test
+        np.testing.assert_allclose(pred_mean, self.mean, rtol=EPS, atol=1e-1)
+        np.testing.assert_allclose(pred_cov, self.cov, rtol=EPS,  atol=1e-1)
 
 
 if __name__ == '__main__':
