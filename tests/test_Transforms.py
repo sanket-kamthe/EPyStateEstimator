@@ -92,7 +92,6 @@ class TestUnscentedTransform(unittest.TestCase):
         transform = self.transform
         np.testing.assert_allclose(self.dim, transform.n)
 
-
     def test_predict_linear(self):
         result_under_test = self.transform.predict(self.test_functions.linear, self.x_state, fargs=None)
 
