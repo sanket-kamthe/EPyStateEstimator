@@ -30,18 +30,19 @@ class NoiseModel:
 
 
 class GaussianNoise(NoiseModel):
-    def __init__(self, dimension, cov, mean=None):
+    def __init__(self, dimension=1, cov=np.eye(1), mean=None):
         Gaussian = namedtuple('Gaussian', ['Q'])
         params = Gaussian(Q=cov)
         self.dimension = dimension
+        self.cov = cov
         if mean is None:
             self.mean = np.zeros((dimension,), dtype=float )
 
         super().__init__(dimension=dimension,
                          params=params)
 
-    def sample(self):
-        return np.random.multivariate_normal(mean=self.mean, cov=self.params.Q)
+    def sample(self, size=None):
+        return np.random.multivariate_normal(mean=self.mean, cov=self.params.Q, size=size)
 
 
 class DynamicSystemModel:
@@ -60,20 +61,20 @@ class DynamicSystemModel:
         self.system_noise = system_noise
         self.measurement_noise = measurement_noise
 
-    def transition_sample(self, x, u, t):
-        return self.transition(x, u, t) + self.system_noise.sample()
+    def transition_noise(self, x, u=None, t=None, *args, **kwargs):
+        return self.transition(x, u, t, *args, **kwargs) + self.system_noise.sample()
 
-    def transition_function(self, x, u, t):
-        return self.transition(x, u, t)
+    def transition(self, x, u=None, t=None, *args, **kwargs):
+        return self.transition(x, u=u, t=t, *args, **kwargs)
 
-    def measurement_sample(self, x, u, t):
-        return self.transition(x, u, t) + self.system_noise.sample()
+    def measurement_sample(self, x, *args, **kwargs):
+        return self.measurement(x, *args, **kwargs) + self.measurement_noise.sample()
 
-    def measurement_function(self, x, u, t):
-        return self.transition(x, u, t)
+    def measurement_function(self, x, *args, **kwargs):
+        return self.measurement(x, *args, **kwargs)
 
 
-def f(x, t):
+def f(x, t, u=None):
     """
     Unified Nonlinear growth model (noise not included)
     Transition function: x_(t+1) = f(x_t, t)
@@ -83,7 +84,7 @@ def f(x, t):
     return x_out
 
 
-def h (x, t=None):
+def h(x, t=None):
     """
     Unified Nonlinear growth model (noise not included)
     Measurement function: y_t = h(x_t)
