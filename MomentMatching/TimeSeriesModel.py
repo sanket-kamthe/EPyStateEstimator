@@ -46,9 +46,15 @@ class GaussianNoise(NoiseModel):
 
 
 class DynamicSystemModel:
-    def __init__(self, system_dim, measurement_dim, transition, measurement, system_noise, measurement_noise):
+    def __init__(self, system_dim,
+                 measurement_dim, transition,
+                 measurement, system_noise,
+                 measurement_noise,
+                 init_distribution=None, dt=1):
         self.system_dim = system_dim
         self.measurement_dim = measurement_dim
+        self.init = init_distribution
+        self.dt = dt
 
         assert isinstance(system_noise, NoiseModel)
         assert isinstance(system_noise, NoiseModel)
@@ -61,8 +67,8 @@ class DynamicSystemModel:
         self.system_noise = system_noise
         self.measurement_noise = measurement_noise
 
-    def transition_noise(self, x, u=None, t=None, *args, **kwargs):
-        return self.transition(x, u, t, *args, **kwargs) + self.system_noise.sample()
+    def transition_noise(self, x,  t=None, u=None, *args, **kwargs):
+        return self.transition(x=x, u=u, t=t, *args, **kwargs) + self.system_noise.sample()
 
     def transition(self, x, u=None, t=None, *args, **kwargs):
         return self.transition(x, u=u, t=t, *args, **kwargs)
@@ -70,8 +76,29 @@ class DynamicSystemModel:
     def measurement_sample(self, x, *args, **kwargs):
         return self.measurement(x, *args, **kwargs) + self.measurement_noise.sample()
 
-    def measurement_function(self, x, *args, **kwargs):
+    def measurement(self, x, *args, **kwargs):
         return self.measurement(x, *args, **kwargs)
+
+    def _simulate(self, N, x_zero, t_zero=0.0):
+
+        x = x_zero
+        t = t_zero
+
+        while True:
+            x_true = self.transition(x=x, t=t)
+            x_noisy = x_true + self.Q.rvs()
+            y_true = self.measurement(x=x_noisy)
+            y_noisy = y_true + self.R.rvs()
+            yield x_true, x_noisy, y_true, y_noisy
+            x = x_noisy
+            t = t + self.dt
+
+    def simulate(self, N, x_zero=None, t_zero=0.0):
+        if x_zero is None:
+            x_zero = np.zeros(self.system_dim)
+        return list(itertools.islice(self._simulate(x_zero=x_zero,
+                                                    t_zero=t_zero), N=N))
+
 
 
 def f(x, t, u=None):
@@ -156,8 +183,10 @@ class UniformNonlinearGrowthModel(TimeSeriesModel):
         init_dist = GaussianState(mean_vec=np.array([0.1]), cov_matrix=np.eye(1)*1.0)
         super().__init__(1, 1, transition_function=f, measurement_function=h, init_dist=init_dist)
 
+
 def dummy_sin(x, t):
     return 2*np.sin(x)
+
 
 class SimpleSinTest(TimeSeriesModel):
     def __init__(self):
