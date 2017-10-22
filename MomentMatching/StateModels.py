@@ -72,10 +72,6 @@ class GaussianState:
         self.mean = mean_vec
         self.cov = cov_matrix
 
-        # Kill the warning for instance attributes
-        # self._mean = None
-        # self._cov = None
-
         # Lazy computation of precision and shift
         self._precision = None
         self._shift = None
@@ -110,7 +106,7 @@ class GaussianState:
     @property
     def precision(self):
         if self._precision is None:
-            self._precision = np.linalg.inv(self.cov)  # TODO: Change to more stable solve later
+            self._precision = np.linalg.pinv(self.cov)  # TODO: Change to more stable solve later
         return self._precision
 
     @property
@@ -183,8 +179,8 @@ class GaussianState:
         # return multivariate_normal(mean=self.mean, cov=self.cov).rvs(number_of_samples)
 
         samples = np.random.multivariate_normal(mean=self.mean,
-                                             cov=self.cov,
-                                             size=number_of_samples)
+                                                cov=self.cov,
+                                                size=number_of_samples)
         return samples
 
     def __repr__(self):
