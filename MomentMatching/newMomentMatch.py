@@ -138,7 +138,7 @@ class MonteCarloTransform(MomentMatching):
         # (self, nonlinear_func, distribution, fargs=None):
 
         assert isinstance(state, GaussianState)
-        frozen_func = partial(func, t=None, u=None, *args, **kwargs)
+        frozen_func = partial(func, t=t, u=u, *args, **kwargs)
 
         samples = state.sample(self.number_of_samples)
 
@@ -173,7 +173,7 @@ class TaylorTransform(MomentMatching):
     def _transform(self, func, state, t=None, u=None, *args, **kwargs):
         # (self, nonlinear_func, distribution, fargs=None, y_observation=None):
         assert isinstance(state, GaussianState)
-        frozen_func = partial(func, t=None, u=None, *args, **kwargs)
+        frozen_func = partial(func, t=t, u=u, *args, **kwargs)
         J_t = self.numerical_jacobian(frozen_func, state.mean)
         # J_t = jacobian(frozen_nonlinear_func)(distribution.mean)
         mean = frozen_func(state.mean)
