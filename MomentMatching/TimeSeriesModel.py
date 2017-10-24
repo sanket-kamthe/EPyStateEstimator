@@ -118,7 +118,7 @@ class TimeSeriesModel(SystemModel):
             transition_noise = make_multivariate_random_sampler_of_dimension(dimension_state)
 
         if measurement_noise is None:
-            measurement_noise = make_multivariate_random_sampler_of_dimension(dimension_observation, sigma=10.0)
+            measurement_noise = make_multivariate_random_sampler_of_dimension(dimension_observation, sigma=5.0)
 
         super().__init__(D=dimension_state,
                          E=dimension_observation,
