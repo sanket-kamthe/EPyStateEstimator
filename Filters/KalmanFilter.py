@@ -13,9 +13,9 @@
 # limitations under the License.
 
 import numpy as np
-from ..MomentMatching.baseMomentMatch import MomentMatching
-from ..MomentMatching.TimeSeriesModel import TimeSeriesModel, DynamicSystemModel
-from ..MomentMatching.StateModels import GaussianState
+from MomentMatching.newMomentMatch import MomentMatching
+from MomentMatching.TimeSeriesModel import TimeSeriesModel, DynamicSystemModel
+from MomentMatching.StateModels import GaussianState
 
 
 class KalmanFilterSmoother:
@@ -28,6 +28,8 @@ class KalmanFilterSmoother:
         self.measurement = system_model.measurement
         self.transition_noise = system_model.system_noise.cov
         self.measurement_noise = system_model.measurement_noise.cov
+        self.init_state = system_model.init_state
+        self.dt =system_model.dt
 
     def predict(self, prior_state, t=None, u=None, *args, **kwargs):
         xx_mean, xx_cov, _ = self.transform(self.transition,
@@ -71,11 +73,24 @@ class KalmanFilterSmoother:
 
         return GaussianState(mean, cov)
 
-    # def kalman_filter(self, measurements, prior_state=None, t_zero=0.0):
+    def kalman_filter(self, measurements, prior_state=None, t_zero=0.0, u=None, *args, **kwargs):
 
+        if prior_state is None:
+            prior_state = self.init_state
 
+        state = prior_state
+        t = t_zero
 
+        result_filter = []
 
+        for i, measurement in enumerate(measurements):
+            pred_state = self.predict(prior_state, t=t, u=u, *args, **kwargs)
+            corrected_state = self.correct(pred_state, measurement, t=t, u=u, *args, **kwargs)
+            result_filter.append(corrected_state)
+            t += self.dt
+            prior_state = corrected_state
+
+        return result_filter
 
 
 class KalmanFilterSmootherOld:

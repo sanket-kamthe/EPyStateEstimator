@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import autograd.numpy as np
+import numpy as np
 from scipy.stats import multivariate_normal
 import itertools
 from collections import namedtuple
@@ -53,7 +53,7 @@ class DynamicSystemModel:
                  init_distribution=None, dt=1):
         self.system_dim = system_dim
         self.measurement_dim = measurement_dim
-        self.init = init_distribution
+        self.init_state = init_distribution
         self.dt = dt
 
         assert isinstance(system_noise, NoiseModel)
@@ -84,21 +84,22 @@ class DynamicSystemModel:
         x = x_zero
         t = t_zero
 
-        while True:
+        for _ in range(N):
             x_true = self.transition(x=x, t=t)
-            x_noisy = x_true + self.Q.rvs()
+            x_noisy = x_true + self.system_noise.sample()
             y_true = self.measurement(x=x_noisy)
-            y_noisy = y_true + self.R.rvs()
+            y_noisy = y_true + self.measurement_noise.sample()
             yield x_true, x_noisy, y_true, y_noisy
             x = x_noisy
             t = t + self.dt
 
     def simulate(self, N, x_zero=None, t_zero=0.0):
-        if x_zero is None:
-            x_zero = np.zeros(self.system_dim)
-        return list(itertools.islice(self._simulate(x_zero=x_zero,
-                                                    t_zero=t_zero), N=N))
 
+        if x_zero is None:
+            x_zero = np.random.multivariate_normal(mean=self.init_state.mean,
+                                                   cov=self.init_state.cov)
+
+        return list(self._simulate(N=N, x_zero=x_zero, t_zero=t_zero))
 
 
 def f(x, t, u=None):
@@ -111,7 +112,7 @@ def f(x, t, u=None):
     return x_out
 
 
-def h(x, t=None):
+def h(x, t=None, u=None):
     """
     Unified Nonlinear growth model (noise not included)
     Measurement function: y_t = h(x_t)
@@ -175,7 +176,7 @@ class TimeSeriesModel(SystemModel):
         return list(itertools.islice(self._system_sim(x_zero=x_zero, t=t), N))
 
 
-class UniformNonlinearGrowthModel(TimeSeriesModel):
+class UniformNonlinearGrowthModel1(TimeSeriesModel):
     """
 
     """
@@ -183,6 +184,24 @@ class UniformNonlinearGrowthModel(TimeSeriesModel):
         init_dist = GaussianState(mean_vec=np.array([0.1]), cov_matrix=np.eye(1)*1.0)
         super().__init__(1, 1, transition_function=f, measurement_function=h, init_dist=init_dist)
 
+
+class UniformNonlinearGrowthModel(DynamicSystemModel):
+    """
+
+    """
+
+    def __init__(self):
+        init_dist = GaussianState(mean_vec=np.array([0.1]), cov_matrix=np.eye(1) * 0.25)
+        super().__init__(system_dim=1,
+                         measurement_dim=1,
+                         transition=f,
+                         measurement=h,
+                         system_noise=GaussianNoise(dimension=1,
+                                                    cov=np.eye(1) * 1),
+                         measurement_noise=GaussianNoise(dimension=1,
+                                                         cov=np.eye(1) * 1),
+                         init_distribution=init_dist
+                         )
 
 def dummy_sin(x, t):
     return 2*np.sin(x)

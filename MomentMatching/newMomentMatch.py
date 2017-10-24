@@ -43,7 +43,7 @@ class MomentMatching:
         for key in self.params:
             self.__setattr__(key, self.params[key])
 
-    def _transform(self, f, state, t=None, u=None, *args, **kwargs):
+    def _transform(self, func, state, t=None, u=None, *args, **kwargs):
         """
         Returns the gaussian approximation the integral
 
@@ -56,8 +56,8 @@ class MomentMatching:
         """
         return NotImplementedError
 
-    def __call__(self, f, state, t=None, u=None, *args, **kwargs):
-        return self._transform(f=f, state=state, t=t, u=u, *args, **kwargs)
+    def __call__(self, func, state, t=None, u=None, *args, **kwargs):
+        return self._transform(func=func, state=state, t=t, u=u, *args, **kwargs)
 
 
 class UnscentedTransform(MomentMatching):
@@ -80,7 +80,6 @@ class UnscentedTransform(MomentMatching):
 
         L = np.linalg.cholesky(cov)
 
-
         scaledL = sqrt_n_plus_lambda * L
         mean_plus_L = mean + scaledL
         mean_minus_L = mean - scaledL
@@ -90,18 +89,12 @@ class UnscentedTransform(MomentMatching):
 
     @staticmethod
     def _weights(n, alpha, beta, kappa):
-        # alpha = self.alpha
-        # kappa = self.kappa
-        # beta = self.beta
-        # n = self.n
 
         param_lambda = alpha * alpha * (n + kappa) - n
         n_plus_lambda = n + param_lambda
 
         w_m = np.zeros([2 * n + 1], dtype=np.float)
         w_c = np.zeros([2 * n + 1], dtype=np.float)
-
-        # print(par_lambda)
 
         # weights w_m are for computing mean and weights w_c are
         # used for covarince calculation
@@ -111,58 +104,28 @@ class UnscentedTransform(MomentMatching):
         w_m[0] = param_lambda / (n + param_lambda)
         w_c[0] = w_m[0] + (1 - alpha * alpha + beta)
 
-        # Wm = [param_lambda/n_plus_lambda] + (np.ones((2*n, 1), dtype=float)/ (2* n_plus_lambda)).tolist()
-        # Wc = Wm.copy()
-
-        # Wc[0] = Wc[0] + (1 - alpha * alpha + beta)
         w_left = np.eye(2 * n +1) - np.array(w_m)
         W = w_left.T @ np.diag(w_c) @ w_left
 
         return w_m, W
 
-    def _predict(self, nonlinear_func, distribution, fargs=None):
-        assert isinstance(distribution, GaussianState)
+    def _transform(self, func, state, t=None, u=None, *args, **kwargs):
 
-        # if args is not tuple:
-        #     args = (args, )
-        frozen_nonlinear_func = partial(nonlinear_func, t=fargs)
+        frozen_func = partial(func, t=t, u=u, *args, **kwargs)
 
-        sigma_points, w_m, w_c = self._get_sigma_points(distribution.mean, distribution.cov, n=distribution.dim)
-
-        transformed_points = frozen_nonlinear_func(sigma_points)
-        pred_mean = np.sum(np.multiply(transformed_points, w_m), axis=1)
-        # pred_mean = pred_mean.reshape([distribution.dim, 1])
-        gofx_minus_mean = transformed_points - pred_mean[:, np.newaxis]
-        scaled_gofx_minus_mean = w_c * gofx_minus_mean
-
-        res = np.einsum('ij,jk->ikj', gofx_minus_mean, scaled_gofx_minus_mean.T)
-        # res_mul = res * w_c[np.newaxis, :, :]
-        pred_cov = np.einsum('ijk->ij', res)
-
-        gofy_minus_mean = sigma_points - distribution.mean[:, np.newaxis]
-        res_cross = np.einsum('ij,jk->ikj', gofy_minus_mean, scaled_gofx_minus_mean.T)
-        # res_mul = res * w_c[np.newaxis, :, :]
-        pred_cross_cov = np.einsum('ijk->ij', res_cross)
-
-        return pred_mean, pred_cov, pred_cross_cov
-
-    def predict(self, nonlinear_func, distribution, fargs):
-        frozen_func = partial(nonlinear_func, t=fargs)
-
-        sigma_pts = self._sigma_points(distribution.mean, distribution.cov)
-        # print(sigma_pts)
+        sigma_pts = self._sigma_points(state.mean, state.cov)
         Xi = []
         for x in sigma_pts:
             x = np.asanyarray(x)
             Xi.append(frozen_func(x))
-        # Xi = list(map(frozen_func, sigma_pts))
+
         Y = np.asarray(Xi)
 
-        pred_mean = self.w_m @ Y
-        pred_cov = Y.T @ self.W @ Y
-        pred_cross_cov = np.asarray(sigma_pts).T @ self.W @ Y
+        mean = self.w_m @ Y
+        cov = Y.T @ self.W @ Y
+        cross_cov = np.asarray(sigma_pts).T @ self.W @ Y
 
-        return pred_mean, pred_cov, pred_cross_cov
+        return mean, cov, cross_cov
 
 
 class MonteCarloTransform(MomentMatching):
@@ -171,18 +134,20 @@ class MonteCarloTransform(MomentMatching):
                          dimension_of_state=dimension_of_state,
                          number_of_samples=number_of_samples)
 
-    def predict(self, nonlinear_func, distribution, fargs=None):
+    def _transform(self, func, state, t=None, u=None, *args, **kwargs):
+        # (self, nonlinear_func, distribution, fargs=None):
 
-        assert isinstance(distribution, GaussianState)
-        frozen_nonlinear_func = partial(nonlinear_func, **fargs)
+        assert isinstance(state, GaussianState)
+        frozen_func = partial(func, t=None, u=None, *args, **kwargs)
 
-        samples = distribution.sample(self.number_of_samples)
+        samples = state.sample(self.number_of_samples)
 
-        propagated_samples = frozen_nonlinear_func(samples)
-        pred_mean = np.mean(propagated_samples, axis=0)
-        pred_cov = np.cov(propagated_samples.T)
-        pred_cross_cov = np.cov(samples.T, propagated_samples.T )
-        return pred_mean, pred_cov, pred_cross_cov
+        propagated_samples = frozen_func(samples)
+        mean = np.mean(propagated_samples, axis=0)
+        cov = np.cov(propagated_samples.T)
+        cross_cov = np.cov(samples.T, propagated_samples.T)
+
+        return mean, cov, cross_cov
 
 
 class TaylorTransform(MomentMatching):
@@ -204,17 +169,17 @@ class TaylorTransform(MomentMatching):
             jacobian.append((f(x1) - z) / eps)
 
         return np.array(jacobian).T
-    # def _jacobian(self, ):
 
-    def predict(self, nonlinear_func, distribution, fargs=None, y_observation=None):
-        assert isinstance(distribution, GaussianState)
-        frozen_nonlinear_func = partial(nonlinear_func, t=fargs)
-        J_t = self.numerical_jacobian(frozen_nonlinear_func, distribution.mean)
+    def _transform(self, func, state, t=None, u=None, *args, **kwargs):
+        # (self, nonlinear_func, distribution, fargs=None, y_observation=None):
+        assert isinstance(state, GaussianState)
+        frozen_func = partial(func, t=None, u=None, *args, **kwargs)
+        J_t = self.numerical_jacobian(frozen_func, state.mean)
         # J_t = jacobian(frozen_nonlinear_func)(distribution.mean)
-        pred_mean = frozen_nonlinear_func(distribution.mean)
-        pred_cov = J_t @ distribution.cov @ J_t.T
-        pred_cross_cov = distribution.cov @ J_t.T
-        return pred_mean, pred_cov, pred_cross_cov
+        mean = frozen_func(state.mean)
+        cov = J_t @ state.cov @ J_t.T
+        cross_cov = state.cov @ J_t.T
+        return mean, cov, cross_cov
 
     def _data_likelihood(self, nonlinear_func, distribution, data=None):
         meanz = nonlinear_func(distribution.mean)  # z = f(x)
@@ -231,7 +196,6 @@ class TaylorTransform(MomentMatching):
         dlogZidSz = jacobian(self._data_likelihood, argnum=2)(nonlinear_func, distribution, data)
 
         return logZi, dlogZidMz, dlogZidSz
-
 
 
 if __name__ == '__main__':
