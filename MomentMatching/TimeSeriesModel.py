@@ -101,7 +101,6 @@ class DynamicSystemModel:
 
         return list(self._simulate(N=N, x_zero=x_zero, t_zero=t_zero))
 
-
 def f(x, t, u=None):
     """
     Unified Nonlinear growth model (noise not included)
@@ -191,21 +190,23 @@ class UniformNonlinearGrowthModel(DynamicSystemModel):
     """
 
     def __init__(self):
-        init_dist = GaussianState(mean_vec=np.array([0.1]), cov_matrix=np.eye(1) * 0.25)
+        init_dist = GaussianState(mean_vec=np.array([0.1]), cov_matrix=np.eye(1) * 1)
         super().__init__(system_dim=1,
                          measurement_dim=1,
                          transition=f,
                          measurement=h,
                          system_noise=GaussianNoise(dimension=1,
-                                                    cov=np.eye(1) * 1),
+                                                    cov=np.eye(1) * 0.25),
                          measurement_noise=GaussianNoise(dimension=1,
-                                                         cov=np.eye(1) * 1),
+                                                         cov=np.eye(1) * 10),
                          init_distribution=init_dist
                          )
 
 def dummy_sin(x, t):
     return 2*np.sin(x)
 
+# def test_sin(x, t):
+#     return np.s
 
 class SimpleSinTest(TimeSeriesModel):
     def __init__(self):

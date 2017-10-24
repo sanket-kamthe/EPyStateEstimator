@@ -321,14 +321,14 @@ class TopEP:
     def __init__(self, system_model, moment_matching):
         self.system_model = system_model
         self.moment_matching = moment_matching
-        self.Q = self.system_model.Q.cov
-        self.R = self.system_model.R.cov
+        self.Q = self.system_model.system_noise.cov
+        self.R = self.system_model.measurement_noise.cov
         # self.node = node
 
     def kalman_filter(self, Nodes, observations, fargs_list):
         prior = Nodes[0].copy()
         if prior.marginal.cov>2000:
-            prior.marginal = self.system_model.init_dist
+            prior.marginal = self.system_model.init_state
 
             # GaussianState(mean_vec=np.array([0.1]),
             #                            cov_matrix=0.1 * np.eye(1, dtype=float))
@@ -336,7 +336,7 @@ class TopEP:
         for node, obs, fargs in zip(Nodes, observations, fargs_list):
 
             logger.debug('[obs={}][filter: t = {}]'.format(obs, fargs))
-            logger.debug('[prior:: t={} mean={} cov={}]]'.format(node.t, node.marginal.mean,node.marginal.cov))
+            logger.debug('[prior:: t={} mean={} cov={}]]'.format(node.t, node.marginal.mean, node.marginal.cov))
 
             pred_state = self.forward_update(node=node, prev_node=prior, fargs=fargs)
 
@@ -365,7 +365,7 @@ class TopEP:
 
         result_node = node.copy()
 
-        state = self.moment_matching(nonlinear_func=self.system_model.transition_function,
+        state = self.moment_matching(nonlinear_func=self.system_model.transition,
                                                           distribution=back_cavity,
                                                           Q=self.Q,
                                                           fargs=fargs)
@@ -400,7 +400,7 @@ class TopEP:
             # print(node)
             # print(measurement_cavity)
 
-        state = self.moment_matching(nonlinear_func=self.system_model.measurement_function,
+        state = self.moment_matching(nonlinear_func=self.system_model.measurement,
                                                distribution=measurement_cavity,
                                                Q=self.R,
                                                match_with=obs,
@@ -430,7 +430,7 @@ class TopEP:
 
         result_node = node.copy()
 
-        state = self.moment_matching(nonlinear_func=self.system_model.transition_function,
+        state = self.moment_matching(nonlinear_func=self.system_model.transition,
                                                     distribution=back_cavity,
                                                     Q=self.Q,
                                                     match_with=forward_cavity,
