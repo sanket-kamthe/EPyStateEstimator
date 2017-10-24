@@ -29,10 +29,10 @@ SEED = 120816
 
 class TestKalmanFilter(unittest.TestCase):
     def setUp(self):
-        # np.random.seed(seed=SEED)
-        N = 100
+        np.random.seed(seed=SEED)
+        N = 50
         self.system = UniformNonlinearGrowthModel()
-        self.transform = UnscentedTransform(n=1, alpha=1, beta=2, kappa=1)
+        self.transform = UnscentedTransform(n=1, alpha=1, beta=0, kappa=1)
         # self.transform = TaylorTransform()
         self.data = self.system.simulate(N=N) #system_simulation(N)
         x_true, x_noisy, y_true, y_noisy = zip(*self.data)
@@ -48,16 +48,16 @@ class TestKalmanFilter(unittest.TestCase):
         self.assertIsInstance(self.kf, KalmanFilterSmoother)
 
         smoothed = self.kf.kalman_smoother(result)
-        plt.plot(x_true, 'r--')
+        plt.plot(x_true, 'r--', label='True value')
         plt.scatter(list(range(self.N)), y_noisy)
         # plt.plot(y_noisy)
         # plt.plot(y_true, 'g--')
-        plt.plot([x.mean for x in result])
-        # plot_gaussian(result)
+        plt.plot([x.mean for x in result], label='Filtered')
+        # plot_gaussian(result, label='Filtered')
         # plt.figure()
         # plt.plot(x_true, 'r--')
-        # plt.plot([x.mean for x in smoothed], 'g-')
-        plot_gaussian(smoothed)
+        # plt.plot([x.mean for x in smoothed], 'g-', label='Smoothed')
+        plot_gaussian(smoothed, label='Smoothed')
         print('\n Filtered NLL = {}, RMSE = {}'.format(nll(result, x_true),
                                                  rmse(result, x_true)))
         print('\n Smoothed NLL = {}, RMSE ={}'.format(nll(smoothed, x_true),
@@ -65,6 +65,7 @@ class TestKalmanFilter(unittest.TestCase):
         #print('Filtered RMSE ={},  NLL{}'.format(nll(result, x_true)))
         print(nll(smoothed, x_true))
         # print()
+        plt.legend()
         plt.show()
 
 

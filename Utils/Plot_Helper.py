@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def plot_gaussian(data):
+def plot_gaussian(data, label=None):
     # if in_data
     # data = in_data[:, 0:1]
     x_mean = np.array([x.mean for x in data])
@@ -26,7 +26,7 @@ def plot_gaussian(data):
     upr = x_mean + 2 * x_sigma
     lwr = x_mean - 2 * x_sigma
     time = np.arange(len(data))
-    plt.fill_between(time, lwr[:, 0], upr[:, 0], alpha=0.5)
+    plt.fill_between(time, lwr[:, 0], upr[:, 0], alpha=0.5, label=label)
 
 
 def plot_gaussian_node(data):

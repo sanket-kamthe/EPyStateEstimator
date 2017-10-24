@@ -198,7 +198,7 @@ class UniformNonlinearGrowthModel(DynamicSystemModel):
                          system_noise=GaussianNoise(dimension=1,
                                                     cov=np.eye(1) * 0.25),
                          measurement_noise=GaussianNoise(dimension=1,
-                                                         cov=np.eye(1) * 10),
+                                                         cov=np.eye(1) * 5),
                          init_distribution=init_dist
                          )
 
