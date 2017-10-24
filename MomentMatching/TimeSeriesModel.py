@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import autograd.numpy as np
+import numpy as np
 from scipy.stats import multivariate_normal
 import itertools
 from collections import namedtuple
@@ -30,24 +30,31 @@ class NoiseModel:
 
 
 class GaussianNoise(NoiseModel):
-    def __init__(self, dimension, cov, mean=None):
+    def __init__(self, dimension=1, cov=np.eye(1), mean=None):
         Gaussian = namedtuple('Gaussian', ['Q'])
         params = Gaussian(Q=cov)
         self.dimension = dimension
+        self.cov = cov
         if mean is None:
             self.mean = np.zeros((dimension,), dtype=float )
 
         super().__init__(dimension=dimension,
                          params=params)
 
-    def sample(self):
-        return np.random.multivariate_normal(mean=self.mean, cov=self.params.Q)
+    def sample(self, size=None):
+        return np.random.multivariate_normal(mean=self.mean, cov=self.params.Q, size=size)
 
 
 class DynamicSystemModel:
-    def __init__(self, system_dim, measurement_dim, transition, measurement, system_noise, measurement_noise):
+    def __init__(self, system_dim,
+                 measurement_dim, transition,
+                 measurement, system_noise,
+                 measurement_noise,
+                 init_distribution=None, dt=1):
         self.system_dim = system_dim
         self.measurement_dim = measurement_dim
+        self.init_state = init_distribution
+        self.dt = dt
 
         assert isinstance(system_noise, NoiseModel)
         assert isinstance(system_noise, NoiseModel)
@@ -60,20 +67,41 @@ class DynamicSystemModel:
         self.system_noise = system_noise
         self.measurement_noise = measurement_noise
 
-    def transition_sample(self, x, u, t):
-        return self.transition(x, u, t) + self.system_noise.sample()
+    def transition_noise(self, x,  t=None, u=None, *args, **kwargs):
+        return self.transition(x=x, u=u, t=t, *args, **kwargs) + self.system_noise.sample()
 
-    def transition_function(self, x, u, t):
-        return self.transition(x, u, t)
+    def transition(self, x, u=None, t=None, *args, **kwargs):
+        return self.transition(x, u=u, t=t, *args, **kwargs)
 
-    def measurement_sample(self, x, u, t):
-        return self.transition(x, u, t) + self.system_noise.sample()
+    def measurement_sample(self, x, *args, **kwargs):
+        return self.measurement(x, *args, **kwargs) + self.measurement_noise.sample()
 
-    def measurement_function(self, x, u, t):
-        return self.transition(x, u, t)
+    def measurement(self, x, *args, **kwargs):
+        return self.measurement(x, *args, **kwargs)
 
+    def _simulate(self, N, x_zero, t_zero=0.0):
 
-def f(x, t):
+        x = x_zero
+        t = t_zero
+
+        for _ in range(N):
+            x_true = self.transition(x=x, t=t)
+            x_noisy = x_true + self.system_noise.sample()
+            y_true = self.measurement(x=x_noisy)
+            y_noisy = y_true + self.measurement_noise.sample()
+            yield x_true, x_noisy, y_true, y_noisy
+            x = x_noisy
+            t = t + self.dt
+
+    def simulate(self, N, x_zero=None, t_zero=0.0):
+
+        if x_zero is None:
+            x_zero = np.random.multivariate_normal(mean=self.init_state.mean,
+                                                   cov=self.init_state.cov)
+
+        return list(self._simulate(N=N, x_zero=x_zero, t_zero=t_zero))
+
+def f(x, t, u=None):
     """
     Unified Nonlinear growth model (noise not included)
     Transition function: x_(t+1) = f(x_t, t)
@@ -83,7 +111,7 @@ def f(x, t):
     return x_out
 
 
-def h (x, t=None):
+def h(x, t=None, u=None):
     """
     Unified Nonlinear growth model (noise not included)
     Measurement function: y_t = h(x_t)
@@ -147,7 +175,7 @@ class TimeSeriesModel(SystemModel):
         return list(itertools.islice(self._system_sim(x_zero=x_zero, t=t), N))
 
 
-class UniformNonlinearGrowthModel(TimeSeriesModel):
+class UniformNonlinearGrowthModel1(TimeSeriesModel):
     """
 
     """
@@ -155,8 +183,30 @@ class UniformNonlinearGrowthModel(TimeSeriesModel):
         init_dist = GaussianState(mean_vec=np.array([0.1]), cov_matrix=np.eye(1)*1.0)
         super().__init__(1, 1, transition_function=f, measurement_function=h, init_dist=init_dist)
 
+
+class UniformNonlinearGrowthModel(DynamicSystemModel):
+    """
+
+    """
+
+    def __init__(self):
+        init_dist = GaussianState(mean_vec=np.array([0.1]), cov_matrix=np.eye(1) * 1)
+        super().__init__(system_dim=1,
+                         measurement_dim=1,
+                         transition=f,
+                         measurement=h,
+                         system_noise=GaussianNoise(dimension=1,
+                                                    cov=np.eye(1) * 0.25),
+                         measurement_noise=GaussianNoise(dimension=1,
+                                                         cov=np.eye(1) * 5),
+                         init_distribution=init_dist
+                         )
+
 def dummy_sin(x, t):
     return 2*np.sin(x)
+
+# def test_sin(x, t):
+#     return np.s
 
 class SimpleSinTest(TimeSeriesModel):
     def __init__(self):

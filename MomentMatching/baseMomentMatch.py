@@ -207,7 +207,7 @@ class UnscentedTransform(MomentMatching):
     """
     
     """
-    def __init__(self, n=1, alpha=1, beta=0, kappa=2):
+    def __init__(self, n=1, alpha=0.5, beta=2, kappa=2):
         #
         # default_params = {
         #     'n' : 2,
@@ -223,8 +223,6 @@ class UnscentedTransform(MomentMatching):
                          beta=beta,
                          kappa=kappa)
 
-
-
     def _sigma_points(self, mean, cov, *args):
         # n = mean.shape[0]
         # alpha = self.alpha
@@ -235,7 +233,12 @@ class UnscentedTransform(MomentMatching):
         # par_lambda = alpha * alpha * (n + kappa) - n
         sqrt_n_plus_lambda = np.sqrt(self.n + self.param_lambda)
         # print(sqrt_n_plus_lambda)
+        # if np.linalg.det(cov)<0:
+        #     L = np.linalg.cholesky(-cov)
+        # else:
         L = np.linalg.cholesky(cov)
+
+
         scaledL = sqrt_n_plus_lambda * L
         mean_plus_L = mean + scaledL
         mean_minus_L = mean - scaledL
@@ -382,7 +385,7 @@ class UnscentedTransform(MomentMatching):
         # Xi = list(map(frozen_func, sigma_pts))
         Y = np.asarray(Xi)
 
-        pred_mean =   self.w_m @ Y
+        pred_mean = self.w_m @ Y
         pred_cov = Y.T @ self.W @ Y
         pred_cross_cov = np.asarray(sigma_pts).T @ self.W @ Y
 
@@ -435,8 +438,8 @@ class TaylorTransform(MomentMatching):
     def predict(self, nonlinear_func, distribution, fargs=None, y_observation=None):
         assert isinstance(distribution, GaussianState)
         frozen_nonlinear_func = partial(nonlinear_func, t=fargs)
-        # J_t = self.numerical_jacobian(frozen_nonlinear_func, distribution.mean)
-        J_t = jacobian(frozen_nonlinear_func)(distribution.mean)
+        J_t = self.numerical_jacobian(frozen_nonlinear_func, distribution.mean)
+        # J_t = jacobian(frozen_nonlinear_func)(distribution.mean)
         pred_mean = frozen_nonlinear_func(distribution.mean)
         pred_cov = J_t @ distribution.cov @ J_t.T
         pred_cross_cov = distribution.cov @ J_t.T
