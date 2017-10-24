@@ -30,7 +30,7 @@
 import numpy as np
 import warnings
 
-
+np.set_printoptions(precision=4)
 RTOL, ATOL = 1e-3, 1e-5
 
 
@@ -166,11 +166,11 @@ class GaussianState:
 
     def rmse(self, x):
         """
-        Root Mean Squared Error
+        Squared Error
         :param x:
         :return:
         """
-        return np.sqrt(np.sum(np.square(self.mean - x)))
+        return np.square(self.mean - x)
 
     def sample(self, number_of_samples):
 
@@ -186,6 +186,9 @@ class GaussianState:
     def __repr__(self):
 
         return str.format('GaussianState \n mean=\n {}, \n cov=\n{})', self.mean, self.cov)
+
+    def __str__(self):
+        return str.format('mean={},cov={}', self.mean, self.cov)
 
     def copy(self):
         return GaussianState(self.mean, self.cov)
