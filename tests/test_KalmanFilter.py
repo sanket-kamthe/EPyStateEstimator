@@ -24,7 +24,7 @@ np.set_printoptions(precision=4)
 from Utils.Plot_Helper import plot_gaussian
 from Utils.Metrics import nll, rmse
 
-SEED = 120816
+SEED = 125
 
 
 class TestKalmanFilter(unittest.TestCase):
@@ -58,15 +58,17 @@ class TestKalmanFilter(unittest.TestCase):
         # plt.plot(x_true, 'r--')
         # plt.plot([x.mean for x in smoothed], 'g-', label='Smoothed')
         plot_gaussian(smoothed, label='Smoothed')
+
         print('\n Filtered NLL = {}, RMSE = {}'.format(nll(result, x_true),
-                                                 rmse(result, x_true)))
+                                                       rmse(result, x_true)))
+
         print('\n Smoothed NLL = {}, RMSE ={}'.format(nll(smoothed, x_true),
-                                                 rmse(smoothed, x_true)))
+                                                      rmse(smoothed, x_true)))
         #print('Filtered RMSE ={},  NLL{}'.format(nll(result, x_true)))
         print(nll(smoothed, x_true))
         # print()
         plt.legend()
-        plt.show()
+        # plt.show()
 
 
 
