@@ -21,6 +21,7 @@ from Filters.KalmanFilter import KalmanFilterSmoother
 import itertools
 from collections.abc import MutableSequence
 import logging
+from Utils.Metrics import nll, rmse
 np.set_printoptions(precision=4)
 
 
@@ -354,6 +355,37 @@ class TopEP:
             yield corrected_state
             prior = corrected_state.copy()
 
+    def kalman_smoother(self, Nodes, t=None):
+        reversedNodes = reversed(Nodes)
+        N = len(Nodes)
+        t = (N - 1) * self.system_model.dt
+
+        result = []
+        next_node = next(reversedNodes).copy()
+        result.append(next_node)
+        # yield next_node
+
+        for node in reversedNodes:
+            smoothed_node = self.backward_update(node=node, next_node=next_node, fargs=t)
+            next_node = smoothed_node.copy()
+            result.append(next_node)
+            t -= self.system_model.dt
+
+        return list(reversed(result))
+
+    def forward_backward_iteration(self, iters, Nodes, observations,  fargs_list, x_true):
+
+        for i in range(iters):
+            filt = list(self.kalman_filter(Nodes, observations, fargs_list))
+            result = self.kalman_smoother(filt)
+            Nodes = result
+            EP1 = [node.marginal for node in Nodes]
+            # assert EP3 == EP2
+            print('\n EP Pass {} NLL = {}, RMSE = {}'.format(i+1, nll(EP1, x_true), rmse(EP1, x_true)))
+
+        return result
+
+
     def forward_update(self, node, prev_node, fargs):
 
         forward_cavity = node.marginal / node.forward_factor
@@ -431,8 +463,8 @@ class TopEP:
 
         result_node = node.copy()
 
-        state = self.kf.smooth(state=back_cavity, next_state=forward_cavity, t=fargs)
-        print('in node {} and t is {} '.format(node.t, fargs))
+        state = self.kf.smooth(state=back_cavity, next_state=next_node.marginal, t=fargs)
+        # print('in node {} and t is {} '.format(node.t, fargs))
         # moment_matching(nonlinear_func=self.system_model.transition,
         #                                             distribution=back_cavity,
         #                                             Q=self.Q,
