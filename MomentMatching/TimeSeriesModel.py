@@ -137,7 +137,7 @@ class TimeSeriesModel(SystemModel):
                  measurement_noise=None,
                  init_dist=None):
 
-        def make_multivariate_random_sampler_of_dimension(D, sigma=1.0):
+        def make_multivariate_random_sampler_of_dimension(D, sigma=0.1):
             mean = np.zeros((D,), dtype=float)
             cov = sigma * np.eye(D, dtype=float)
             return multivariate_normal(mean=mean, cov=cov)
@@ -146,7 +146,7 @@ class TimeSeriesModel(SystemModel):
             transition_noise = make_multivariate_random_sampler_of_dimension(dimension_state)
 
         if measurement_noise is None:
-            measurement_noise = make_multivariate_random_sampler_of_dimension(dimension_observation, sigma=5.0)
+            measurement_noise = make_multivariate_random_sampler_of_dimension(dimension_observation, sigma=10.0)
 
         super().__init__(D=dimension_state,
                          E=dimension_observation,

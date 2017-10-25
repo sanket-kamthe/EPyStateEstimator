@@ -17,6 +17,7 @@ import autograd.numpy as np
 from MomentMatching.StateModels import GaussianState
 from MomentMatching.baseMomentMatch import MomentMatching
 from collections import  namedtuple
+from Filters.KalmanFilter import KalmanFilterSmoother
 import itertools
 from collections.abc import MutableSequence
 import logging
@@ -147,7 +148,7 @@ class TimeSeriesNodeForEP:
     @staticmethod
     def marginal_init(state_dim):
         mean = np.zeros((state_dim,), dtype=float)
-        cov = 1e12 * np.eye(state_dim, dtype=float)
+        cov = np.inf * np.eye(state_dim, dtype=float)
         return GaussianState(mean_vec=mean, cov_matrix=cov)
 
     # @staticmethod
@@ -158,7 +159,7 @@ class TimeSeriesNodeForEP:
     @staticmethod
     def initialise_factors(state_dim):
         mean = np.zeros((state_dim,), dtype=float)
-        cov = (1e12-1) * np.eye(state_dim, dtype=float)
+        cov = np.inf * np.eye(state_dim, dtype=float)
         # self.measurement_factor = self.factor_init(state_dim)
         # self.back_factor = self.factor_init(state_dim)
         # self.forward_factor = self.factor_init(state_dim)
@@ -323,6 +324,8 @@ class TopEP:
         self.moment_matching = moment_matching
         self.Q = self.system_model.system_noise.cov
         self.R = self.system_model.measurement_noise.cov
+        self.kf = KalmanFilterSmoother(moment_matching=moment_matching,
+                                       system_model=system_model)
         # self.node = node
 
     def kalman_filter(self, Nodes, observations, fargs_list):
@@ -365,10 +368,7 @@ class TopEP:
 
         result_node = node.copy()
 
-        state = self.moment_matching(nonlinear_func=self.system_model.transition,
-                                                          distribution=back_cavity,
-                                                          Q=self.Q,
-                                                          fargs=fargs)
+        state = self.kf.predict(prior_state=back_cavity, t=fargs)
         # logger.debug('time {} mean={}, cov={}'.format(node.t, node.marginal.mean, node.marginal.cov))
         # print(state.cov)
         if (state.cov > 0) and (state.cov < 100):
@@ -400,11 +400,12 @@ class TopEP:
             # print(node)
             # print(measurement_cavity)
 
-        state = self.moment_matching(nonlinear_func=self.system_model.measurement,
-                                               distribution=measurement_cavity,
-                                               Q=self.R,
-                                               match_with=obs,
-                                               fargs=None)
+        state = self.kf.correct(state=measurement_cavity, meas=obs)
+        # moment_matching(func=self.system_model.measurement,
+        #                              state=measurement_cavity,
+        #                                        Q=self.R,
+        #                                        match_with=obs,
+        #                                        fargs=None)
 
 
 
@@ -430,11 +431,13 @@ class TopEP:
 
         result_node = node.copy()
 
-        state = self.moment_matching(nonlinear_func=self.system_model.transition,
-                                                    distribution=back_cavity,
-                                                    Q=self.Q,
-                                                    match_with=forward_cavity,
-                                                    fargs=fargs)
+        state = self.kf.smooth(state=back_cavity, next_state=forward_cavity, t=fargs)
+        print('in node {} and t is {} '.format(node.t, fargs))
+        # moment_matching(nonlinear_func=self.system_model.transition,
+        #                                             distribution=back_cavity,
+        #                                             Q=self.Q,
+        #                                             match_with=forward_cavity,
+        #                                             fargs=fargs)
 
         if (state.cov>0) and (state.cov<100):
             # print(state.cov)
@@ -449,7 +452,7 @@ class TopEP:
 if __name__ == '__main__':
 
     from MomentMatching.StateModels import GaussianState
-    from MomentMatching.baseMomentMatch import UnscentedTransform, TaylorTransform, MonteCarloTransform
+    from MomentMatching.newMomentMatch import UnscentedTransform, TaylorTransform, MonteCarloTransform
     from MomentMatching.auto_grad import logpdf
     from MomentMatching.ExpectationPropagation import TimeSeriesNodeForEP, EPbase, EPNodes
     from MomentMatching.TimeSeriesModel import UniformNonlinearGrowthModel, SimpleSinTest
@@ -458,9 +461,9 @@ if __name__ == '__main__':
 
     ungm = SimpleSinTest()
     ungm = UniformNonlinearGrowthModel()
-    data = ungm.system_simulation(x_zero=0.1, N=5)
+    data = ungm.simulate(N=5)
 
-    Q = ungm.Q.cov
+    Q = ungm.system_noise.cov
     print(Q)
     x_true, x_noisy, y_true, y_noisy = list(zip(*data))
 
@@ -475,7 +478,7 @@ if __name__ == '__main__':
     TT = UnscentedTransform(n=1)
     All_nodes = EPNodes(dimension_of_state=1, N=16)
 
-    TestEP = TopEP(system_model=ungm, moment_matching=TT.moment_matching_KF)
+    TestEP = TopEP(system_model=ungm, moment_matching=TT)
     # prior =
     # All_nodes[0] = prior
     prior = All_nodes[0].copy()

@@ -35,13 +35,13 @@ RTOL, ATOL = 1e-3, 1e-5
 
 
 def natural_to_moment(precision, shift):
-    cov = np.linalg.inv(precision)
+    cov = np.linalg.pinv(precision)
     mean = np.dot(cov, shift)
     return mean, cov
 
 
 def moment_to_natural(mean, cov):
-    precision = np.linalg.inv(cov)
+    precision = np.linalg.pinv(cov)
     shift = np.dot(precision, mean)
     return precision, shift
 
@@ -161,6 +161,8 @@ class GaussianState:
         :return: -ve of logpdf (x, mean=self.mean, cov=self.cov)
         """
         from scipy.stats import multivariate_normal
+        if np.isinf(self.cov):
+            return np.nan
 
         return -multivariate_normal(mean=self.mean, cov=self.cov).logpdf(x)
 

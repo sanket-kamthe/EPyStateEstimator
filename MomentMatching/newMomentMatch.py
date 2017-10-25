@@ -64,7 +64,7 @@ class UnscentedTransform(MomentMatching):
     """
     
     """
-    def __init__(self, n=1, alpha=0.5, beta=2, kappa=2):
+    def __init__(self, n=1, alpha=1, beta=0, kappa=1):
 
         self.w_m, self.W = self._weights(n, alpha, beta, kappa)
         self.param_lambda = alpha * alpha * (n + kappa) - n
