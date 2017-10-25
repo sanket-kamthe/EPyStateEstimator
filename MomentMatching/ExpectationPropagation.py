@@ -29,7 +29,7 @@ np.set_printoptions(precision=4)
 FORMAT = "[ %(funcName)10s() ] %(message)s"
 
 
-logging.basicConfig(filename='Expectation_Propagation.log', level=logging.DEBUG, format=FORMAT)
+logging.basicConfig(filename='Expectation_Propagation.log', level=logging.INFO, format=FORMAT)
 logger = logging.getLogger(__name__)
 # class GaussianState(object):
 #     def __init__(self, mean, variance):
