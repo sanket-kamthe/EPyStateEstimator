@@ -21,12 +21,12 @@ import logging
 
 logging.basicConfig(level='critical')
 
-SEED = 10
+SEED = 100
 
 np.random.seed(seed=SEED)
 
 
-N = 50
+N = 100
 system = UniformNonlinearGrowthModel()
 data = system.simulate(N)
 x_true, x_noisy, y_true, y_noisy = zip(*data)
@@ -35,7 +35,10 @@ x_true, x_noisy, y_true, y_noisy = zip(*data)
 transform = UnscentedTransform(n=1)
 # transform = TaylorTransform()
 Nodes = EPNodes(dimension_of_state=1, N=N)
-EP = TopEP(system_model=system, moment_matching=transform)
+EP = TopEP(system_model=system,
+           moment_matching=transform,
+           power=0.7,
+           damping=1)
 kf = KalmanFilterSmoother(moment_matching=transform,
                           system_model=system)
 
@@ -73,7 +76,7 @@ plot_gaussian(EP1, label='EP Pass 1')
 plot_gaussian(EP2, label='EP Pass 2')
 plt.legend()
 # plt.show()
-EP3Nodes = EP.forward_backward_iteration(7, Nodes, y_noisy, list(range(0, N)), x_true)
+EP3Nodes = EP.forward_backward_iteration(6, Nodes, y_noisy, list(range(0, N)), x_true)
 EP3 = [node.marginal for node in EP3Nodes]
 plot_gaussian(EP3, label='EP Pass 7')
 plt.legend()

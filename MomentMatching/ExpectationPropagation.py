@@ -322,13 +322,19 @@ class EPNodes(MutableSequence):
 
 
 class TopEP:
-    def __init__(self, system_model, moment_matching):
+    def __init__(self, system_model, moment_matching, power=1, damping=1):
         self.system_model = system_model
         self.moment_matching = moment_matching
         self.Q = self.system_model.system_noise.cov
         self.R = self.system_model.measurement_noise.cov
         self.kf = KalmanFilterSmoother(moment_matching=moment_matching,
                                        system_model=system_model)
+
+        self.power = power
+        if damping is None:
+            self.damping = 1/self.power
+        else:
+            self.damping = damping
         # self.node = node
     # @profile
 
@@ -356,6 +362,16 @@ class TopEP:
             #         mean={corrected_state.marginal.mean} cov={corrected_state.marginal.cov}]]')
             yield corrected_state
             prior = corrected_state.copy()
+
+
+    def power_update(self, projected_marginal, factor, marginal):
+        damping = self.damping
+        power = self.power
+        # projected_marginal = project(f, tilted_marginal)  # PowerEP equation 21
+        new_factor = factor * ((projected_marginal / marginal) ** damping)  # PowerEP equation 22
+        new_marginal = marginal * ((projected_marginal / marginal) ** (power * damping))  # PowerEP equation 23
+
+        return new_factor, new_marginal
 
     def kalman_smoother(self, Nodes, t=None):
         reversedNodes = reversed(Nodes)
@@ -406,9 +422,10 @@ class TopEP:
         state = self.kf.predict(prior_state=back_cavity, t=fargs)
         # logger.debug('time {} mean={}, cov={}'.format(node.t, node.marginal.mean, node.marginal.cov))
         # print(state.cov)
-        if (state.cov > 0) and (state.cov < 100):
+        if (state.cov > 0) and (state.cov < 1e8):
             result_node.forward_factor = state.copy()
             result_node.marginal = forward_cavity * result_node.forward_factor
+
 
 
         return result_node
@@ -419,14 +436,17 @@ class TopEP:
         #                                                                   measurement_cavity.mean,
         #                                                                   measurement_cavity.cov))
 
-        if measurement_cavity.cov <0:
-            logger.debug('Negative Cavity')
-            logger.debug('[node_marginal:: t={} mean={} cov={}]]'.format(node.t,
-                                                                              node.marginal.mean,
-                                                                              node.marginal.cov))
-            logger.debug('[measurement_factor:: t={} mean={} cov={}]]'.format(node.t,
-                                                                              node.measurement_factor.mean,
-                                                                              node.measurement_factor.cov))
+
+            # logger.debug('Negative Cavity')
+            # logger.debug('[node_marginal:: t={} mean={} cov={}]]'.format(node.t,
+            #                                                                   node.marginal.mean,
+            #                                                                   node.marginal.cov))
+            # logger.debug('[measurement_factor:: t={} mean={} cov={}]]'.format(node.t,
+            #                                                                   node.measurement_factor.mean,
+            #
+        if np.linalg.det(measurement_cavity.cov) < 0:
+            return node.copy()
+        #                                                              node.measurement_factor.cov))
 
         result = node.copy()
 
@@ -445,9 +465,14 @@ class TopEP:
 
 
         if (state.cov > 0) and (state.cov < 100):
-            result.marginal = state.copy()
+            # result.marginal = state.copy()
+            #
+            # result.measurement_factor = result.marginal / measurement_cavity
 
-            result.measurement_factor = result.marginal / measurement_cavity
+            result.measurement_factor, result.marginal = \
+                self.power_update(projected_marginal=state,
+                                  factor=node.measurement_factor,
+                                  marginal=node.marginal)
             # logger.debug('[measurement_factor:: t={} mean={} cov={}]]'.format(node.t,
             #                                                            result.measurement_factor.mean,
             #                                                            result.measurement_factor.cov))
@@ -478,8 +503,11 @@ class TopEP:
             # print(state.cov)
 
             result_node.marginal = state.copy()
-
             result_node.back_factor = result_node.marginal / back_cavity
+            # result_node.back_factor, result_node.marginal = \
+            # self.power_update(projected_marginal=state,
+            #                   factor=node.back_factor,
+            #                   marginal=node.marginal)
         # result_node.marginal = forward_cavity * result_node.forward_factor
 
         return result_node
