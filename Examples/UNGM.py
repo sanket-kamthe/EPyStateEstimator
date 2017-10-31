@@ -21,7 +21,7 @@ import logging
 
 logging.basicConfig(level='critical')
 
-SEED = 130
+SEED = 10
 
 np.random.seed(seed=SEED)
 
