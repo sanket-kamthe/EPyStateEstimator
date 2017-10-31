@@ -5,12 +5,21 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 plt.style.use('seaborn-poster')
 
+import os
+import sys
+module_path = os.path.abspath(os.path.join('..'))
+if module_path not in sys.path:
+    sys.path.append(module_path)
 from MomentMatching.newMomentMatch import MomentMatching, UnscentedTransform, TaylorTransform, MonteCarloTransform
 from MomentMatching.TimeSeriesModel import TimeSeriesModel, UniformNonlinearGrowthModel
 from MomentMatching.StateModels import GaussianState
 from MomentMatching.ExpectationPropagation import EPNodes, TopEP
 from Filters.KalmanFilter import KalmanFilterSmoother
 from Utils.Metrics import nll, rmse
+from Utils.Plot_Helper import plot_gaussian, plot_gaussian_node
+import logging
+
+logging.basicConfig(level='critical')
 
 SEED = 130
 
@@ -53,13 +62,23 @@ plt.plot([x.marginal.mean for x in EPSmthd], 'g-', label='EP as Kalman Smoother'
 plt.plot([x.marginal.mean for x in EP2Filt], 'b--', label='EP 2nd pass as Kalman Filter')
 plt.plot([x.marginal.mean for x in EP2Smthd], 'g--', label='EP 2nd pass as Kalman Smoother')
 plt.legend()
-plt.show()
+# plt.show()
 
 EP1 = [node.marginal for node in EPSmthd]
 EP2 = [node.marginal for node in EP2Smthd]
 
-EP3Nodes = EP.forward_backward_iteration(30, Nodes, y_noisy, list(range(0, N)), x_true)
+plt.figure()
+plt.plot(x_true, 'r--', label='X_true')
+plot_gaussian(EP1, label='EP Pass 1')
+plot_gaussian(EP2, label='EP Pass 2')
+plt.legend()
+# plt.show()
+EP3Nodes = EP.forward_backward_iteration(7, Nodes, y_noisy, list(range(0, N)), x_true)
 EP3 = [node.marginal for node in EP3Nodes]
+plot_gaussian(EP3, label='EP Pass 7')
+plt.legend()
+plt.show()
+
 # assert EP3 == EP2
 # print('\n EP Pass 1 NLL = {}, RMSE = {}'.format(nll(EP1, x_true),
 #                                                        rmse(EP1, x_true)))

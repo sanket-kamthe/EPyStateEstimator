@@ -21,7 +21,7 @@ import logging
 
 FORMAT = "[ %(funcName)10s() ] %(message)s"
 
-logging.basicConfig(filename='kalman_filter.log', level=logging.DEBUG, format=FORMAT)
+logging.basicConfig(filename='kalman_filter.log', level=logging.FATAL, format=FORMAT)
 logger = logging.getLogger(__name__)
 
 def pairwise(x):

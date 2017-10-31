@@ -22,6 +22,7 @@ import itertools
 from collections.abc import MutableSequence
 import logging
 from Utils.Metrics import nll, rmse
+
 np.set_printoptions(precision=4)
 
 
@@ -29,8 +30,9 @@ np.set_printoptions(precision=4)
 FORMAT = "[ %(funcName)10s() ] %(message)s"
 
 
-logging.basicConfig(filename='Expectation_Propagation.log', level=logging.INFO, format=FORMAT)
+logging.basicConfig(filename='Expectation_Propagation.log', level=logging.FATAL, format=FORMAT)
 logger = logging.getLogger(__name__)
+logger.propagate = False
 # class GaussianState(object):
 #     def __init__(self, mean, variance):
 #         self.mean = mean
@@ -328,6 +330,7 @@ class TopEP:
         self.kf = KalmanFilterSmoother(moment_matching=moment_matching,
                                        system_model=system_model)
         # self.node = node
+    # @profile
 
     def kalman_filter(self, Nodes, observations, fargs_list):
         prior = Nodes[0].copy()
@@ -339,19 +342,18 @@ class TopEP:
 
         for node, obs, fargs in zip(Nodes, observations, fargs_list):
 
-            logger.debug('[obs={}][filter: t = {}]'.format(obs, fargs))
-            logger.debug('[prior:: t={} mean={} cov={}]]'.format(node.t, node.marginal.mean, node.marginal.cov))
+            # logger.debug('[obs={}][filter: t = {}]'.format(obs, fargs))
+            # logger.debug('[prior:: t={} mean={} cov={}]]'.format(node.t, node.marginal.mean, node.marginal.cov))
 
             pred_state = self.forward_update(node=node, prev_node=prior, fargs=fargs)
 
-            logger.debug('[prediction::marginal t={} mean={} cov={}]]'.format(node.t,
-                                                                              pred_state.marginal.mean,
-                                                                              pred_state.marginal.cov))
+            # logger.debug('[prediction::marginal t={} mean={} cov={}]]'.format(node.t,
+            #                                                                   pred_state.marginal.mean,
+            #                                                                   pred_state.marginal.cov))
             corrected_state = self.measurement_update(pred_state, obs, fargs)
 
-            logger.debug('[correction::marginal t={} mean={} cov={}]]'.format(node.t,
-                                                                              corrected_state.marginal.mean,
-                                                                              corrected_state.marginal.cov))
+            # logger.debug(f'[correction::marginal t={node.t} \
+            #         mean={corrected_state.marginal.mean} cov={corrected_state.marginal.cov}]]')
             yield corrected_state
             prior = corrected_state.copy()
 
@@ -373,6 +375,7 @@ class TopEP:
 
         return list(reversed(result))
 
+
     def forward_backward_iteration(self, iters, Nodes, observations,  fargs_list, x_true):
 
         for i in range(iters):
@@ -385,18 +388,18 @@ class TopEP:
 
         return result
 
-
+    # @profile
     def forward_update(self, node, prev_node, fargs):
 
         forward_cavity = node.marginal / node.forward_factor
         back_cavity = prev_node.marginal / prev_node.back_factor
 
-        logger.debug('[forward_cavity:: t={} mean={} cov={}]]'.format(node.t,
-                                                                      forward_cavity.mean,
-                                                                      forward_cavity.cov))
-        logger.debug('[back_cavity:: t={} mean={} cov={}]]'.format(node.t,
-                                                                   back_cavity.mean,
-                                                                   back_cavity.cov))
+        # logger.debug('[forward_cavity:: t={} mean={} cov={}]]'.format(node.t,
+        #                                                               forward_cavity.mean,
+        #                                                               forward_cavity.cov))
+        # logger.debug('[back_cavity:: t={} mean={} cov={}]]'.format(node.t,
+        #                                                            back_cavity.mean,
+        #                                                            back_cavity.cov))
 
         result_node = node.copy()
 
@@ -412,9 +415,9 @@ class TopEP:
 
     def measurement_update(self, node, obs, fargs):
         measurement_cavity = node.marginal / node.measurement_factor
-        logger.debug('[measurement_cavity:: t={} mean={} cov={}]]'.format(node.t,
-                                                                          measurement_cavity.mean,
-                                                                          measurement_cavity.cov))
+        # logger.debug('[measurement_cavity:: t={} mean={} cov={}]]'.format(node.t,
+        #                                                                   measurement_cavity.mean,
+        #                                                                   measurement_cavity.cov))
 
         if measurement_cavity.cov <0:
             logger.debug('Negative Cavity')
@@ -445,21 +448,21 @@ class TopEP:
             result.marginal = state.copy()
 
             result.measurement_factor = result.marginal / measurement_cavity
-            logger.debug('[measurement_factor:: t={} mean={} cov={}]]'.format(node.t,
-                                                                       result.measurement_factor.mean,
-                                                                       result.measurement_factor.cov))
+            # logger.debug('[measurement_factor:: t={} mean={} cov={}]]'.format(node.t,
+            #                                                            result.measurement_factor.mean,
+            #                                                            result.measurement_factor.cov))
         return result
 
     def backward_update(self, node, next_node, fargs):
         back_cavity = node.marginal / node.back_factor
         forward_cavity = next_node.marginal / next_node.forward_factor
 
-        logger.debug('[forward_cavity:: t={} mean={} cov={}]]'.format(node.t,
-                                                                      forward_cavity.mean,
-                                                                      forward_cavity.cov))
-        logger.debug('[back_cavity:: t={} mean={} cov={}]]'.format(node.t,
-                                                                   back_cavity.mean,
-                                                                   back_cavity.cov))
+        # logger.debug('[forward_cavity:: t={} mean={} cov={}]]'.format(node.t,
+        #                                                               forward_cavity.mean,
+        #                                                               forward_cavity.cov))
+        # logger.debug('[back_cavity:: t={} mean={} cov={}]]'.format(node.t,
+        #                                                            back_cavity.mean,
+        #                                                            back_cavity.cov))
 
         result_node = node.copy()
 
