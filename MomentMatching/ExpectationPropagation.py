@@ -416,14 +416,16 @@ class TopEP:
         # logger.debug('[back_cavity:: t={} mean={} cov={}]]'.format(node.t,
         #                                                            back_cavity.mean,
         #                                                            back_cavity.cov))
-
+        if np.linalg.det(back_cavity.cov) < 0:
+            return node.copy()
         result_node = node.copy()
 
         state = self.kf.predict(prior_state=back_cavity, t=fargs)
         # logger.debug('time {} mean={}, cov={}'.format(node.t, node.marginal.mean, node.marginal.cov))
         # print(state.cov)
         if (state.cov > 0) and (state.cov < 1e8):
-            result_node.forward_factor = state.copy()
+            interim_state = state.copy()
+            result_node.forward_factor = interim_state ** (1/self.power)
             result_node.marginal = forward_cavity * result_node.forward_factor
 
 
@@ -489,6 +491,9 @@ class TopEP:
         #                                                            back_cavity.mean,
         #                                                            back_cavity.cov))
 
+        if np.linalg.det(back_cavity.cov) < 0:
+            return node.copy()
+
         result_node = node.copy()
 
         state = self.kf.smooth(state=back_cavity, next_state=next_node.marginal, t=fargs)
@@ -504,10 +509,10 @@ class TopEP:
 
             result_node.marginal = state.copy()
             result_node.back_factor = result_node.marginal / back_cavity
-            # result_node.back_factor, result_node.marginal = \
-            # self.power_update(projected_marginal=state,
-            #                   factor=node.back_factor,
-            #                   marginal=node.marginal)
+            result_node.back_factor, result_node.marginal = \
+            self.power_update(projected_marginal=state,
+                              factor=node.back_factor,
+                              marginal=node.marginal)
         # result_node.marginal = forward_cavity * result_node.forward_factor
 
         return result_node
