@@ -14,14 +14,14 @@ from MomentMatching.newMomentMatch import MomentMatching, UnscentedTransform, Ta
 from MomentMatching.TimeSeriesModel import TimeSeriesModel, UniformNonlinearGrowthModel
 from MomentMatching.StateModels import GaussianState
 from MomentMatching.ExpectationPropagation import EPNodes, TopEP
-from Filters.KalmanFilter import KalmanFilterSmoother
+from Filters.KalmanFilter import KalmanFilterSmoother, PowerKalmanFilterSmoother
 from Utils.Metrics import nll, rmse
 from Utils.Plot_Helper import plot_gaussian, plot_gaussian_node
 import logging
 
 logging.basicConfig(level='critical')
 
-SEED = 130
+SEED = 100
 
 np.random.seed(seed=SEED)
 
@@ -32,19 +32,26 @@ data = system.simulate(N)
 x_true, x_noisy, y_true, y_noisy = zip(*data)
 
 
-# transform = UnscentedTransform(n=1)
-transform = TaylorTransform()
+power = 0.8
+damping = 0.9
+
+transform = UnscentedTransform(n=1,  beta=2,  alpha=1, kappa=2)
+# transform = TaylorTransform()
 Nodes = EPNodes(dimension_of_state=1, N=N)
 EP = TopEP(system_model=system,
            moment_matching=transform,
-           power=0.5,
-           damping=1)
-kf = KalmanFilterSmoother(moment_matching=transform,
-                          system_model=system)
+           power=power,
+           damping=damping)
+kf = PowerKalmanFilterSmoother(moment_matching=transform,
+                               system_model=system,
+                               power=power)
 
 EPFilt = EP.kalman_filter(Nodes, y_noisy, list(range(0, N)))
 
 x_filtered = list(EPFilt)
+EP3 = [node.marginal for node in x_filtered]
+print('\n Filter {} NLL = {}, RMSE = {}'.format(1, nll(EP3, x_true), rmse(EP3, x_true)))
+
 x_filt_mean = [x.marginal.mean for x in x_filtered]
 
 result = kf.kalman_filter(y_noisy, prior_state=system.init_state)
@@ -53,6 +60,9 @@ smoothed = kf.kalman_smoother(result)
 
 EPSmthd = EP.kalman_smoother(x_filtered)
 
+EP3 = [node.marginal for node in EPSmthd]
+
+print('\n Smoother {} NLL = {}, RMSE = {}'.format(1, nll(EP3, x_true), rmse(EP3, x_true)))
 EP2Filt = list(EP.kalman_filter(EPSmthd, y_noisy, list(range(0, N))))
 EP2Smthd = EP.kalman_smoother(EP2Filt)
 
@@ -76,8 +86,14 @@ plot_gaussian(EP1, label='EP Pass 1')
 plot_gaussian(EP2, label='EP Pass 2')
 plt.legend()
 # plt.show()
-EP3Nodes = EP.forward_backward_iteration(10, Nodes, y_noisy, list(range(0, N)), x_true)
-EP3 = [node.marginal for node in EP3Nodes]
+EPNodesList = EP.forward_backward_iteration(10, Nodes, y_noisy, list(range(0, N)), x_true)
+for i, Nodes in enumerate(EPNodesList):
+    EP3 = [node.marginal for node in Nodes]
+    print('\n EP Pass {} NLL = {}, RMSE = {}'.format(i + 1, nll(EP3, x_true), rmse(EP3, x_true)))
+# EP1 = [node.marginal for node in Nodes for Nodes in EPNodesList]
+            # assert EP3 == EP2
+# print('\n EP Pass {} NLL = {}, RMSE = {}'.format(i+1, nll(EP1, x_true), rmse(EP1, x_true)))
+EP3 = [node.marginal for node in EPNodesList[-1]]
 plot_gaussian(EP3, label='EP Pass 7')
 plt.legend()
 plt.show()

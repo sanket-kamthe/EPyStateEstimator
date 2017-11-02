@@ -123,6 +123,60 @@ class KalmanFilterSmoother:
 
         return list(reversed(result))
 
+
+class PowerKalmanFilterSmoother(KalmanFilterSmoother):
+
+    def __init__(self, moment_matching, system_model, power=1):
+        self.power = power
+        super().__init__(moment_matching=moment_matching, system_model=system_model)
+
+
+    def predict(self, prior_state, t=None, u=None, *args, **kwargs):
+        xx_mean, xx_cov, _ = self.transform(self.transition,
+                                            prior_state,
+                                            t=t, u=u,
+                                            *args, **kwargs)
+        xx_cov += self.transition_noise
+        xx_cov /= self.power
+        return GaussianState(xx_mean, xx_cov)
+
+    def correct(self, state, meas, t=None, u=None, *args, **kwargs):
+
+        z_mean, z_cov, xz_cross_cov = \
+            self.transform(self.measurement,
+                           state,
+                           t=t, u=u,
+                           *args, **kwargs)
+
+        z_cov += self.measurement_noise
+        z_cov /= self.power
+
+        # kalman_gain = np.matmul(xz_cross_cov, np.linalg.pinv(z_cov))
+        kalman_gain = np.linalg.solve(z_cov, xz_cross_cov)
+        mean = state.mean + np.dot(kalman_gain, (meas - z_mean)) # equation 15  in Marc's ACC paper
+        cov = state.cov - np.dot(kalman_gain, np.transpose(xz_cross_cov))
+
+        return GaussianState(mean, cov)
+
+    def smooth(self, state, next_state, t=None, u=None, *args, **kwargs):
+
+        xx_mean, xx_cov, xx_cross_cov = \
+            self.transform(self.transition,
+                           state,
+                           t=t, u=u,
+                           *args, **kwargs)
+
+        xx_cov += self.transition_noise
+        xx_cov /= self.power
+
+        # J = xx_cross_cov @ np.linalg.pinv(xx_cov)
+        J = np.linalg.solve(xx_cov, xx_cross_cov)
+        mean = state.mean + np.dot(J, (next_state.mean - xx_mean))
+        cov = state.cov + J @ (next_state.cov - xx_cov) @ J.T
+
+        return GaussianState(mean, cov)
+
+
 class KalmanFilterSmootherOld:
     def __init__(self, moment_matching, system_model):
         """

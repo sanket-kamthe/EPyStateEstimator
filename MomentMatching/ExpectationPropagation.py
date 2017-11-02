@@ -17,7 +17,7 @@ import autograd.numpy as np
 from MomentMatching.StateModels import GaussianState
 from MomentMatching.baseMomentMatch import MomentMatching
 from collections import  namedtuple
-from Filters.KalmanFilter import KalmanFilterSmoother
+from Filters.KalmanFilter import KalmanFilterSmoother, PowerKalmanFilterSmoother
 import itertools
 from collections.abc import MutableSequence
 import logging
@@ -327,12 +327,13 @@ class TopEP:
         self.moment_matching = moment_matching
         self.Q = self.system_model.system_noise.cov
         self.R = self.system_model.measurement_noise.cov
-        self.kf = KalmanFilterSmoother(moment_matching=moment_matching,
-                                       system_model=system_model)
+        self.kf = PowerKalmanFilterSmoother(moment_matching=moment_matching,
+                                            system_model=system_model,
+                                            power=power)
 
         self.power = power
         if damping is None:
-            self.damping = 1/self.power
+            self.damping = self.power
         else:
             self.damping = damping
         # self.node = node
@@ -363,13 +364,12 @@ class TopEP:
             yield corrected_state
             prior = corrected_state.copy()
 
-
-    def power_update(self, projected_marginal, factor, marginal):
+    def power_update(self, projected_marginal, factor, marginal, cavity):
         damping = self.damping
         power = self.power
         # projected_marginal = project(f, tilted_marginal)  # PowerEP equation 21
-        new_factor = factor * ((projected_marginal / marginal) ** damping)  # PowerEP equation 22
-        new_marginal = marginal * ((projected_marginal / marginal) ** (power * damping))  # PowerEP equation 23
+        new_factor = (factor ** (1 - damping)) * ((projected_marginal / cavity) ** damping)  # PowerEP equation 22
+        new_marginal = (marginal ** (1 - damping)) * (projected_marginal ** damping)   # PowerEP equation 23
 
         return new_factor, new_marginal
 
@@ -391,16 +391,13 @@ class TopEP:
 
         return list(reversed(result))
 
-
     def forward_backward_iteration(self, iters, Nodes, observations,  fargs_list, x_true):
-
+        result = []
         for i in range(iters):
             filt = list(self.kalman_filter(Nodes, observations, fargs_list))
-            result = self.kalman_smoother(filt)
-            Nodes = result
-            EP1 = [node.marginal for node in Nodes]
-            # assert EP3 == EP2
-            print('\n EP Pass {} NLL = {}, RMSE = {}'.format(i+1, nll(EP1, x_true), rmse(EP1, x_true)))
+            result.append(self.kalman_smoother(filt))
+            Nodes = result[-1]
+
 
         return result
 
@@ -424,9 +421,8 @@ class TopEP:
         # logger.debug('time {} mean={}, cov={}'.format(node.t, node.marginal.mean, node.marginal.cov))
         # print(state.cov)
         if (state.cov > 0) and (state.cov < 1e8):
-            interim_state = state.copy()
-            result_node.forward_factor = interim_state ** (1/self.power)
-            result_node.marginal = forward_cavity * result_node.forward_factor
+            result_node.forward_factor = (node.forward_factor ** (1-self.damping)) * (state ** (self.damping))
+            result_node.marginal = node.marginal * (result_node.forward_factor / node.forward_factor) ** (1/1)
 
 
 
@@ -474,7 +470,8 @@ class TopEP:
             result.measurement_factor, result.marginal = \
                 self.power_update(projected_marginal=state,
                                   factor=node.measurement_factor,
-                                  marginal=node.marginal)
+                                  marginal=node.marginal,
+                                  cavity=measurement_cavity)
             # logger.debug('[measurement_factor:: t={} mean={} cov={}]]'.format(node.t,
             #                                                            result.measurement_factor.mean,
             #                                                            result.measurement_factor.cov))
@@ -512,7 +509,8 @@ class TopEP:
             result_node.back_factor, result_node.marginal = \
             self.power_update(projected_marginal=state,
                               factor=node.back_factor,
-                              marginal=node.marginal)
+                              marginal=node.marginal,
+                              cavity=back_cavity)
         # result_node.marginal = forward_cavity * result_node.forward_factor
 
         return result_node
