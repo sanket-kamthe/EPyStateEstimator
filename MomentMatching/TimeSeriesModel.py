@@ -180,7 +180,7 @@ class UniformNonlinearGrowthModel1(TimeSeriesModel):
 
     """
     def __init__(self):
-        init_dist = GaussianState(mean_vec=np.array([0.1]), cov_matrix=np.eye(1)*1.0)
+        init_dist = GaussianState(mean_vec=np.array([0.0]), cov_matrix=np.eye(1)*1.0)
         super().__init__(1, 1, transition_function=f, measurement_function=h, init_dist=init_dist)
 
 

@@ -15,7 +15,7 @@
 import unittest
 import random
 import numpy as np
-from ..MomentMatching.StateModels import GaussianState, moment_to_natural, natural_to_moment
+from MomentMatching.StateModels import GaussianState, moment_to_natural, natural_to_moment
 # from scipy.stats import multivariate_normal
 
 class Test1DGaussianStateModel(unittest.TestCase):

@@ -129,8 +129,8 @@ class GaussianState:
         # TODO: Replace assert with a custom Error
         assert isinstance(other, GaussianState)
         precision = self.precision - other.precision
-        if precision < 0:
-            warnings.warn('Negative Precision!!!')
+        # if precision < 0:
+        #     warnings.warn('Negative Precision!!!')
             # print(precision)
             # precision + 1e-6
 
@@ -140,10 +140,10 @@ class GaussianState:
 
     def __pow__(self, power, modulo=None):
 
-        precision = power * self.precision
-        shift = power * self.shift
-        mean, cov = natural_to_moment(precision, shift)
-        return GaussianState(mean, cov)
+        # precision = power * self.precision
+        # shift = power * self.shift
+        # mean, cov = natural_to_moment(precision, shift)
+        return GaussianState(self.mean, self.cov/power)
 
     def __eq__(self, other):
         # Make sure that 'other' is also a GaussianState class
