@@ -369,7 +369,7 @@ class TopEP:
         power = self.power
         # projected_marginal = project(f, tilted_marginal)  # PowerEP equation 21
         new_factor = (factor ** (1 - damping)) * ((projected_marginal / cavity) ** damping)  # PowerEP equation 22
-        new_marginal = (marginal ** (1 - damping)) * (projected_marginal ** damping)   # PowerEP equation 23
+        new_marginal = marginal * ((projected_marginal/marginal) ** (damping/power))   # PowerEP equation 23
 
         return new_factor, new_marginal
 

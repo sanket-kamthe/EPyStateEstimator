@@ -32,10 +32,10 @@ data = system.simulate(N)
 x_true, x_noisy, y_true, y_noisy = zip(*data)
 
 
-power = 0.8
+power = 0.1
 damping = 0.9
 
-transform = UnscentedTransform(n=1,  beta=2,  alpha=1, kappa=2)
+transform = UnscentedTransform(n=1,  beta=0,  alpha=1, kappa=2)
 # transform = TaylorTransform()
 Nodes = EPNodes(dimension_of_state=1, N=N)
 EP = TopEP(system_model=system,
@@ -86,7 +86,7 @@ plot_gaussian(EP1, label='EP Pass 1')
 plot_gaussian(EP2, label='EP Pass 2')
 plt.legend()
 # plt.show()
-EPNodesList = EP.forward_backward_iteration(10, Nodes, y_noisy, list(range(0, N)), x_true)
+EPNodesList = EP.forward_backward_iteration(25, Nodes, y_noisy, list(range(0, N)), x_true)
 for i, Nodes in enumerate(EPNodesList):
     EP3 = [node.marginal for node in Nodes]
     print('\n EP Pass {} NLL = {}, RMSE = {}'.format(i + 1, nll(EP3, x_true), rmse(EP3, x_true)))
