@@ -31,11 +31,16 @@ def pairwise(x):
 
 
 class KalmanFilterSmoother:
-    def __init__(self, moment_matching, system_model):
-        assert isinstance(system_model, DynamicSystemModel)  # make sure we are working with the time series model.
-        assert isinstance(moment_matching, MomentMatching)
+    def __init__(self, moment_matching, system_model, meas_moment_matching=None):
+        # assert isinstance(system_model, DynamicSystemModel)  # make sure we are working with the time series model.
+        # assert isinstance(moment_matching, MomentMatching)
 
         self.transform = moment_matching
+
+        if meas_moment_matching is None:
+            self.meas_transform = moment_matching
+        else:
+            self.meas_transform = meas_moment_matching
         self.transition = system_model.transition
         self.measurement = system_model.measurement
         self.transition_noise = system_model.system_noise.cov
@@ -54,10 +59,10 @@ class KalmanFilterSmoother:
     def correct(self, state, meas, t=None, u=None, *args, **kwargs):
 
         z_mean, z_cov, xz_cross_cov = \
-            self.transform(self.measurement,
-                           state,
-                           t=t, u=u,
-                           *args, **kwargs)
+            self.meas_transform(self.measurement,
+                                state,
+                                t=t, u=u,
+                                *args, **kwargs)
 
         z_cov += self.measurement_noise
 
@@ -126,9 +131,15 @@ class KalmanFilterSmoother:
 
 class PowerKalmanFilterSmoother(KalmanFilterSmoother):
 
-    def __init__(self, moment_matching, system_model, power=1):
+    def __init__(self, moment_matching, system_model, power=1, meas_moment_matching=None):
         self.power = power
-        super().__init__(moment_matching=moment_matching, system_model=system_model)
+        # if meas_moment_matching is None:
+        #     self.meas_transform = moment_matching
+        # else:
+        #     self.meas_transform = meas_moment_matching
+        super().__init__(moment_matching=moment_matching,
+                         system_model=system_model,
+                         meas_moment_matching=meas_moment_matching)
 
 
     def predict(self, prior_state, t=None, u=None, *args, **kwargs):
@@ -143,18 +154,18 @@ class PowerKalmanFilterSmoother(KalmanFilterSmoother):
     def correct(self, state, meas, t=None, u=None, *args, **kwargs):
 
         z_mean, z_cov, xz_cross_cov = \
-            self.transform(self.measurement,
-                           state,
-                           t=t, u=u,
-                           *args, **kwargs)
+            self.meas_transform(self.measurement,
+                                state,
+                                t=t, u=u,
+                                *args, **kwargs)
 
         z_cov += self.measurement_noise
         z_cov /= self.power
 
         # kalman_gain = np.matmul(xz_cross_cov, np.linalg.pinv(z_cov))
-        kalman_gain = np.linalg.solve(z_cov, xz_cross_cov)
-        mean = state.mean + np.dot(kalman_gain, (meas - z_mean)) # equation 15  in Marc's ACC paper
-        cov = state.cov - np.dot(kalman_gain, np.transpose(xz_cross_cov))
+        kalman_gain = (np.linalg.solve(z_cov, xz_cross_cov.T)).T
+        mean = state.mean + kalman_gain @ (meas - z_mean)  # equation 15  in Marc's ACC paper
+        cov = state.cov - kalman_gain @ xz_cross_cov.T
 
         return GaussianState(mean, cov)
 

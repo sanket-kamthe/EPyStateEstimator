@@ -76,6 +76,7 @@ class BearingsOnlyTracking(DynamicSystemModel):
                          init_distribution=init_dist
                          )
 
+# def numpy_array(x)
 
 if __name__ == '__main__':
 
@@ -87,15 +88,18 @@ if __name__ == '__main__':
     if module_path not in sys.path:
         sys.path.append(module_path)
 
-    N = 10
+    N = 50
 
     system = BearingsOnlyTracking()
     data = system.simulate(N)
     x_true, x_noisy, y_true, y_noisy = zip(*data)
 
-    plt.plot(x_true)
+    x_true = np.asanyarray(x_true)
+    x_noisy = np.asanyarray(x_noisy)
 
-    plt.scatter(list(range(N)), x_noisy)
-    plt.plot(y_noisy)
+
+    # plt.plot(x_true[:, 0])
+    # plt.scatter(list(range(N)), x_noisy[:, 0])
+    plt.scatter(list(range(N)), y_noisy)
     plt.show()
 

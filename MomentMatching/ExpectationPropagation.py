@@ -322,7 +322,7 @@ class EPNodes(MutableSequence):
 
 
 class TopEP:
-    def __init__(self, system_model, moment_matching, power=1, damping=1):
+    def __init__(self, system_model, moment_matching, meas_transform=None, power=1, damping=1):
         self.system_model = system_model
         self.moment_matching = moment_matching
         self.Q = self.system_model.system_noise.cov
@@ -341,7 +341,7 @@ class TopEP:
 
     def kalman_filter(self, Nodes, observations, fargs_list):
         prior = Nodes[0].copy()
-        if prior.marginal.cov>2000:
+        if prior.marginal.cov[0, 0] > 2000:
             prior.marginal = self.system_model.init_state
 
             # GaussianState(mean_vec=np.array([0.1]),
@@ -420,7 +420,7 @@ class TopEP:
         state = self.kf.predict(prior_state=back_cavity, t=fargs)
         # logger.debug('time {} mean={}, cov={}'.format(node.t, node.marginal.mean, node.marginal.cov))
         # print(state.cov)
-        if (state.cov > 0) and (state.cov < 1e8):
+        if np.linalg.det(state.cov) > 0:
             result_node.forward_factor = (node.forward_factor ** (1-self.damping)) * (state ** (self.damping))
             result_node.marginal = node.marginal * (result_node.forward_factor / node.forward_factor) ** (1/1)
 
@@ -460,9 +460,7 @@ class TopEP:
         #                                        match_with=obs,
         #                                        fargs=None)
 
-
-
-        if (state.cov > 0) and (state.cov < 100):
+        if np.linalg.det(state.cov) > 0:
             # result.marginal = state.copy()
             #
             # result.measurement_factor = result.marginal / measurement_cavity
