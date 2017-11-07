@@ -28,8 +28,8 @@ np.random.seed(seed=SEED)
 
 
 N = 100
-# system = UniformNonlinearGrowthModel()
-system = BearingsOnlyTracking()
+system = UniformNonlinearGrowthModel()
+# system = BearingsOnlyTracking()
 data = system.simulate(N)
 x_true, x_noisy, y_true, y_noisy = zip(*data)
 
@@ -37,10 +37,10 @@ x_true, x_noisy, y_true, y_noisy = zip(*data)
 power = 0.59
 damping = 0.6
 
-transform = UnscentedTransform(n=4,  beta=0,  alpha=1, kappa=2)
+transform = UnscentedTransform(n=1,  beta=0,  alpha=1, kappa=2)
 meas_transform = UnscentedTransform(n=1, beta=0,  alpha=1, kappa=2)
 # transform = TaylorTransform()
-Nodes = EPNodes(dimension_of_state=4, N=N)
+Nodes = EPNodes(dimension_of_state=1, N=N)
 EP = TopEP(system_model=system,
            moment_matching=transform,
            meas_transform=meas_transform,

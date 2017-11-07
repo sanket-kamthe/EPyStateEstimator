@@ -106,7 +106,7 @@ class GaussianState:
     @property
     def precision(self):
         if self._precision is None:
-            self._precision = np.linalg.pinv(self.cov)  # TODO: Change to more stable solve later
+            self._precision = np.linalg.solve(self.cov, np.eye(self.dim))  # TODO: Change to more stable solve later
         return self._precision
 
     @property
