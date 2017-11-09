@@ -102,7 +102,6 @@ class BeginNode(BaseNode):
         new_marginal = marginal * ((projected_marginal/marginal) ** (power * damping))  # PowerEP equation 23
 
 
-
 class TimeSeriesNodeForEP:
     def __init__(self, t, state_dim=1, marginal_init=None, factor_init=None):
 
@@ -151,7 +150,8 @@ class TimeSeriesNodeForEP:
     @staticmethod
     def marginal_init(state_dim):
         mean = np.zeros((state_dim,), dtype=float)
-        cov = np.inf * np.eye(state_dim, dtype=float)
+        diag_cov = np.inf * np.ones((state_dim,), dtype=float)
+        cov = np.diag(diag_cov)
         return GaussianState(mean_vec=mean, cov_matrix=cov)
 
     # @staticmethod

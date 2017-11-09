@@ -24,6 +24,7 @@ FORMAT = "[ %(funcName)10s() ] %(message)s"
 logging.basicConfig(filename='kalman_filter.log', level=logging.FATAL, format=FORMAT)
 logger = logging.getLogger(__name__)
 
+
 def pairwise(x):
     node, next_node = tee(x)
     next(node, None)
