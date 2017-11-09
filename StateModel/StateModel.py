@@ -14,4 +14,24 @@
 
 import abc
 
+
 class State(metaclass=abc.ABCMeta):
+
+    params = {}
+
+    @abc.abstractmethod
+    def __mul__(self, other):
+        pass
+
+    @abc.abstractmethod
+    def __truediv__(self, other):
+        pass
+
+    @abc.abstractmethod
+    def __pow__(self, power, modulo=None):
+        pass
+
+    @abc.abstractmethod
+    def nll(self, x):
+        pass
+
