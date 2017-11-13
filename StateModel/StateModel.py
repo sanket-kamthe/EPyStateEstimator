@@ -35,3 +35,6 @@ class State(metaclass=abc.ABCMeta):
     def nll(self, x):
         pass
 
+    @abc.abstractmethod
+    def sample(self, size=None):
+        pass

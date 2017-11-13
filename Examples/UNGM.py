@@ -3,13 +3,11 @@ import numpy as np
 import itertools
 import matplotlib.pyplot as plt
 import seaborn as sns
-plt.style.use('seaborn-poster')
-
-import os
-import sys
-module_path = os.path.abspath(os.path.join('..'))
-if module_path not in sys.path:
-    sys.path.append(module_path)
+# import os
+# import sys
+# module_path = os.path.abspath(os.path.join('..'))
+# if module_path not in sys.path:
+#     sys.path.append(module_path)
 from MomentMatching.newMomentMatch import MomentMatching, UnscentedTransform, TaylorTransform, MonteCarloTransform
 from MomentMatching.TimeSeriesModel import TimeSeriesModel, UniformNonlinearGrowthModel
 from MomentMatching.StateModels import GaussianState
@@ -26,12 +24,46 @@ SEED = 200
 
 np.random.seed(seed=SEED)
 
-
-N = 100
+N = 10
 system = UniformNonlinearGrowthModel()
 # system = BearingsOnlyTracking()
 data = system.simulate(N)
 x_true, x_noisy, y_true, y_noisy = zip(*data)
+
+
+def _power_sweep(power, damping):
+    transform = UnscentedTransform(n=1, beta=0, alpha=1, kappa=2)
+    meas_transform = UnscentedTransform(n=1, beta=0, alpha=1, kappa=2)
+
+    Nodes = EPNodes(dimension_of_state=1, N=N)
+    EP = TopEP(system_model=system,
+               moment_matching=transform,
+               meas_transform=meas_transform,
+               power=power,
+               damping=damping)
+
+    EPNodesList = EP.forward_backward_iteration(30, Nodes, y_noisy, list(range(0, N)), x_true)
+
+    Node = [node.marginal for node in EPNodesList[-1]]
+    return nll(Node, x_true), rmse(Node, x_true)
+
+
+power_range = np.linspace(0.1, 1.0, num=3)
+damp_range = np.linspace(0.1, 1.0, num=3)
+
+results = []
+
+for power, damping in itertools.product(power_range, damp_range):
+
+    ans = _power_sweep(power, damping)
+    results.append(ans)
+
+power_data = _power_sweep(0.59, 0.6)
+NLL, RMSE = power_data
+
+print(NLL, RMSE)
+
+
 
 
 power = 0.59
