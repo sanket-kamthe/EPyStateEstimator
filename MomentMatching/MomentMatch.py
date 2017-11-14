@@ -66,14 +66,14 @@ class MomentMatching(metaclass=ABCMeta):
         pass
 
 
-class ProjectTransition(metaclass=MomentMatching):
+class ProjectTransition(MomentMatching):
 
     @abstractmethod
     def project(self, distribution, next_state=None):
         pass
 
 
-class ProjectMeasurement(metaclass=MomentMatching):
+class ProjectMeasurement(MomentMatching):
 
     @abstractmethod
     def project(self, distribution, meas):

@@ -10,18 +10,18 @@ import seaborn as sns
 #     sys.path.append(module_path)
 from MomentMatching.newMomentMatch import MomentMatching, UnscentedTransform, TaylorTransform, MonteCarloTransform
 from MomentMatching.TimeSeriesModel import TimeSeriesModel, UniformNonlinearGrowthModel
-from StateModel import GaussianState
-from MomentMatching.ExpectationPropagation import TopEP
+from MomentMatching.StateModels import GaussianState
+from MomentMatching.ExpectationPropagation import TopEP, EPNodes
 from Filters.KalmanFilter import KalmanFilterSmoother, PowerKalmanFilterSmoother
 from Utils.Metrics import nll, rmse
 from Utils.Plot_Helper import plot_gaussian, plot_gaussian_node
 from Systems import BearingsOnlyTracking
 import logging
-from ExpectationPropagation import EPNodes
+# from ExpectationPropagation import EPNodes
 
 logging.basicConfig(level='critical')
 
-SEED = 200
+SEED = 100
 
 np.random.seed(seed=SEED)
 

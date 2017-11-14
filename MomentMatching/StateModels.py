@@ -118,7 +118,7 @@ class GaussianState:
 
     def __mul__(self, other):
         # Make sure that other is also a GaussianState class
-        assert isinstance(other, GaussianState)
+        # assert isinstance(other, GaussianState)
         precision = self.precision + other.precision
         shift = self.shift + other.shift
         mean, cov = natural_to_moment(precision, shift)
@@ -127,7 +127,7 @@ class GaussianState:
     def __truediv__(self, other):
         # Make sure that 'other' is also a GaussianState class
         # TODO: Replace assert with a custom Error
-        assert isinstance(other, GaussianState)
+        # assert isinstance(other, GaussianState)
         precision = self.precision - other.precision
         # if precision < 0:
         #     warnings.warn('Negative Precision!!!')
@@ -148,7 +148,7 @@ class GaussianState:
     def __eq__(self, other):
         # Make sure that 'other' is also a GaussianState class
         # TODO: Replace assert with a custom Error
-        assert isinstance(other, GaussianState)
+        # assert isinstance(other, GaussianState)
         mean_equal = np.allclose(self.mean, other.mean, rtol=RTOL, atol=RTOL)
         cov_equal = np.allclose(self.cov, other.cov, rtol=RTOL, atol=RTOL)
 

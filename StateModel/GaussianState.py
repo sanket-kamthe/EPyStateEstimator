@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import numpy as np
+from numpy.linalg import LinAlgError
 from StateModel import State
 
 RTOL, ATOL = 1e-3, 1e-5
@@ -90,7 +91,11 @@ class GaussianState(State):
     @property
     def precision(self):
         if self._precision is None:
-            self._precision = np.linalg.solve(self.cov, np.eye(self.dim))  # TODO: Change to more stable solve later
+            try:
+                self._precision = np.linalg.solve(self.cov, np.eye(self.dim))
+            except LinAlgError:
+                print(f'bad covariance{self.cov}')
+
         return self._precision
 
     @property
@@ -111,7 +116,7 @@ class GaussianState(State):
     def __truediv__(self, other):
         # Make sure that 'other' is also a GaussianState class
         # TODO: Replace assert with a custom Error
-        assert isinstance(other, GaussianState)
+        # assert isinstance(other, GaussianState)
         precision = self.precision - other.precision
         # if precision < 0:
         #     warnings.warn('Negative Precision!!!')

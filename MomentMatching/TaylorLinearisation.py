@@ -68,4 +68,3 @@ class TaylorTransform(MappingTransform):
         dlogZidSz = jacobian(self._data_likelihood, argnum=2)(nonlinear_func, distribution, data)
 
         return logZi, dlogZidMz, dlogZidSz
-    

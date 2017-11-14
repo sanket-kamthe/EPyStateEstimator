@@ -87,7 +87,8 @@ class DynamicSystemEP(TimeSeriesEP):
         forward_cavity = next_node.marginal / next_node.forward_factor
 
         try:
-            state = self.project_transition(distribution=back_cavity, state=next_node.marginal)
+            state = self.project_transition(distribution=back_cavity,
+                                            state=next_node.marginal)
         except LinAlgError:
             return node.copy()
         else:
@@ -101,5 +102,5 @@ class DynamicSystemEP(TimeSeriesEP):
     def project_measurement(self, distribution):
         return self._measurement.project(distribution)
 
-    def project_transition(self, distribution):
+    def project_transition(self, distribution, state):
         return self._transition.project(distribution)
