@@ -1,7 +1,7 @@
 import numpy as np
 import itertools
 from collections import namedtuple
-
+from abc import abstractmethod, ABCMeta
 
 class NoiseModel:
     def __init__(self, dimension, params):
@@ -26,6 +26,44 @@ class GaussianNoise(NoiseModel):
 
     def sample(self, size=None):
         return np.random.multivariate_normal(mean=self.mean, cov=self.params.Q, size=size)
+
+
+class DynamicSystem(metaclass=ABCMeta):
+
+    # def transition_noise(self, x,  t=None, u=None, *args, **kwargs):
+    #     return self.transition(x=x, u=u, t=t, *args, **kwargs) + self.system_noise.sample()
+
+    @abstractmethod
+    def transition(self, x, u=None, t=None, *args, **kwargs):
+        pass
+
+    @abstractmethod
+    def measurement(self, x, *args, **kwargs):
+        pass
+
+
+
+    def _simulate(self, N, x_zero, t_zero=0.0):
+
+        x = x_zero
+        t = t_zero
+
+        for _ in range(N):
+            x_true = self.transition(x=x, t=t)
+            x_noisy = x_true + self.system_noise.sample()
+            y_true = self.measurement(x=x_noisy)
+            y_noisy = y_true + self.measurement_noise.sample()
+            yield x_true, x_noisy, y_true, y_noisy
+            x = x_noisy
+            t = t + self.dt
+
+    def simulate(self, N, x_zero=None, t_zero=0.0):
+
+        if x_zero is None:
+            x_zero = np.random.multivariate_normal(mean=self.init_state.mean,
+                                                   cov=self.init_state.cov)
+
+        return list(self._simulate(N=N, x_zero=x_zero, t_zero=t_zero))
 
 
 class DynamicSystemModel:

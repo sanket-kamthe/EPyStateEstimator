@@ -25,14 +25,14 @@ SEED = 200
 np.random.seed(seed=SEED)
 
 N = 10
-system = UniformNonlinearGrowthModel()
-# system = BearingsOnlyTracking()
+# system = UniformNonlinearGrowthModel()
+system = BearingsOnlyTracking()
 data = system.simulate(N)
 x_true, x_noisy, y_true, y_noisy = zip(*data)
 
 
 def _power_sweep(power, damping):
-    transform = UnscentedTransform(n=1, beta=0, alpha=1, kappa=2)
+    transform = UnscentedTransform(n=4, beta=0, alpha=1, kappa=2)
     meas_transform = UnscentedTransform(n=1, beta=0, alpha=1, kappa=2)
 
     Nodes = EPNodes(dimension_of_state=1, N=N)

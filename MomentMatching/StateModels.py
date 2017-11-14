@@ -106,7 +106,7 @@ class GaussianState:
     @property
     def precision(self):
         if self._precision is None:
-            self._precision = np.linalg.solve(self.cov, np.eye(self.dim))  # TODO: Change to more stable solve later
+            self._precision = np.linalg.solve(self.cov, np.eye(self.dim))
         return self._precision
 
     @property
@@ -161,7 +161,7 @@ class GaussianState:
         :return: -ve of logpdf (x, mean=self.mean, cov=self.cov)
         """
         from scipy.stats import multivariate_normal
-        if np.isinf(self.cov):
+        if np.isinf(self.cov) or np.linalg.det(self.cov)<0.0:
             return np.nan
 
         return -multivariate_normal(mean=self.mean, cov=self.cov).logpdf(x)

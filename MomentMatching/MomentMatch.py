@@ -12,20 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import abc
+from abc import ABCMeta, abstractmethod
 
+class MomentMatching(metaclass=ABCMeta):
+    _params = {}
 
-class KalmanFilterBase(metaclass=abc.ABCMeta):
-
-    @abc.abstractmethod
-    def predict(self, prior_state, t=None, u=None):
+    @abstractmethod
+    def project(self, state):
         pass
-
-    @abc.abstractmethod
-    def correct(self, state, meas):
-        pass
-
-    @abc.abstractmethod
-    def smooth(self, state, next_state, t=None, u=None):
-        pass
-

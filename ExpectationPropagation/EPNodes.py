@@ -1,4 +1,4 @@
-
+from StateModel import GaussianState, GaussianFactor
 
 
 
@@ -8,12 +8,14 @@ class TimeSeriesNodeForEP:
         self.t = t
         self.state_dimension=state_dim
         if marginal_init is None:
-            self.marginal = self.marginal_init(state_dim)
+            self.marginal = GaussianFactor(dim=state_dim)
         else:
             self.marginal = marginal_init
 
         if factor_init is None:
-            self.measurement_factor, self.back_factor, self.forward_factor = (self.initialise_factors(state_dim))
+            self.measurement_factor = GaussianFactor(dim=state_dim)
+            self.back_factor = GaussianFactor(dim=state_dim)
+            self.forward_factor = GaussianFactor(dim=state_dim)
         else:
             self.measurement_factor, self.back_factor, self.forward_factor = factor_init
 

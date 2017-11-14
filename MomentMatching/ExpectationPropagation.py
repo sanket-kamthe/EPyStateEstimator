@@ -407,12 +407,12 @@ class TopEP:
         forward_cavity = node.marginal / node.forward_factor
         back_cavity = prev_node.marginal / prev_node.back_factor
 
-        # logger.debug('[forward_cavity:: t={} mean={} cov={}]]'.format(node.t,
-        #                                                               forward_cavity.mean,
-        #                                                               forward_cavity.cov))
-        # logger.debug('[back_cavity:: t={} mean={} cov={}]]'.format(node.t,
-        #                                                            back_cavity.mean,
-        #                                                            back_cavity.cov))
+        logger.debug('[forward_cavity:: t={} mean={} cov={}]]'.format(node.t,
+                                                                      forward_cavity.mean,
+                                                                      forward_cavity.cov))
+        logger.debug('[back_cavity:: t={} mean={} cov={}]]'.format(node.t,
+                                                                   back_cavity.mean,
+                                                                   back_cavity.cov))
         if np.linalg.det(back_cavity.cov) < 0:
             return node.copy()
         result_node = node.copy()

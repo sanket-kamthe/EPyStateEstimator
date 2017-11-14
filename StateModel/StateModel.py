@@ -12,26 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import abc
+from abc import ABCMeta, abstractmethod
 
 
-class State(metaclass=abc.ABCMeta):
+class State(metaclass=ABCMeta):
 
-    params = {}
+    _params = {}
 
-    @abc.abstractmethod
+    @abstractmethod
     def __mul__(self, other):
         pass
 
-    @abc.abstractmethod
+    @abstractmethod
     def __truediv__(self, other):
         pass
 
-    @abc.abstractmethod
+    @abstractmethod
     def __pow__(self, power, modulo=None):
         pass
 
-    @abc.abstractmethod
+    @abstractmethod
     def nll(self, x):
         pass
 

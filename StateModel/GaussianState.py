@@ -179,6 +179,20 @@ class GaussianState(State):
     def copy(self):
         return GaussianState(self.mean, self.cov)
 
+    @classmethod
+    def as_factor(cls, dim):
+        mean = np.zeros((dim,), dtype=float)
+        diag_cov = np.inf * np.ones((dim,), dtype=float)
+        cov = np.diag(diag_cov)
+        return cls.__init__(mean_vec=mean,
+                         cov_matrix=cov)
+
+
 
 class GaussianFactor(GaussianState):
     def __init__(self, dim):
+        mean = np.zeros((dim,), dtype=float)
+        diag_cov = np.inf * np.ones((dim,), dtype=float)
+        cov = np.diag(diag_cov)
+        super().__init__(mean_vec=mean,
+                         cov_matrix=cov)

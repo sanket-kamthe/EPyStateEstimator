@@ -77,7 +77,7 @@ class UnscentedTransform(MomentMatching):
     def _sigma_points(self, mean, cov, *args):
 
         sqrt_n_plus_lambda = np.sqrt(self.n + self.param_lambda)
-        jittered_cov = cov + 1e-6*np.eye(self.n)
+        jittered_cov = cov + 1e-4*np.eye(self.n)
         L = np.linalg.cholesky(jittered_cov)
 
         scaledL = sqrt_n_plus_lambda * L
