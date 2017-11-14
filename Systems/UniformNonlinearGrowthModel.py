@@ -1,6 +1,6 @@
 
 from Systems import DynamicSystemModel, GaussianNoise
-from MomentMatching import GaussianState
+from StateModel import GaussianState
 import numpy as np
 
 

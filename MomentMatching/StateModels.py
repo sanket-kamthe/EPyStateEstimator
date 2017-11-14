@@ -194,3 +194,10 @@ class GaussianState:
 
     def copy(self):
         return GaussianState(self.mean, self.cov)
+
+    @classmethod
+    def from_params(cls, *params):
+        mean_vec, cov_matrix = params
+        return cls.__init__(mean_vec=mean_vec, cov_matrix=cov_matrix)
+
+

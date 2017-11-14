@@ -10,13 +10,14 @@ import seaborn as sns
 #     sys.path.append(module_path)
 from MomentMatching.newMomentMatch import MomentMatching, UnscentedTransform, TaylorTransform, MonteCarloTransform
 from MomentMatching.TimeSeriesModel import TimeSeriesModel, UniformNonlinearGrowthModel
-from MomentMatching.StateModels import GaussianState
-from MomentMatching.ExpectationPropagation import EPNodes, TopEP
+from StateModel import GaussianState
+from MomentMatching.ExpectationPropagation import TopEP
 from Filters.KalmanFilter import KalmanFilterSmoother, PowerKalmanFilterSmoother
 from Utils.Metrics import nll, rmse
 from Utils.Plot_Helper import plot_gaussian, plot_gaussian_node
 from Systems import BearingsOnlyTracking
 import logging
+from ExpectationPropagation import EPNodes
 
 logging.basicConfig(level='critical')
 
@@ -25,14 +26,14 @@ SEED = 200
 np.random.seed(seed=SEED)
 
 N = 10
-# system = UniformNonlinearGrowthModel()
-system = BearingsOnlyTracking()
+system = UniformNonlinearGrowthModel()
+# system = BearingsOnlyTracking()
 data = system.simulate(N)
 x_true, x_noisy, y_true, y_noisy = zip(*data)
 
 
 def _power_sweep(power, damping):
-    transform = UnscentedTransform(n=4, beta=0, alpha=1, kappa=2)
+    transform = UnscentedTransform(n=1, beta=0, alpha=1, kappa=2)
     meas_transform = UnscentedTransform(n=1, beta=0, alpha=1, kappa=2)
 
     Nodes = EPNodes(dimension_of_state=1, N=N)

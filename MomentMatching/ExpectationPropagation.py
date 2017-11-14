@@ -107,6 +107,7 @@ class TimeSeriesNodeForEP:
 
         self.t = t
         self.state_dimension=state_dim
+        self.factors = ['forward_update', 'measurement_update', 'backward_update']
         if marginal_init is None:
             self.marginal = self.marginal_init(state_dim)
         else:
@@ -271,6 +272,7 @@ class EPNodes(MutableSequence):
         # self._Node = list(itertools.repeat(init_node, N))
         self.mode_select = [1, 1, 1]
 
+
     def validate_input(self, value):
         pass
 
@@ -300,7 +302,7 @@ class EPNodes(MutableSequence):
         for node in self._Node:
             mode = itertools.compress(node.factors, mode_select)
             for factor in mode:
-                print(f'In Node{node.t} {factor} factor')
+                print(f'In Node{node.t} {factor}')
 
     def smoother_mode(self):
         self.filter_mode()
@@ -308,7 +310,7 @@ class EPNodes(MutableSequence):
         for node in reversed(self._Node):
             mode = itertools.compress(node.factors, mode_select)
             for factor in mode:
-                print(f'In Node{node.t} {factor} factor')
+                print(f'In Node{node.t} {factor}')
 
     def filter_iter(self):
         previous_node, next_node = itertools.tee(self._Node)
