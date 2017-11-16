@@ -44,7 +44,7 @@ class KalmanFilterSmoother:
         else:
             self.meas_transform = meas_moment_matching
         self.transition = system_model.transition
-        self.measurement = system_model.measurement
+        self.measurement = system_model.measure
         self.transition_noise = system_model.system_noise.cov
         self.measurement_noise = system_model.measurement_noise.cov
         self.init_state = system_model.init_state

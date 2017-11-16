@@ -14,7 +14,9 @@
 
 from abc import abstractmethod, ABCMeta
 from numpy.linalg import LinAlgError
-from MomentMatching import ProjectTransition, ProjectMeasurement
+from MomentMatching import MomentMatching
+from Systems import DynamicSystem, DynamicSystemModel
+import numpy as np
 
 
 class TimeSeriesEP(metaclass=ABCMeta):
@@ -31,31 +33,80 @@ class TimeSeriesEP(metaclass=ABCMeta):
     def back_update(self, node, next_node):
         pass
 
-    @abstractmethod
-    def project_transition(self, distribution):
-        pass
-
-    @abstractmethod
-    def project_measurement(self, distribution):
-        pass
+    # @abstractmethod
+    # def project_transition(self, distribution):
+    #     pass
+    #
+    # @abstractmethod
+    # def project_measurement(self, distribution):
+    #     pass
 
 
 class DynamicSystemEP(TimeSeriesEP):
 
-    def __init__(self, project_transition, project_measurement):
+    def __init__(self, system, ep_project, measurements):
 
-        assert isinstance(project_measurement, ProjectMeasurement)
-        assert isinstance(project_transition, ProjectTransition)
+        assert isinstance(ep_project, MomentMatching)
+        assert isinstance(system, DynamicSystemModel)
 
-        self._transition = project_transition
-        self._measurement = project_measurement
+        self._system = system
+        self.project = ep_project.project
+        self._measurements = measurements
 
-    def fwd_update(self, node, prev_node):
+    @property
+    def transition(self):
+        return self._system.transition
+
+    @property
+    def measure(self):
+        return self._system.measure
+
+    @property
+    def transition_noise(self):
+        return self._system.transition_noise
+
+    @property
+    def measurement_noise(self):
+        return self._system.measurement_noise
+
+    @property
+    def prior(self):
+        return self._system.init_state
+
+    @staticmethod
+    def enumerate_reversed(L):
+        """
+        Traverse in reverse, from one but last without making any copies
+
+        https://stackoverflow.com/a/529466
+
+        Parameters
+        ----------
+        L: input list
+
+        Returns
+        -------
+        generator with index, reversed_list
+        """
+
+        for index in reversed(range(len(L) - 1)):
+            yield index, L[index]
+
+    @property
+    def time_index(self):
+        n = len(self._measurements)
+        time_index = np.arange(start=0.0, stop=n, step=1) * self._system.dt
+        return time_index
+
+    def fwd_update(self, node, prev_node, t=None, u=None):
         forward_cavity = node.marginal / node.forward_factor
         back_cavity = prev_node.marginal / prev_node.back_factor
 
         try:
-            state = self.project_transition(distribution=back_cavity)
+            state = self.project(self.transition,
+                                 distribution=back_cavity,
+                                 noise=self.transition_noise,
+                                 t=t, u=u)
         except LinAlgError:
             return node.copy()
         else:
@@ -66,12 +117,16 @@ class DynamicSystemEP(TimeSeriesEP):
 
         return result_node
 
-    def meas_update(self, node, meas):
+    def meas_update(self, node, meas, t=None, u=None):
 
         measurement_cavity = node.marginal / node.measurement_factor
 
         try:
-            state = self.project_measurement(distribution=measurement_cavity)
+            state = self.project(self.measure,
+                                 distribution=measurement_cavity,
+                                 meas=meas,
+                                 noise=self.measurement_noise,
+                                 t=t, u=u)
         except LinAlgError:
             return node.copy()
         else:
@@ -82,13 +137,16 @@ class DynamicSystemEP(TimeSeriesEP):
 
         return result_node
 
-    def back_update(self, node, next_node):
+    def back_update(self, node, next_node, t=None, u=None):
         back_cavity = node.marginal / node.back_factor
         forward_cavity = next_node.marginal / next_node.forward_factor
 
         try:
-            state = self.project_transition(distribution=back_cavity,
-                                            state=next_node.marginal)
+            state = self.project(self.transition,
+                                 distribution=back_cavity,
+                                 state=next_node.marginal,
+                                 noise=self.transition_noise,
+                                 t=t, u=u)
         except LinAlgError:
             return node.copy()
         else:
@@ -99,8 +157,65 @@ class DynamicSystemEP(TimeSeriesEP):
 
         return result_node
 
-    def project_measurement(self, distribution):
-        return self._measurement.project(distribution)
+    def kalman_filter(self, nodes):
+        prior = self.prior
 
-    def project_transition(self, distribution, state):
-        return self._transition.project(distribution)
+        for i, (node, meas, t) in enumerate(zip(nodes,
+                                                self._measurements,
+                                                self.time_index)):
+
+            pred_state = self.fwd_update(node=node,
+                                         prev_node=prior,
+                                         t=t)
+
+            corr_state = self.meas_update(node=pred_state,
+                                          meas=meas,
+                                          t=t)
+            nodes[i] = corr_state.copy()
+            prior = corr_state.copy()
+
+    def kalman_smoother(self, nodes):
+        next_node = nodes[-1]
+        time_index = self.time_index
+        for i, node in self.enumerate_reversed(nodes):
+            smoothed_node = self.back_update(node=node[i],
+                                             next_node=next_node,
+                                             t=time_index[i])
+            next_node = smoothed_node.copy()
+
+    def ep_update(self, nodes, max_iter=10):
+
+        self.kalman_filter(nodes=nodes)
+        self.kalman_smoother(nodes=nodes)
+        max_iter -= 1
+
+        prior = self.prior
+        for i, (node, meas, t) in enumerate(zip(nodes,
+                                                self._measurements,
+                                                self.time_index)):
+
+            pred_state = self.fwd_update(node=node,
+                                         prev_node=prior,
+                                         t=t)
+
+            corr_state = self.meas_update(node=pred_state,
+                                          meas=meas,
+                                          t=t)
+
+            if (i+1) < len(nodes):
+                smthd_node = self.back_update(node=corr_state,
+                                              next_node=node[i+1],
+                                              t=t)
+
+
+
+
+
+
+
+
+
+
+
+
+

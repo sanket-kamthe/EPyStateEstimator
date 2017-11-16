@@ -38,10 +38,11 @@ class DynamicSystem(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def measurement(self, x, *args, **kwargs):
+    def measure(self, x, *args, **kwargs):
         pass
 
-
+    def system_noise(self):
+        pass
 
     def _simulate(self, N, x_zero, t_zero=0.0):
 
@@ -51,7 +52,7 @@ class DynamicSystem(metaclass=ABCMeta):
         for _ in range(N):
             x_true = self.transition(x=x, t=t)
             x_noisy = x_true + self.system_noise.sample()
-            y_true = self.measurement(x=x_noisy)
+            y_true = self.measure(x=x_noisy)
             y_noisy = y_true + self.measurement_noise.sample()
             yield x_true, x_noisy, y_true, y_noisy
             x = x_noisy
@@ -66,7 +67,7 @@ class DynamicSystem(metaclass=ABCMeta):
         return list(self._simulate(N=N, x_zero=x_zero, t_zero=t_zero))
 
 
-class DynamicSystemModel:
+class DynamicSystemModel(DynamicSystem):
     def __init__(self, system_dim,
                  measurement_dim, transition,
                  measurement, system_noise,
@@ -97,7 +98,7 @@ class DynamicSystemModel:
     def measurement_sample(self, x, *args, **kwargs):
         return self.measurement(x, *args, **kwargs) + self.measurement_noise.sample()
 
-    def measurement(self, x, *args, **kwargs):
+    def measure(self, x, *args, **kwargs):
         return self.measurement(x, *args, **kwargs)
 
     def _simulate(self, N, x_zero, t_zero=0.0):

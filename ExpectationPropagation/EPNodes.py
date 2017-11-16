@@ -1,5 +1,6 @@
 from StateModel import GaussianState, GaussianFactor
 from collections.abc import MutableSequence
+import itertools
 
 
 class TimeSeriesNodeForEP:
@@ -49,7 +50,6 @@ class EPNodes(MutableSequence):
         # self._Node = list(itertools.repeat(init_node, N))
         self.mode_select = [1, 1, 1]
 
-
     def validate_input(self, value):
         pass
 
@@ -81,6 +81,7 @@ class EPNodes(MutableSequence):
     def filter_mode(self):
         mode_select = [1, 1, 0]
         for node in self._Node:
+            yield node
             mode = itertools.compress(node.factors, mode_select)
             for factor in mode:
                 print(f'In Node{node.t} {factor}')

@@ -1,2 +1,2 @@
 from .StateModels import GaussianState
-from .MomentMatch import ProjectMeasurement, ProjectTransition
+from .MomentMatch import MomentMatching, KalmanFilterMapping
