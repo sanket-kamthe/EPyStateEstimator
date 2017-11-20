@@ -165,7 +165,7 @@ class PowerKalmanFilterSmoother(KalmanFilterSmoother):
         z_cov /= self.power
 
         # kalman_gain = np.matmul(xz_cross_cov, np.linalg.pinv(z_cov))
-        kalman_gain = (np.linalg.solve(z_cov, xz_cross_cov.T)).T
+        kalman_gain = np.linalg.solve(z_cov, xz_cross_cov.T).T
         mean = state.mean + kalman_gain @ (meas - z_mean)  # equation 15  in Marc's ACC paper
         cov = state.cov - kalman_gain @ xz_cross_cov.T
 
@@ -183,7 +183,7 @@ class PowerKalmanFilterSmoother(KalmanFilterSmoother):
         xx_cov /= self.power
 
         # J = xx_cross_cov @ np.linalg.pinv(xx_cov)
-        J = np.linalg.solve(xx_cov, xx_cross_cov)
+        J = np.linalg.solve(xx_cov, xx_cross_cov.T).T
         mean = state.mean + np.dot(J, (next_state.mean - xx_mean))
         cov = state.cov + J @ (next_state.cov - xx_cov) @ J.T
 

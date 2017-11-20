@@ -206,7 +206,7 @@ class GaussianState(State):
         mean = np.zeros((dim,), dtype=float)
         #diag_cov = (np.inf) * np.ones((dim,), dtype=float)
         #cov = np.diag(diag_cov)
-	cov = 99999 * np.eye(dim)
+        cov = 99999 * np.eye(dim)
         return cls(mean_vec=mean, cov_matrix=cov)
 
 

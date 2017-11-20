@@ -152,9 +152,9 @@ class KalmanFilterMapping(MomentMatching):
 
         xx_cov += noise_cov
 
-        smoother_gain = np.linalg.solve(xx_cross_cov.T, xx_cov.T) ###
-        mean = state.mean + np.dot(smoother_gain.T, (next_state.mean - xx_mean)) ###
-        cov = state.cov + smoother_gain.T @ (next_state.cov - xx_cov) @ smoother_gain ###
+        smoother_gain = np.linalg.solve(xx_cov, xx_cross_cov.T).T
+        mean = state.mean + np.dot(smoother_gain, (next_state.mean - xx_mean))
+        cov = state.cov + smoother_gain @ (next_state.cov - xx_cov) @ smoother_gain.T
 
         return GaussianState(mean, cov)
 
@@ -165,9 +165,9 @@ class KalmanFilterMapping(MomentMatching):
 
         z_cov += noise_cov
 
-        kalman_gain = np.linalg.solve(xz_cross_cov.T, z_cov.T) ###
-        mean = state.mean + np.dot(kalman_gain.T, (meas - z_mean))  # equation 15  in Marc's ACC paper ###
-        cov = state.cov - np.dot(kalman_gain.T, np.transpose(xz_cross_cov)) ###
+        kalman_gain = np.linalg.solve(z_cov, xz_cross_cov.T).T  ###
+        mean = state.mean + np.dot(kalman_gain, (meas - z_mean))  # equation 15  in Marc's ACC paper ###
+        cov = state.cov - np.dot(kalman_gain, np.transpose(xz_cross_cov)) ###
 
         return GaussianState(mean, cov)
 
@@ -219,9 +219,9 @@ class PowerKalmanFilterMapping(MomentMatching):
         xx_cov /= self.power
         xx_cov = (xx_cov.T + xx_cov) / 2
 
-        smoother_gain = np.linalg.solve(xx_cross_cov.T, xx_cov.T) ###
-        mean = state.mean + np.dot(smoother_gain.T, (next_state.mean - xx_mean)) ###
-        cov = state.cov + smoother_gain.T @ (next_state.cov - xx_cov) @ smoother_gain ###
+        smoother_gain = np.linalg.solve(xx_cov, xx_cross_cov.T).T
+        mean = state.mean + np.dot(smoother_gain, (next_state.mean - xx_mean))
+        cov = state.cov + smoother_gain @ (next_state.cov - xx_cov) @ smoother_gain.T
 
         cov = (cov + cov.T) /2
         return GaussianState(mean, cov)
@@ -236,9 +236,9 @@ class PowerKalmanFilterMapping(MomentMatching):
 
         xx_cov = (z_cov.T + z_cov) / 2
 
-        kalman_gain = np.linalg.solve(xz_cross_cov.T, z_cov.T) ###
-        mean = state.mean + np.dot(kalman_gain.T, (meas - z_mean))  # equation 15  in Marc's ACC paper ###
-        cov = state.cov - np.dot(kalman_gain.T, np.transpose(xz_cross_cov)) ###
+        kalman_gain = np.linalg.solve(z_cov, xz_cross_cov.T).T
+        mean = state.mean + np.dot(kalman_gain, (meas - z_mean))  # equation 15  in Marc's ACC paper ###
+        cov = state.cov - np.dot(kalman_gain, np.transpose(xz_cross_cov)) ###
 
         cov = (cov + cov.T) / 2
 

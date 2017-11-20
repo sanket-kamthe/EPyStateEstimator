@@ -12,9 +12,9 @@ SEED = 100
 np.random.seed(seed=SEED)
 
 N = 50
-state_dim = 1
-system = UniformNonlinearGrowthModel()
-# system = BearingsOnlyTracking()
+state_dim = 4
+# system = UniformNonlinearGrowthModel()
+system = BearingsOnlyTracking()
 data = system.simulate(N)
 x_true, x_noisy, y_true, y_noisy = zip(*data)
 
