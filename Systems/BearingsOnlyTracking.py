@@ -31,10 +31,14 @@ def h(x, t=None, u=None, sensor_list=None):
 
     """
     if sensor_list is None:
-        sensor_list = [Sensor(x=0, y=0)]
+        sensor_list = [Sensor(x=0, y=0), Sensor(x=0, y=1), Sensor(x=0, y=1)]
     measurements = []
     for sensor in sensor_list:
         theta = np.arctan((x[1] - sensor.y) / (x[0] - sensor.x))
+
+        if theta < 0:
+            theta += 2*np.pi
+
         measurements.append(theta)
 
     return np.array(measurements)

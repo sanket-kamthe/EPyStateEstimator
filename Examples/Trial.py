@@ -11,24 +11,26 @@ SEED = 100
 
 np.random.seed(seed=SEED)
 
-N = 10
-# system = UniformNonlinearGrowthModel()
-system = BearingsOnlyTracking()
+N = 50
+state_dim = 1
+system = UniformNonlinearGrowthModel()
+# system = BearingsOnlyTracking()
 data = system.simulate(N)
 x_true, x_noisy, y_true, y_noisy = zip(*data)
 
 
-power = 0.2
+power = 0.5
 damping = 0.6
 
-Nodes = EPNodes(dimension_of_state=4, N=N)
 
-transition_transform = UnscentedTransform(dim=4,
+Nodes = EPNodes(dimension_of_state=state_dim, N=N)
+
+transition_transform = UnscentedTransform(dim=state_dim,
                                           beta=0,
                                           alpha=1,
                                           kappa=2)
 
-meas_transform = UnscentedTransform(dim=4,
+meas_transform = UnscentedTransform(dim=state_dim,
                                     beta=0,
                                     alpha=1,
                                     kappa=2)
@@ -67,7 +69,7 @@ EP_obj.kalman_smoother(Nodes)
 EP3 = [node.marginal for node in Nodes]
 print('\n Filter {} NLL = {}, RMSE = {}'.format(1, nll(EP3, x_true), rmse(EP3, x_true)))
 
-EP_obj.ep_update(Nodes, max_iter=10)
+powerEP_obj.ep_update(Nodes, max_iter=10)
 
 EP3 = [node.marginal for node in Nodes]
 print('\n Filter {} NLL = {}, RMSE = {}'.format(1, nll(EP3, x_true), rmse(EP3, x_true)))

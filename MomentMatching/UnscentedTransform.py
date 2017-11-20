@@ -22,11 +22,11 @@ class UnscentedTransform(MappingTransform):
 
     """
 
-    def __init__(self, n=1, alpha=1, beta=0, kappa=1):
-        self.w_m, self.W = self._weights(n, alpha, beta, kappa)
-        self.param_lambda = alpha * alpha * (n + kappa) - n
+    def __init__(self, dim=1, alpha=1, beta=0, kappa=1):
+        self.w_m, self.W = self._weights(dim, alpha, beta, kappa)
+        self.param_lambda = alpha * alpha * (dim + kappa) - dim
         super().__init__(approximation_method='Unscented Transform',
-                         n=n,
+                         n=dim,
                          alpha=alpha,
                          beta=beta,
                          kappa=kappa)

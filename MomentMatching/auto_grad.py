@@ -6,8 +6,8 @@ from autograd.core import primitive
 from autograd.numpy.numpy_grads import unbroadcast
 from autograd.scipy.stats import multivariate_normal
 
-pdf    =  primitive(scipy.stats.multivariate_normal.pdf)
-logpdf =  primitive(multivariate_normal.logpdf)
+pdf     = primitive(scipy.stats.multivariate_normal.pdf)
+logpdf  = primitive(multivariate_normal.logpdf)
 entropy = primitive(scipy.stats.multivariate_normal.entropy)
 
 # With thanks to Eric Bresch.

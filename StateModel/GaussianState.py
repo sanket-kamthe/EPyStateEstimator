@@ -17,20 +17,21 @@ from numpy.linalg import LinAlgError
 from StateModel import State
 
 RTOL, ATOL = 1e-3, 1e-5
-INF = 1e20
+INF = 1000
 JIT = 1e-6
 
 def natural_to_moment(precision, shift):
-    dim = precision.shape[0]
-    cov = np.linalg.solve(precision, np.eye(N=dim))
-    # cov = np.linalg.pinv(precision)
+    # dim = precision.shape[0]
+    # cov = np.linalg.solve(precision, np.eye(N=dim))
+    cov = np.linalg.pinv(precision)
     mean = np.dot(cov, shift)
     return mean, cov
 
 
 def moment_to_natural(mean, cov):
-    dim = cov.shape[0]
-    precision = np.linalg.solve(cov, np.eye(N=dim))
+    # dim = cov.shape[0]
+    # precision = np.linalg.solve(cov, np.eye(N=dim))
+    precision = np.linalg.pinv(cov)
     shift = precision @ mean
     return precision, shift
 
@@ -158,7 +159,11 @@ class GaussianState(State):
         if np.isinf(self.cov[0,0]):
             return np.nan
 
-        return -multivariate_normal(mean=self.mean, cov=self.cov).logpdf(x)
+        diff = x - self.mean
+        logdet = np.log(2 * np.pi * np.linalg.det(self.cov))
+        NLL= 0.5 * (logdet + diff.T @ self.precision @ diff)
+        return NLL
+        # return -multivariate_normal(mean=self.mean, cov=self.cov).logpdf(x, cond=1e-6)
 
     def rmse(self, x):
         """
@@ -166,7 +171,7 @@ class GaussianState(State):
         :param x:
         :return:
         """
-        return np.square (np.linalg.norm(self.mean - x))
+        return np.square(np.linalg.norm(self.mean - x))
 
     def sample(self, number_of_samples):
 
@@ -192,14 +197,14 @@ class GaussianState(State):
     @classmethod
     def as_factor(cls, dim):
         mean = np.zeros((dim,), dtype=float)
-        diag_cov = (INF* 10) * np.ones((dim,), dtype=float)
+        diag_cov = (np.inf) * np.ones((dim,), dtype=float)
         cov = np.diag(diag_cov)
         return cls(mean_vec=mean, cov_matrix=cov)
 
     @classmethod
     def as_marginal(cls, dim):
         mean = np.zeros((dim,), dtype=float)
-        diag_cov =  (INF ) * np.ones((dim,), dtype=float)
+        diag_cov = (np.inf) * np.ones((dim,), dtype=float)
         cov = np.diag(diag_cov)
         return cls(mean_vec=mean, cov_matrix=cov)
 
