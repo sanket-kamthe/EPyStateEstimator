@@ -17,17 +17,21 @@ from numpy.linalg import LinAlgError
 from StateModel import State
 
 RTOL, ATOL = 1e-3, 1e-5
-
+INF = 1e20
+JIT = 1e-6
 
 def natural_to_moment(precision, shift):
-    cov = np.linalg.pinv(precision)
+    dim = precision.shape[0]
+    cov = np.linalg.solve(precision, np.eye(N=dim))
+    # cov = np.linalg.pinv(precision)
     mean = np.dot(cov, shift)
     return mean, cov
 
 
 def moment_to_natural(mean, cov):
-    precision = np.linalg.pinv(cov)
-    shift = np.dot(precision, mean)
+    dim = cov.shape[0]
+    precision = np.linalg.solve(cov, np.eye(N=dim))
+    shift = precision @ mean
     return precision, shift
 
 
@@ -92,6 +96,7 @@ class GaussianState(State):
     def precision(self):
         if self._precision is None:
             try:
+                self.cov += np.eye(self.dim) * JIT
                 self._precision = np.linalg.solve(self.cov, np.eye(self.dim))
             except LinAlgError:
                 print(f'bad covariance{self.cov}')
@@ -150,7 +155,7 @@ class GaussianState(State):
         :return: -ve of logpdf (x, mean=self.mean, cov=self.cov)
         """
         from scipy.stats import multivariate_normal
-        if np.isinf(self.cov):
+        if np.isinf(self.cov[0,0]):
             return np.nan
 
         return -multivariate_normal(mean=self.mean, cov=self.cov).logpdf(x)
@@ -161,7 +166,7 @@ class GaussianState(State):
         :param x:
         :return:
         """
-        return np.square(self.mean - x)
+        return np.square (np.linalg.norm(self.mean - x))
 
     def sample(self, number_of_samples):
 
@@ -187,10 +192,16 @@ class GaussianState(State):
     @classmethod
     def as_factor(cls, dim):
         mean = np.zeros((dim,), dtype=float)
-        diag_cov = np.inf * np.ones((dim,), dtype=float)
+        diag_cov = (INF* 10) * np.ones((dim,), dtype=float)
         cov = np.diag(diag_cov)
         return cls(mean_vec=mean, cov_matrix=cov)
 
+    @classmethod
+    def as_marginal(cls, dim):
+        mean = np.zeros((dim,), dtype=float)
+        diag_cov =  (INF ) * np.ones((dim,), dtype=float)
+        cov = np.diag(diag_cov)
+        return cls(mean_vec=mean, cov_matrix=cov)
 
 
 class GaussianFactor(GaussianState):

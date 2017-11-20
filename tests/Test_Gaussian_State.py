@@ -128,7 +128,7 @@ class TestGaussianStatePower(unittest.TestCase):
         assert (self.state2 == self.state1)
 
     def test_power_integer(self):
-        self.pow = random.randint(2, 7)
+        self.pow = random.randint(3, 7)
         self.state2 = self.state1
         for _ in range(self.pow-1):
             self.state2 = self.state2 * self.state1

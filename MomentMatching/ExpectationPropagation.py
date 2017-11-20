@@ -330,7 +330,8 @@ class TopEP:
         self.R = self.system_model.measurement_noise.cov
         self.kf = PowerKalmanFilterSmoother(moment_matching=moment_matching,
                                             system_model=system_model,
-                                            power=power)
+                                            power=power,
+                                            meas_moment_matching=meas_transform)
 
         self.power = power
         if damping is None:
@@ -500,7 +501,7 @@ class TopEP:
         #                                             match_with=forward_cavity,
         #                                             fargs=fargs)
 
-        if (state.cov>0) and (state.cov<100):
+        if (np.linalg.det(state.cov)>0):
             # print(state.cov)
 
             result_node.marginal = state.copy()

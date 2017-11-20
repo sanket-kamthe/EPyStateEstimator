@@ -9,7 +9,7 @@ class TimeSeriesNodeForEP:
         self.t = t
         self.state_dimension=state_dim
         if marginal_init is None:
-            self.marginal = GaussianState.as_factor(dim=state_dim)
+            self.marginal = GaussianState.as_marginal(dim=state_dim)
             assert isinstance(self.marginal, GaussianState)
         else:
             self.marginal = marginal_init

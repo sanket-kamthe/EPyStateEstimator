@@ -3,7 +3,7 @@ from Systems import DynamicSystemModel, GaussianNoise
 from StateModel import GaussianState
 from collections import namedtuple
 from functools import partial
-import numpy as np
+import autograd.numpy as np
 
 
 
@@ -16,13 +16,13 @@ def f(x, t=None, u=None, delta_t=0.1):
     x_t+1 = F_t * x_t + G_t*w_t
     x_t = [x_t, y_t, \dot x_t, \dot y_t]
     """
-    f_t = np.array([[1,  0,  delta_t,  0],
-                  [0,  1., 0,        delta_t],
-                  [0,  0,  1,        0.],
-                  [0,  0,  0,         1]
+    f_t = np.array([[1,  0,  delta_t,       0],
+                  [0,    1,        0, delta_t],
+                  [0,    0,        1,       0],
+                  [0,    0,        0,       1]
                   ])
 
-    x_out = np.dot(f_t, x)
+    x_out = f_t @ x
     return x_out
 
 
@@ -100,6 +100,7 @@ if __name__ == '__main__':
 
     # plt.plot(x_true[:, 0])
     # plt.scatter(list(range(N)), x_noisy[:, 0])
-    plt.scatter(list(range(N)), y_noisy)
+    plt.scatter(x_noisy[:, 0], x_noisy[:, 1])
+    plt.plot(x_true[:, 0], x_true[:, 1])
     plt.show()
 

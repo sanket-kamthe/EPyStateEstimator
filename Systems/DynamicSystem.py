@@ -87,16 +87,18 @@ class DynamicSystemModel(DynamicSystem):
         self.transition = transition
         self.measurement = measurement
         self.system_noise = system_noise
-        self.measurement_noise = measurement_noise
+        self._measurement_noise = measurement_noise
 
-    def transition_noise(self, x,  t=None, u=None, *args, **kwargs):
-        return self.transition(x=x, u=u, t=t, *args, **kwargs) + self.system_noise.sample()
+    @property
+    def transition_noise(self):
+        return  self.system_noise.cov
 
     def transition(self, x, u=None, t=None, *args, **kwargs):
         return self.transition(x, u=u, t=t, *args, **kwargs)
 
-    def measurement_sample(self, x, *args, **kwargs):
-        return self.measurement(x, *args, **kwargs) + self.measurement_noise.sample()
+    @property
+    def measurement_noise(self):
+        return self._measurement_noise.cov
 
     def measure(self, x, *args, **kwargs):
         return self.measurement(x, *args, **kwargs)
@@ -110,7 +112,7 @@ class DynamicSystemModel(DynamicSystem):
             x_true = self.transition(x=x, t=t)
             x_noisy = x_true + self.system_noise.sample()
             y_true = self.measurement(x=x_noisy)
-            y_noisy = y_true + self.measurement_noise.sample()
+            y_noisy = y_true + self._measurement_noise.sample()
             yield x_true, x_noisy, y_true, y_noisy
             x = x_noisy
             t = t + self.dt

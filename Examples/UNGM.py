@@ -11,7 +11,8 @@ import seaborn as sns
 from MomentMatching.newMomentMatch import MomentMatching, UnscentedTransform, TaylorTransform, MonteCarloTransform
 from MomentMatching.TimeSeriesModel import TimeSeriesModel, UniformNonlinearGrowthModel
 from MomentMatching.StateModels import GaussianState
-from MomentMatching.ExpectationPropagation import TopEP, EPNodes
+from ExpectationPropagation import EPNodes
+from MomentMatching.ExpectationPropagation import TopEP
 from Filters.KalmanFilter import KalmanFilterSmoother, PowerKalmanFilterSmoother
 from Utils.Metrics import nll, rmse
 from Utils.Plot_Helper import plot_gaussian, plot_gaussian_node
@@ -25,55 +26,21 @@ SEED = 100
 
 np.random.seed(seed=SEED)
 
-N = 10
-system = UniformNonlinearGrowthModel()
-# system = BearingsOnlyTracking()
+N = 100
+# system = UniformNonlinearGrowthModel()
+system = BearingsOnlyTracking()
 data = system.simulate(N)
 x_true, x_noisy, y_true, y_noisy = zip(*data)
 
 
-def _power_sweep(power, damping):
-    transform = UnscentedTransform(n=1, beta=0, alpha=1, kappa=2)
-    meas_transform = UnscentedTransform(n=1, beta=0, alpha=1, kappa=2)
+power = 1
+damping = 1
 
-    Nodes = EPNodes(dimension_of_state=1, N=N)
-    EP = TopEP(system_model=system,
-               moment_matching=transform,
-               meas_transform=meas_transform,
-               power=power,
-               damping=damping)
-
-    EPNodesList = EP.forward_backward_iteration(30, Nodes, y_noisy, list(range(0, N)), x_true)
-
-    Node = [node.marginal for node in EPNodesList[-1]]
-    return nll(Node, x_true), rmse(Node, x_true)
-
-
-power_range = np.linspace(0.1, 1.0, num=3)
-damp_range = np.linspace(0.1, 1.0, num=3)
-
-results = []
-
-for power, damping in itertools.product(power_range, damp_range):
-
-    ans = _power_sweep(power, damping)
-    results.append(ans)
-
-power_data = _power_sweep(0.59, 0.6)
-NLL, RMSE = power_data
-
-print(NLL, RMSE)
-
-
-
-
-power = 0.59
-damping = 0.6
-
-transform = UnscentedTransform(n=1,  beta=0,  alpha=1, kappa=2)
-meas_transform = UnscentedTransform(n=1, beta=0,  alpha=1, kappa=2)
+transform = UnscentedTransform(n=4,  beta=0,  alpha=1, kappa=2)
+meas_transform = UnscentedTransform(n=4, beta=0,  alpha=1, kappa=2)
 # transform = TaylorTransform()
-Nodes = EPNodes(dimension_of_state=1, N=N)
+# meas_transform = TaylorTransform()
+Nodes = EPNodes(dimension_of_state=4, N=N)
 EP = TopEP(system_model=system,
            moment_matching=transform,
            meas_transform=meas_transform,
@@ -82,7 +49,8 @@ EP = TopEP(system_model=system,
 
 kf = PowerKalmanFilterSmoother(moment_matching=transform,
                                system_model=system,
-                               power=power)
+                               power=power,
+                               meas_moment_matching=meas_transform)
 
 EPFilt = EP.kalman_filter(Nodes, y_noisy, list(range(0, N)))
 
@@ -90,17 +58,17 @@ x_filtered = list(EPFilt)
 EP3 = [node.marginal for node in x_filtered]
 print('\n Filter {} NLL = {}, RMSE = {}'.format(1, nll(EP3, x_true), rmse(EP3, x_true)))
 
-x_filt_mean = [x.marginal.mean for x in x_filtered]
-
-result = kf.kalman_filter(y_noisy, prior_state=system.init_state)
-
-smoothed = kf.kalman_smoother(result)
+# x_filt_mean = [x.marginal.mean for x in x_filtered]
+#
+# result = kf.kalman_filter(y_noisy, prior_state=system.init_state)
+#
+# smoothed = kf.kalman_smoother(result)
 
 EPSmthd = EP.kalman_smoother(x_filtered)
 
 EP3 = [node.marginal for node in EPSmthd]
 
-print('\n Smoother {} NLL = {}, RMSE = {}'.format(1, nll(EP3, x_true), rmse(EP3, x_true)))
+# print('\n Smoother {} NLL = {}, RMSE = {}'.format(1, nll(EP3, x_true), rmse(EP3, x_true)))
 EP2Filt = list(EP.kalman_filter(EPSmthd, y_noisy, list(range(0, N))))
 EP2Smthd = EP.kalman_smoother(EP2Filt)
 

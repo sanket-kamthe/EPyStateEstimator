@@ -144,7 +144,7 @@ class DynamicSystemEP(TimeSeriesEP):
         try:
             state = self.project(self.transition,
                                  distribution=back_cavity,
-                                 state=next_node.marginal,
+                                 meas=next_node.marginal,
                                  noise=self.transition_noise,
                                  t=t, u=u)
         except LinAlgError:
@@ -158,7 +158,8 @@ class DynamicSystemEP(TimeSeriesEP):
         return result_node
 
     def kalman_filter(self, nodes):
-        prior = self.prior
+        prior = nodes[0].copy()
+        prior.marginal = self.prior
 
         for i, (node, meas, t) in enumerate(zip(nodes,
                                                 self._measurements,
@@ -174,14 +175,19 @@ class DynamicSystemEP(TimeSeriesEP):
             nodes[i] = corr_state.copy()
             prior = corr_state.copy()
 
+        return nodes
+
     def kalman_smoother(self, nodes):
         next_node = nodes[-1]
         time_index = self.time_index
         for i, node in self.enumerate_reversed(nodes):
-            smoothed_node = self.back_update(node=node[i],
+            smoothed_node = self.back_update(node=nodes[i],
                                              next_node=next_node,
                                              t=time_index[i])
             next_node = smoothed_node.copy()
+            nodes[i] = next_node
+
+        return nodes
 
     def ep_update(self, nodes, max_iter=10):
 
@@ -189,7 +195,9 @@ class DynamicSystemEP(TimeSeriesEP):
         self.kalman_smoother(nodes=nodes)
         max_iter -= 1
 
-        prior = self.prior
+        prior = nodes[0].copy()
+        prior.marginal = self.prior
+
         for i, (node, meas, t) in enumerate(zip(nodes,
                                                 self._measurements,
                                                 self.time_index)):
@@ -204,7 +212,7 @@ class DynamicSystemEP(TimeSeriesEP):
 
             if (i+1) < len(nodes):
                 smthd_node = self.back_update(node=corr_state,
-                                              next_node=node[i+1],
+                                              next_node=nodes[i+1],
                                               t=t)
 
 

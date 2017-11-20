@@ -112,11 +112,16 @@ class MappingTransform:
         return self._transform(func=func, state=state, t=t, u=u, *args, **kwargs)
 
 
-class KalmanFilterMapping(MomentMatching, MappingTransform):
-    def __init__(self,approximation_method=None, **kwargs):
+class KalmanFilterMapping(MomentMatching):
 
-        self.transform = super().__init__(approximation_method=approximation_method,
-                                          **kwargs)
+    def __init__(self, transition, measure=None):
+
+        self.transition = transition
+        if measure is None:
+            self.measure = transition
+        else:
+            self.measure = measure
+        super().__init__()
     
     def project(self, func, distribution,  meas=None, noise=None, t=None, u=None, *args, **kwargs):
         if meas is None:
@@ -130,41 +135,116 @@ class KalmanFilterMapping(MomentMatching, MappingTransform):
     #     return self._f(x, t=t, u=u, *args, **kwargs)
     
     def _predict(self, func, distribution, noise_cov, t=None, u=None, *args, **kwargs):
-        xx_mean, xx_cov, _ = self.transform(func,
-                                            distribution,
-                                            t=t, u=u,
-                                            *args, **kwargs)
+        xx_mean, xx_cov, _ = self.transition(func,
+                                             distribution,
+                                             t=t, u=u,
+                                             *args, **kwargs)
         xx_cov += noise_cov
         return GaussianState(xx_mean, xx_cov)
     
     def _smooth(self, func, state, next_state, noise_cov, t=None, u=None, *args, **kwargs):
 
         xx_mean, xx_cov, xx_cross_cov = \
-            self.transform(func,
-                           state,
-                           t=t, u=u,
-                           *args, **kwargs)
+            self.transition(func,
+                            state,
+                            t=t, u=u,
+                            *args, **kwargs)
 
         xx_cov += noise_cov
 
-        smoother_gain = np.linalg.solve(xx_cov, xx_cross_cov)
-        mean = state.mean + np.dot(smoother_gain, (next_state.mean - xx_mean))
-        cov = state.cov + smoother_gain @ (next_state.cov - xx_cov) @ smoother_gain.T
+        smoother_gain = np.linalg.solve(xx_cross_cov.T, xx_cov.T)
+        mean = state.mean + np.dot(smoother_gain.T, (next_state.mean - xx_mean))
+        cov = state.cov + smoother_gain.T @ (next_state.cov - xx_cov) @ smoother_gain
 
         return GaussianState(mean, cov)
 
     def _correct(self, func, state, meas, noise_cov, t=None, u=None, *args, **kwargs):
 
         z_mean, z_cov, xz_cross_cov = \
-            self.transform(func, state, t=t, u=u, *args, **kwargs)
+            self.measure(func, state, t=t, u=u, *args, **kwargs)
 
         z_cov += noise_cov
 
-        kalman_gain = np.linalg.solve(z_cov, xz_cross_cov)
-        mean = state.mean + np.dot(kalman_gain, (meas - z_mean))  # equation 15  in Marc's ACC paper
-        cov = state.cov - np.dot(kalman_gain, np.transpose(xz_cross_cov))
+        kalman_gain = np.linalg.solve(xz_cross_cov.T, z_cov.T)
+        mean = state.mean + np.dot(kalman_gain.T, (meas - z_mean))  # equation 15  in Marc's ACC paper
+        cov = state.cov - np.dot(kalman_gain.T, np.transpose(xz_cross_cov))
 
         return GaussianState(mean, cov)
+
+class PowerKalmanFilterMapping(MomentMatching):
+
+    def __init__(self, transition, measure=None, power=1):
+
+        self.power = power
+
+        self.transition = transition
+        if measure is None:
+            self.measure = transition
+        else:
+            self.measure = measure
+        super().__init__()
+
+    def project(self, func, distribution, meas=None, noise=None, t=None, u=None, *args, **kwargs):
+        if meas is None:
+            return self._predict(func, distribution, noise, t=t, u=u, *args, **kwargs)
+        elif isinstance(meas, GaussianState):
+            return self._smooth(func, distribution, meas, noise, t=t, u=u, *args, **kwargs)
+        else:
+            return self._correct(func, distribution, meas, noise, t=t, u=u, *args, **kwargs)
+
+    #
+    # def g(self, x, t=None, u=None, *args, **kwargs):
+    #     return self._f(x, t=t, u=u, *args, **kwargs)
+
+    def _predict(self, func, distribution, noise_cov, t=None, u=None, *args, **kwargs):
+        xx_mean, xx_cov, _ = self.transition(func,
+                                             distribution,
+                                             t=t, u=u,
+                                             *args, **kwargs)
+        xx_cov += noise_cov
+        xx_cov /= self.power
+
+        xx_cov = (xx_cov.T + xx_cov)/2
+        return GaussianState(xx_mean, xx_cov)
+
+    def _smooth(self, func, state, next_state, noise_cov, t=None, u=None, *args, **kwargs):
+
+        xx_mean, xx_cov, xx_cross_cov = \
+            self.transition(func,
+                            state,
+                            t=t, u=u,
+                            *args, **kwargs)
+
+        xx_cov += noise_cov
+        xx_cov /= self.power
+        xx_cov = (xx_cov.T + xx_cov) / 2
+
+        smoother_gain = np.linalg.solve(xx_cross_cov.T, xx_cov.T)
+        mean = state.mean + np.dot(smoother_gain.T, (next_state.mean - xx_mean))
+        cov = state.cov + smoother_gain.T @ (next_state.cov - xx_cov) @ smoother_gain
+
+        cov = (cov + cov.T) /2
+        return GaussianState(mean, cov)
+
+    def _correct(self, func, state, meas, noise_cov, t=None, u=None, *args, **kwargs):
+
+        z_mean, z_cov, xz_cross_cov = \
+            self.measure(func, state, t=t, u=u, *args, **kwargs)
+
+        z_cov += noise_cov
+        z_cov /= self.power
+
+        xx_cov = (z_cov.T + z_cov) / 2
+
+        kalman_gain = np.linalg.solve(xz_cross_cov.T, z_cov.T)
+        mean = state.mean + np.dot(kalman_gain.T, (meas - z_mean))  # equation 15  in Marc's ACC paper
+        cov = state.cov - np.dot(kalman_gain.T, np.transpose(xz_cross_cov))
+
+        cov = (cov + cov.T) / 2
+
+        return GaussianState(mean, cov)
+
+
     # def sys_noise(self):
     #     return self._noise.cov
     #
