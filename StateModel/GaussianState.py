@@ -160,7 +160,7 @@ class GaussianState(State):
             return np.nan
 
         diff = x - self.mean
-        logdet = np.log(2 * np.pi * np.linalg.det(self.cov))
+        logdet = np.log(2 * np.pi) + np.log(np.linalg.det(self.cov))
         NLL= 0.5 * (logdet + diff.T @ self.precision @ diff)
         return NLL
         # return -multivariate_normal(mean=self.mean, cov=self.cov).logpdf(x, cond=1e-6)
@@ -204,8 +204,9 @@ class GaussianState(State):
     @classmethod
     def as_marginal(cls, dim):
         mean = np.zeros((dim,), dtype=float)
-        diag_cov = (np.inf) * np.ones((dim,), dtype=float)
-        cov = np.diag(diag_cov)
+        #diag_cov = (np.inf) * np.ones((dim,), dtype=float)
+        #cov = np.diag(diag_cov)
+	cov = 99999 * np.eye(dim)
         return cls(mean_vec=mean, cov_matrix=cov)
 
 

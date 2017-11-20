@@ -69,7 +69,7 @@ class KalmanFilterSmoother:
         z_cov += self.measurement_noise
 
         # kalman_gain = np.matmul(xz_cross_cov, np.linalg.pinv(z_cov))
-        kalman_gain = np.linalg.solve(z_cov, xz_cross_cov)
+        kalman_gain = np.linalg.solve(z_cov, xz_cross_cov.T).T
         mean = state.mean + np.dot(kalman_gain, (meas - z_mean)) # equation 15  in Marc's ACC paper
         cov = state.cov - np.dot(kalman_gain, np.transpose(xz_cross_cov))
 
@@ -86,7 +86,7 @@ class KalmanFilterSmoother:
         xx_cov += self.transition_noise
 
         # J = xx_cross_cov @ np.linalg.pinv(xx_cov)
-        J = np.linalg.solve(xx_cov, xx_cross_cov)
+        J = np.linalg.solve(xx_cov, xx_cross_cov.T).T
         mean = state.mean + np.dot(J, (next_state.mean - xx_mean))
         cov = state.cov + J @ (next_state.cov - xx_cov) @ J.T
 
