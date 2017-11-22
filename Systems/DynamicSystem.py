@@ -91,14 +91,14 @@ class DynamicSystemModel(DynamicSystem):
 
     @property
     def transition_noise(self):
-        return  self.system_noise.cov
+        return  self.system_noise
 
     def transition(self, x, u=None, t=None, *args, **kwargs):
         return self.transition(x, u=u, t=t, *args, **kwargs)
 
     @property
     def measurement_noise(self):
-        return self._measurement_noise.cov
+        return self._measurement_noise
 
     def measure(self, x, *args, **kwargs):
         return self.measurement(x, *args, **kwargs)

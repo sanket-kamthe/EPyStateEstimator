@@ -12,15 +12,15 @@ SEED = 100
 np.random.seed(seed=SEED)
 
 N = 50
-state_dim = 4
-# system = UniformNonlinearGrowthModel()
-system = BearingsOnlyTracking()
+state_dim = 1
+system = UniformNonlinearGrowthModel()
+# system = BearingsOnlyTracking()
 data = system.simulate(N)
 x_true, x_noisy, y_true, y_noisy = zip(*data)
 
 
 power = 0.5
-damping = 0.6
+damping = 0.8
 
 
 Nodes = EPNodes(dimension_of_state=state_dim, N=N)
@@ -69,6 +69,8 @@ EP_obj.kalman_smoother(Nodes)
 EP3 = [node.marginal for node in Nodes]
 print('\n Filter {} NLL = {}, RMSE = {}'.format(1, nll(EP3, x_true), rmse(EP3, x_true)))
 
+
+Nodes = EPNodes(dimension_of_state=state_dim, N=N)
 powerEP_obj.ep_update(Nodes, max_iter=10)
 
 EP3 = [node.marginal for node in Nodes]

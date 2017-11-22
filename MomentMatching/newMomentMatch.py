@@ -22,6 +22,7 @@ from functools import partial
 from MomentMatching.auto_grad import logpdf
 from collections import namedtuple
 import logging
+from numpy.linalg import LinAlgError
 FORMAT = "[ %(funcName)10s() ] %(message)s"
 
 # from scipy.stats import multivariate_normal
@@ -77,8 +78,13 @@ class UnscentedTransform(MomentMatching):
     def _sigma_points(self, mean, cov, *args):
 
         sqrt_n_plus_lambda = np.sqrt(self.n + self.param_lambda)
-        jittered_cov = cov + 1e-4*np.eye(self.n)
-        L = np.linalg.cholesky(jittered_cov)
+        jittered_cov = cov + 1e-6*np.eye(self.n)
+
+        try:
+            L = np.linalg.cholesky(jittered_cov)
+        except LinAlgError:
+            print(f'bad covariance{cov}')
+
 
         scaledL = sqrt_n_plus_lambda * L
         mean_plus_L = mean + scaledL
@@ -102,7 +108,7 @@ class UnscentedTransform(MomentMatching):
         w_m = w_m + 1 / (2 * (n + param_lambda))
         w_c = w_c + w_m
         w_m[0] = param_lambda / (n + param_lambda)
-        w_c[0] = w_m[0] + (1 - alpha * alpha + beta)
+        w_c[0] = w_m[0] + (1 - (alpha ** 2) + beta)
 
         w_left = np.eye(2 * n +1) - np.array(w_m)
         W = w_left.T @ np.diag(w_c) @ w_left
@@ -117,12 +123,14 @@ class UnscentedTransform(MomentMatching):
         Xi = []
         for x in sigma_pts:
             x = np.asanyarray(x)
-            Xi.append(frozen_func(x))
+            result = np.asanyarray(frozen_func(x))
+            Xi.append(result)
 
         Y = np.asarray(Xi)
 
         mean = self.w_m @ Y
         cov = Y.T @ self.W @ Y
+        cov = (cov + cov.T)/2
         cross_cov = np.asarray(sigma_pts).T @ self.W @ Y
 
         return mean, cov, cross_cov
@@ -130,6 +138,8 @@ class UnscentedTransform(MomentMatching):
 
 class MonteCarloTransform(MomentMatching):
     def __init__(self, dimension_of_state=1, number_of_samples=None):
+        if number_of_samples is None:
+            number_of_samples = 1000
         super().__init__(approximation_method='Monte Carlo Sampling',
                          dimension_of_state=dimension_of_state,
                          number_of_samples=number_of_samples)
@@ -137,18 +147,37 @@ class MonteCarloTransform(MomentMatching):
     def _transform(self, func, state, t=None, u=None, *args, **kwargs):
         # (self, nonlinear_func, distribution, fargs=None):
 
-        assert isinstance(state, GaussianState)
+        # assert isinstance(state, GaussianState)
         frozen_func = partial(func, t=t, u=u, *args, **kwargs)
 
         samples = state.sample(self.number_of_samples)
 
-        propagated_samples = frozen_func(samples)
+        Xi = []
+        for x in samples:
+            x = np.asanyarray(x)
+            result = np.asanyarray(frozen_func(x))
+            Xi.append(result)
+
+        # Y = np.asarray(Xi)
+
+        propagated_samples = np.asarray(Xi)
         mean = np.mean(propagated_samples, axis=0)
-        cov = np.cov(propagated_samples.T)
-        cross_cov = np.cov(samples.T, propagated_samples.T)
+        cov, cross_cov = \
+            self.sample_covariance(propagated_samples.T,
+                                   samples.T)
+        # cov = np.cov(propagated_samples.T, bias=True)
+        # cross_cov = np.cov(samples.T, propagated_samples.T)
 
         return mean, cov, cross_cov
 
+    @staticmethod
+    def sample_covariance(y_samples, x_samples):
+        x_dim = x_samples.shape[0]
+        y_dim = y_samples.shape[0]
+        total_cov = np.cov(x_samples, y_samples, bias=True)
+        cov = total_cov[0:y_dim, 0:y_dim]
+        cross_cov = total_cov[0:x_dim, x_dim:]
+        return cov, cross_cov
 
 class TaylorTransform(MomentMatching):
     def __init__(self, dimension_of_state=1, eps=EPS):
@@ -175,7 +204,7 @@ class TaylorTransform(MomentMatching):
         # assert isinstance(state, GaussianState)
         frozen_func = partial(func, t=t, u=u, *args, **kwargs)
         J_t = self.numerical_jacobian(frozen_func, state.mean)
-        # J_t = jacobian(frozen_nonlinear_func)(distribution.mean)
+        # J_t = jacobian(frozen_func)(state.mean)
         mean = frozen_func(state.mean)
         cov = J_t @ state.cov @ J_t.T
         cross_cov = state.cov @ J_t.T

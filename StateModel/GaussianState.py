@@ -18,7 +18,7 @@ from StateModel import State
 
 RTOL, ATOL = 1e-3, 1e-5
 INF = 1000
-JIT = 1e-6
+JIT = 1e-12
 
 def natural_to_moment(precision, shift):
     # dim = precision.shape[0]
@@ -117,6 +117,7 @@ class GaussianState(State):
         precision = self.precision + other.precision
         shift = self.shift + other.shift
         mean, cov = natural_to_moment(precision, shift)
+        cov = (cov.T + cov) / 2
         return GaussianState(mean, cov)
 
     def __truediv__(self, other):
@@ -131,14 +132,19 @@ class GaussianState(State):
 
         shift = self.shift - other.shift
         mean, cov = natural_to_moment(precision, shift)
+        cov = (cov.T + cov) / 2
         return GaussianState(mean, cov)
 
     def __pow__(self, power, modulo=None):
+        if (self.cov[0, 0]) > INF:
+            return GaussianState(self.mean, self.cov)
 
         # precision = power * self.precision
         # shift = power * self.shift
         # mean, cov = natural_to_moment(precision, shift)
-        return GaussianState(self.mean, self.cov/power)
+        cov = self.cov / power
+        cov = (cov.T + cov) / 2
+        return GaussianState(self.mean, cov)
 
     def __eq__(self, other):
         # Make sure that 'other' is also a GaussianState class

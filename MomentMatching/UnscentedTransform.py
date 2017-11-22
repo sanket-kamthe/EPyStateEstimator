@@ -80,3 +80,6 @@ class UnscentedTransform(MappingTransform):
         cross_cov = np.asarray(sigma_pts).T @ self.W @ Y
 
         return mean, cov, cross_cov
+
+    def __call__(self, func, state, t=None, u=None, *args, **kwargs):
+        return self._transform(func=func, state=state, t=t, u=u, *args, **kwargs)

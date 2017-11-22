@@ -8,7 +8,8 @@ import autograd.numpy as np
 
 
 Sensor = namedtuple('Sensor', ['x', 'y'])
-
+Default_Sensor_List = [Sensor(x=-1, y=-1),
+                       Sensor(x=-2, y=-2)]
 
 def f(x, t=None, u=None, delta_t=0.1):
     """
@@ -31,7 +32,7 @@ def h(x, t=None, u=None, sensor_list=None):
 
     """
     if sensor_list is None:
-        sensor_list = [Sensor(x=0, y=0), Sensor(x=0, y=1), Sensor(x=0, y=1)]
+        sensor_list = Default_Sensor_List
     measurements = []
     for sensor in sensor_list:
         theta = np.arctan((x[1] - sensor.y) / (x[0] - sensor.x))

@@ -35,7 +35,9 @@ RTOL, ATOL = 1e-3, 1e-5
 
 
 def natural_to_moment(precision, shift):
-    cov = np.linalg.pinv(precision)
+    dim = precision.shape[0]
+    cov = np.linalg.solve(precision, np.eye(N=dim))
+    # cov = np.linalg.pinv(precision)
     mean = np.dot(cov, shift)
     return mean, cov
 
@@ -122,6 +124,7 @@ class GaussianState:
         precision = self.precision + other.precision
         shift = self.shift + other.shift
         mean, cov = natural_to_moment(precision, shift)
+        cov = (cov.T + cov) / 2
         return GaussianState(mean, cov)
 
     def __truediv__(self, other):
@@ -136,6 +139,8 @@ class GaussianState:
 
         shift = self.shift - other.shift
         mean, cov = natural_to_moment(precision, shift)
+        cov = (cov.T + cov) / 2
+
         return GaussianState(mean, cov)
 
     def __pow__(self, power, modulo=None):
@@ -143,7 +148,9 @@ class GaussianState:
         # precision = power * self.precision
         # shift = power * self.shift
         # mean, cov = natural_to_moment(precision, shift)
-        return GaussianState(self.mean, self.cov/power)
+        cov = self.cov / power
+        cov = (cov.T + cov) / 2
+        return GaussianState(self.mean, cov)
 
     def __eq__(self, other):
         # Make sure that 'other' is also a GaussianState class
@@ -161,8 +168,8 @@ class GaussianState:
         :return: -ve of logpdf (x, mean=self.mean, cov=self.cov)
         """
         from scipy.stats import multivariate_normal
-        if np.isinf(self.cov) or np.linalg.det(self.cov)<0.0:
-            return np.nan
+        # if np.testing.self.cov) or np.linalg.det(self.cov)<0.0:
+        #     return np.nan
 
         return -multivariate_normal(mean=self.mean, cov=self.cov).logpdf(x)
 
@@ -172,7 +179,7 @@ class GaussianState:
         :param x:
         :return:
         """
-        return np.square(self.mean - x)
+        return np.square (np.linalg.norm(self.mean - x))
 
     def sample(self, number_of_samples):
 

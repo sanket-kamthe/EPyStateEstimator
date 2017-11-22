@@ -22,13 +22,14 @@ import logging
 
 logging.basicConfig(level='critical')
 
-SEED = 200
+SEED = 100
 
 np.random.seed(seed=SEED)
 
-N = 50
-system = UniformNonlinearGrowthModel()
-# system = BearingsOnlyTracking()
+N = 10
+sys_dim = 4
+# system = UniformNonlinearGrowthModel()
+system = BearingsOnlyTracking()
 data = system.simulate(N)
 x_true, x_noisy, y_true, y_noisy = zip(*data)
 
@@ -36,36 +37,39 @@ x_true, x_noisy, y_true, y_noisy = zip(*data)
 power = 1
 damping = 1
 
-transform = UnscentedTransform(n=1,  beta=0,  alpha=1, kappa=2)
-meas_transform = UnscentedTransform(n=1, beta=0,  alpha=1, kappa=2)
+# transform = UnscentedTransform(n=sys_dim,  beta=0,  alpha=1, kappa=-1)
+# meas_transform = UnscentedTransform(n=sys_dim, beta=0,  alpha=1, kappa=-1)
 # transform = TaylorTransform()
 # meas_transform = TaylorTransform()
-def _power_sweep(power, damping):
-    transform = UnscentedTransform(n=1, beta=0, alpha=1, kappa=2)
-    meas_transform = UnscentedTransform(n=1, beta=0, alpha=1, kappa=2)
 
-    Nodes = EPNodes(dimension_of_state=1, N=N)
+transform = MonteCarloTransform(dimension_of_state=4)
+meas_transform = MonteCarloTransform(dimension_of_state=4)
+def _power_sweep(power, damping):
+    transform = UnscentedTransform(n=sys_dim, beta=0, alpha=1, kappa=2)
+    meas_transform = UnscentedTransform(n=sys_dim, beta=0, alpha=1, kappa=2)
+
+    Nodes = EPNodes(dimension_of_state=sys_dim, N=N)
     EP = TopEP(system_model=system,
                moment_matching=transform,
                meas_transform=meas_transform,
                power=power,
                damping=damping)
 
-    EPNodesList = EP.forward_backward_iteration(20, Nodes, y_noisy, list(range(0, N)), x_true)
+    EPNodesList = EP.forward_backward_iteration(10, Nodes, y_noisy, list(range(0, N)), x_true)
 
     Node = [node.marginal for node in EPNodesList[-1]]
     return nll(Node, x_true), rmse(Node, x_true)
 
-power_range = np.linspace(0.1, 1.0, num=10)
-damp_range = np.linspace(0.1, 1.0, num=10)
+power_range = np.linspace(0.5, 1.0, num=2)
+damp_range = np.linspace(0.5, 1.0, num=2)
 results = []
-for power, damping in itertools.product(power_range, damp_range):
-    ans = _power_sweep(power, damping)
-    results.append(ans)
+# for power, damping in itertools.product(power_range, damp_range):
+#     ans = _power_sweep(power, damping)
+#     results.append(ans)
 
-power_data = _power_sweep(0.59, 0.6)
-NLL, RMSE = power_data
-Nodes = EPNodes(dimension_of_state=1, N=N)
+# power_data = _power_sweep(0.59, 0.6)
+# NLL, RMSE = power_data
+Nodes = EPNodes(dimension_of_state=sys_dim, N=N)
 EP = TopEP(system_model=system,
            moment_matching=transform,
            meas_transform=meas_transform,
@@ -94,8 +98,8 @@ EPSmthd = EP.kalman_smoother(x_filtered)
 EP3 = [node.marginal for node in EPSmthd]
 
 print('\n Smoother {} NLL = {}, RMSE = {}'.format(1, nll(EP3, x_true), rmse(EP3, x_true)))
-EP2Filt = list(EP.kalman_filter(EPSmthd, y_noisy, list(range(0, N))))
-EP2Smthd = EP.kalman_smoother(EP2Filt)
+# EP2Filt = list(EP.kalman_filter(EPSmthd, y_noisy, list(range(0, N))))
+# EP2Smthd = EP.kalman_smoother(EP2Filt)
 
 plt.plot(x_true, 'r--', label='X_true')
 # plt.plot([x.mean for x in result],  'b-', label='Kalman Filter')
@@ -103,21 +107,21 @@ plt.plot(x_filt_mean, 'b-', label='EP as Kalman Filter')
 # plt.plot([x.mean for x in smoothed],  'm-', label='Kalman Smoother')
 plt.plot([x.marginal.mean for x in EPSmthd], 'g-', label='EP as Kalman Smoother')
 
-plt.plot([x.marginal.mean for x in EP2Filt], 'b--', label='EP 2nd pass as Kalman Filter')
-plt.plot([x.marginal.mean for x in EP2Smthd], 'g--', label='EP 2nd pass as Kalman Smoother')
+# plt.plot([x.marginal.mean for x in EP2Filt], 'b--', label='EP 2nd pass as Kalman Filter')
+# plt.plot([x.marginal.mean for x in EP2Smthd], 'g--', label='EP 2nd pass as Kalman Smoother')
 plt.legend()
 # plt.show()
 
 EP1 = [node.marginal for node in EPSmthd]
-EP2 = [node.marginal for node in EP2Smthd]
+# EP2 = [node.marginal for node in EP2Smthd]
 
 plt.figure()
 plt.plot(x_true, 'r--', label='X_true')
 plot_gaussian(EP1, label='EP Pass 1')
-plot_gaussian(EP2, label='EP Pass 2')
+# plot_gaussian(EP2, label='EP Pass 2')
 plt.legend()
 # plt.show()
-EPNodesList = EP.forward_backward_iteration(50, Nodes, y_noisy, list(range(0, N)), x_true)
+EPNodesList = EP.forward_backward_iteration(10, Nodes, y_noisy, list(range(0, N)), x_true)
 for i, Nodes in enumerate(EPNodesList):
     EP3 = [node.marginal for node in Nodes]
     print('\n EP Pass {} NLL = {}, RMSE = {}'.format(i + 1, nll(EP3, x_true), rmse(EP3, x_true)))
@@ -125,7 +129,7 @@ for i, Nodes in enumerate(EPNodesList):
             # assert EP3 == EP2
 # print('\n EP Pass {} NLL = {}, RMSE = {}'.format(i+1, nll(EP1, x_true), rmse(EP1, x_true)))
 EP3 = [node.marginal for node in EPNodesList[-1]]
-plot_gaussian(EP3, label='EP Pass 7')
+plot_gaussian(EP3, label='EP Pass 20')
 plt.legend()
 plt.show()
 
