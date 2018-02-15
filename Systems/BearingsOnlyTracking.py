@@ -53,9 +53,9 @@ class BearingsOnlyTracking(DynamicSystemModel):
     def __init__(self, Q_sigma=0.1, R_sigma=0.05, sensor_list=None, delta_t=0.1):
 
         init_dist = GaussianState(mean_vec=np.array([0.0, 0.0, 1.0, 0.0]),
-                                  cov_matrix=np.eye(4) * [0.1, 0.1, 10, 10])
+                                  cov_mat=np.eye(4) * [0.1, 0.1, 10, 10])
         if sensor_list is None:
-            meas_dim = 1
+            meas_dim = len(Default_Sensor_List)
         else:
             meas_dim = len(sensor_list)
 

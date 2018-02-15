@@ -18,8 +18,10 @@
 import autograd.numpy as np
 from MomentMatching.StateModels import GaussianState
 from autograd import jacobian
+from Utils.linalg import jittered_chol
 from functools import partial
-from MomentMatching.auto_grad import logpdf
+from autograd.scipy.stats.multivariate_normal import logpdf
+# from MomentMatching.auto_grad import logpdf
 from collections import namedtuple
 import logging
 from numpy.linalg import LinAlgError
@@ -78,12 +80,13 @@ class UnscentedTransform(MomentMatching):
     def _sigma_points(self, mean, cov, *args):
 
         sqrt_n_plus_lambda = np.sqrt(self.n + self.param_lambda)
-        jittered_cov = cov + 1e-6*np.eye(self.n)
+        # jittered_cov = cov + 1e-6*np.eye(self.n)
 
         try:
-            L = np.linalg.cholesky(jittered_cov)
+            # L = np.linalg.cholesky(jittered_cov)
+            L = jittered_chol(cov)
         except LinAlgError:
-            print(f'bad covariance{cov}')
+            print('bad covariance {}'.format(cov))
 
 
         scaledL = sqrt_n_plus_lambda * L
@@ -254,15 +257,15 @@ if __name__ == '__main__':
 
     res = unscented_transform.project(f, distribution)
 
-    print(f"The transformed mean is {res.mean} and the expected mean is {a * xx_mean + b}")
+    print("The transformed mean is {} and the expected mean is {}".format(res.mean, a * xx_mean + b))
 
-    print(f"The transformed cov is {res.cov} and the expected cov is {a * xx_sigma * a}")
+    print("The transformed cov is {} and the expected cov is {}".format(res.cov, a * xx_sigma * a))
 
     mct = MonteCarloTransform(1, number_of_samples=1000)
 
     res2 = mct.predict(f, distribution)
-    print(f"The MCT transformed mean is {res2} and the expected mean is {a * xx_mean + b}")
+    print("The MCT transformed mean is {} and the expected mean is {}".format(res.mean, a * xx_mean + b))
 
-    print(f"The transformed cov is {res2} and the expected cov is {a * xx_sigma * a}")
+    print("The MCT transformed cov is {} and the expected cov is {}".format(res.cov, a * xx_sigma * a))
 
 

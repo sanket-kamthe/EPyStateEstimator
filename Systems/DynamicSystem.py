@@ -67,6 +67,11 @@ class DynamicSystem(metaclass=ABCMeta):
         return list(self._simulate(N=N, x_zero=x_zero, t_zero=t_zero))
 
 
+#TODO: make dynamic model a single stepping solution rather than fixed start
+
+#TODO: default dynamic system is linear model with
+
+
 class DynamicSystemModel(DynamicSystem):
     def __init__(self, system_dim,
                  measurement_dim, transition,
@@ -79,7 +84,7 @@ class DynamicSystemModel(DynamicSystem):
         self.dt = dt
 
         assert isinstance(system_noise, NoiseModel)
-        assert isinstance(system_noise, NoiseModel)
+        assert isinstance(measurement_noise, NoiseModel)
 
         assert (system_noise.dimension == system_dim)
         assert (measurement_noise.dimension == measurement_dim)

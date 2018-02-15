@@ -21,29 +21,32 @@ import logging
 # from ExpectationPropagation import EPNodes
 
 logging.basicConfig(level='critical')
+plt.ion()
 
-SEED = 100
-
+SEED = 101
 np.random.seed(seed=SEED)
 
-N = 10
-sys_dim = 4
+N = 50
+sys_dim = 1
 # system = UniformNonlinearGrowthModel()
 system = BearingsOnlyTracking()
+sys_dim = system.system_dim
+meas_dim = system.measurement_dim
 data = system.simulate(N)
 x_true, x_noisy, y_true, y_noisy = zip(*data)
 
 
-power = 1
-damping = 1
+power = 0.6
+damping = 0.8
+EP_iters = 10
 
-# transform = UnscentedTransform(n=sys_dim,  beta=0,  alpha=1, kappa=-1)
-# meas_transform = UnscentedTransform(n=sys_dim, beta=0,  alpha=1, kappa=-1)
+transform = UnscentedTransform(n=sys_dim,  beta=0,  alpha=1, kappa=2)
+meas_transform = UnscentedTransform(n=sys_dim, beta=0,  alpha=1, kappa=2)
 # transform = TaylorTransform()
 # meas_transform = TaylorTransform()
 
-transform = MonteCarloTransform(dimension_of_state=4)
-meas_transform = MonteCarloTransform(dimension_of_state=4)
+# transform = MonteCarloTransform(dimension_of_state=sys_dim)
+# meas_transform = MonteCarloTransform(dimension_of_state=sys_dim)
 def _power_sweep(power, damping):
     transform = UnscentedTransform(n=sys_dim, beta=0, alpha=1, kappa=2)
     meas_transform = UnscentedTransform(n=sys_dim, beta=0, alpha=1, kappa=2)
@@ -120,8 +123,8 @@ plt.plot(x_true, 'r--', label='X_true')
 plot_gaussian(EP1, label='EP Pass 1')
 # plot_gaussian(EP2, label='EP Pass 2')
 plt.legend()
-# plt.show()
-EPNodesList = EP.forward_backward_iteration(10, Nodes, y_noisy, list(range(0, N)), x_true)
+plt.show()
+EPNodesList = EP.forward_backward_iteration(EP_iters, Nodes, y_noisy, list(range(0, N)), x_true)
 for i, Nodes in enumerate(EPNodesList):
     EP3 = [node.marginal for node in Nodes]
     print('\n EP Pass {} NLL = {}, RMSE = {}'.format(i + 1, nll(EP3, x_true), rmse(EP3, x_true)))
@@ -129,7 +132,8 @@ for i, Nodes in enumerate(EPNodesList):
             # assert EP3 == EP2
 # print('\n EP Pass {} NLL = {}, RMSE = {}'.format(i+1, nll(EP1, x_true), rmse(EP1, x_true)))
 EP3 = [node.marginal for node in EPNodesList[-1]]
-plot_gaussian(EP3, label='EP Pass 20')
+plot_gaussian(EP3, label='EP Pass {}'.format(EP_iters))
+plt.plot(x_true, 'r--', label='X_true')
 plt.legend()
 plt.show()
 

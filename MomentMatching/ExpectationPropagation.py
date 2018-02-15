@@ -179,10 +179,10 @@ class TimeSeriesNodeForEP:
                                    marginal_init=marginal_init,
                                    factor_init=factor_init)
 
-    def __repr__(self):
-        str_rep = f'''{self.__class__}.(t={self.t}, state_dim={self.state_dimension},
-    marginal_init={self.marginal}, factor_init={(self.measurement_factor, self.back_factor, self.forward_factor)})'''
-        return str_rep
+    # def __repr__(self):
+    #     str_rep = f'''{self.__class__}.(t={self.t}, state_dim={self.state_dimension},
+    # marginal_init={self.marginal}, factor_init={(self.measurement_factor, self.back_factor, self.forward_factor)})'''
+    #     return str_rep
 
 
 class EPbase:

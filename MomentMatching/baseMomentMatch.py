@@ -19,14 +19,15 @@ import autograd.numpy as np
 from MomentMatching.StateModels import GaussianState
 from autograd import jacobian
 from functools import partial
-from MomentMatching.auto_grad import logpdf
+# from MomentMatching.auto_grad import logpdf
+from scipy.stats import multivariate_normal
 from collections import namedtuple
 import logging
 FORMAT = "[ %(funcName)10s() ] %(message)s"
 
 # from scipy.stats import multivariate_normal
 EPS = 1e-4
-
+logpdf = multivariate_normal.logpdf
 
 logging.basicConfig(filename='Expectation_Propagation.log', level=logging.DEBUG, format=FORMAT)
 logger = logging.getLogger(__name__)

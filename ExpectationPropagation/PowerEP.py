@@ -14,7 +14,26 @@
 
 from .DynamicSystemEP import DynamicSystemEP
 from numpy.linalg import LinAlgError
+from functools import partial
 
+
+#TODO: only reason we need dynamic system is for transition, multiple dispatch or
+# TODO: or isInstance based swtiching should reduce dependencies
+
+# class PowerEP():
+#
+#     def func
+#
+#     def _curried_func(self, func, t=None, u=None, *args, **kwargs):
+#         return partial(func,t=t, u=u, *args, **kwargs)
+#
+#
+#     def update(self, approx_methd, match_with, node, *args, **kwargs):
+#         if match_with is None:
+#             self.fwd_update(approx_methd, match_with, node, args, kwargs)
+#
+#     def __call__(self, approx_methd, match_with, node, *args, **kwargs):
+#         return self.update(approx_methd, match_with, node, *args, **kwargs)
 
 class PowerDynamicSystemEP(DynamicSystemEP):
 

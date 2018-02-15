@@ -17,6 +17,7 @@ import random
 import numpy as np
 from MomentMatching.StateModels import GaussianState, moment_to_natural, natural_to_moment
 # from scipy.stats import multivariate_normal
+from scipy import stats
 
 class Test1DGaussianStateModel(unittest.TestCase):
     def setUp(self):
@@ -151,11 +152,12 @@ class TestGaussianSamples(unittest.TestCase):
     def test_samples(self):
 
         # print(self.mean.shape)
-        N = 100
-        # rd= multivariate_normal(mean=self.mean, cov=self.cov)
+        N = 2 ** 10
         samples = self.state.sample(N)
         sample_mean = np.mean(samples, axis=0)
         np.testing.assert_allclose(samples.shape, (N, self.mean.shape[0]))
+        W, p = stats.shapiro(samples)
+        assert (W>0.9)
 
 
 if __name__ == '__main__':

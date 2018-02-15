@@ -32,8 +32,11 @@ class TimeSeriesNodeForEP:
                                    factor_init=factor_init)
 
     def __repr__(self):
-        str_rep = f'''{self.__class__}.(t={self.t}, state_dim={self.state_dimension},
-    marginal_init={self.marginal}, factor_init={(self.measurement_factor, self.back_factor, self.forward_factor)})'''
+        str_rep = '''{}.t={}, state_dim={}, marginal_init={},
+         factor_init={})'''.format(self.__class__,
+                                   self.t,
+                                   self.marginal,
+                                   (self.measurement_factor, self.back_factor, self.forward_factor))
         return str_rep
 
 
@@ -76,7 +79,7 @@ class EPNodes(MutableSequence):
         assert isinstance(value, TimeSeriesNodeForEP)
 
     def __str__(self):
-        return f'EP Nodes with {len(self._Node)} items in list ' + str(self._Node[0])
+        return 'EP Nodes with {} items in list '.format(len(self._Node)) + str(self._Node[0])
 
     def filter_mode(self):
         mode_select = [1, 1, 0]
@@ -84,7 +87,7 @@ class EPNodes(MutableSequence):
             yield node
             mode = itertools.compress(node.factors, mode_select)
             for factor in mode:
-                print(f'In Node{node.t} {factor}')
+                print('In Node{} {}'.format(node.t, factor ))
 
     def smoother_mode(self):
         self.filter_mode()
@@ -92,7 +95,7 @@ class EPNodes(MutableSequence):
         for node in reversed(self._Node):
             mode = itertools.compress(node.factors, mode_select)
             for factor in mode:
-                print(f'In Node{node.t} {factor}')
+                print('In Node{} {}'.format(node.t, factor))
 
     def filter_iter(self):
         previous_node, next_node = itertools.tee(self._Node)

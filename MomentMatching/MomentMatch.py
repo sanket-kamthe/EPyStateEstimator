@@ -18,7 +18,7 @@ import numpy as np
 from StateModel import GaussianState
 
 
-class MomentMatching(metaclass=ABCMeta):
+class MomentMatching():
     _params = {}
 
     @abstractmethod
@@ -281,3 +281,7 @@ class PowerKalmanFilterMapping(MomentMatching):
 #
 #     def noise(self):
 #         return self._noise.cov
+
+from functools import singledispatch
+
+# def project()
