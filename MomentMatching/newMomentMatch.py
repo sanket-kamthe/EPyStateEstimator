@@ -52,6 +52,7 @@ class MomentMatching:
 
         \int f(x) q (x) dx, where q(x) is the distribution and f(x) is the non-linear function
         The result is exact when f(x) is a linear function.
+
         :param nonlinear_func:
         :param distribution: object of type GaussianState for example
         :return: distribution of y =  \int f(x) q (x) dx in the form of a tuple
