@@ -15,8 +15,7 @@
 
 import unittest
 import numpy as np
-from MomentMatching.TimeSeriesModel import GaussianNoise, DynamicSystemModel
-
+from Systems.DynamicSystem import GaussianNoise, DynamicSystemModel
 SEED = 12345
 
 

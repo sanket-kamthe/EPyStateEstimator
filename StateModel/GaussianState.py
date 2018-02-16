@@ -17,26 +17,47 @@ from numpy.linalg import LinAlgError
 from StateModel import State
 from Utils import cholesky
 from scipy.stats import multivariate_normal
+from Utils.linalg import jittered_solve
 import scipy as sp
 
 RTOL, ATOL = 1e-3, 1e-5
 INF = 1000
 JIT = 1e-12
+LARGE_NUM = 99999
+
 
 def natural_to_moment(precision, shift):
     dim = precision.shape[0]
-    cov = sp.linalg.solve(precision,
-                          np.eye(N=dim),
-                          assume_a='pos')
+
+    if np.trace(precision) < 1e-6:
+        # almost zero precision
+        dim = dim
+        mean = np.zeros((dim,), dtype=float)
+        cov = LARGE_NUM * np.eye(dim)
+        return mean, cov
+
     # cov = np.linalg.pinv(precision)
+
+    try:
+        cov = jittered_solve(precision,
+                             np.eye(N=dim),
+                             assume_a='pos')
+
+    except LinAlgError:
+        print('possible bad precision matrix {}'.format(precision))
+        raise LinAlgError
     mean = np.dot(cov, shift)
     return mean, cov
 
 
 def moment_to_natural(mean, cov):
     dim = cov.shape[0]
-    precision = sp.linalg.solve(cov, np.eye(N=dim),
-                                assume_a='pos')
+    try:
+        precision = jittered_solve(cov, np.eye(N=dim), assume_a='pos')
+    except LinAlgError:
+        print('possible bad covariance matrix {}'.format(cov))
+        raise LinAlgError
+
     # precision = np.linalg.pinv(cov)
     shift = precision @ mean
     return precision, shift
@@ -74,16 +95,19 @@ class GaussianState(State):
         self._dim = None
         self._precision = None
         self._shift = None
+        self._mode = None  # 'natural', 'moment'
+        self._chol = None
         #         self.dim = dim
 
         if mean_vec is not None:
             self.mean = mean_vec
             self.cov = cov_mat
-
+            self._mode = 'moment'
 
         if shift_vec is not None:
             self.precision = precision_mat
             self.shift = shift_vec
+            self._mode = 'natural'
 
         # super(multivariate_normal, self).__init__(mean=mean_vec,
         #                                           cov_mat=cov)
@@ -92,22 +116,19 @@ class GaussianState(State):
 
     @property
     def mean(self):
-        if self._mean is None:
-            self._mean = np.dot(self.cov, self.shift)
+        if self._mode == 'natural' and self._mean is None:
+            self.mean, self.cov = natural_to_moment(self.precision, self.shift)
+
         return self._mean
 
     @mean.setter
     def mean(self, mean):
         self._mean = mean
-        # we have changed mean so shift and precision are no longer valid, so we set them to None for lazy computation
-        #  if needed
-        # self._shift = None
-        # self._precision = None
 
     @property
     def dim(self):
         if self._dim is None:
-            if self._mean is None:
+            if self._mode == 'natural':
                 self._dim = np.shape(self.shift)[0]
             else:
                 self._dim = np.shape(self.mean)[0]
@@ -115,30 +136,19 @@ class GaussianState(State):
 
     @property
     def cov(self):
-        if self._cov is None:
-            try:
-                self.precision += np.eye(self.dim) * JIT
-                self._cov = np.linalg.solve(self.precision, np.eye(self.dim))
-            except LinAlgError:
-                print('bad covariance {}'.format(self.cov))
+        if self._mode == 'natural' and self._cov is None:
+            self.mean, self.cov = natural_to_moment(self.precision, self.shift)
+
         return self._cov
 
     @cov.setter
     def cov(self, cov):
         self._cov = cov
-        # we have changed the covariance so shift and precision are no longer valid,
-        #  so we set them to None for lazy computation, if needed.
-        self._shift = None
-        self._precision = None
 
     @property
     def precision(self):
-        if self._precision is None:
-            try:
-                self.cov += np.eye(self.dim) * JIT
-                self._precision = np.linalg.solve(self.cov, np.eye(self.dim))
-            except LinAlgError:
-                print('bad covariance {}'.format(self.cov))
+        if self._mode == 'moment' and self._precision is None:
+            self.precision, self.shift = moment_to_natural(mean=self.mean, cov=self.cov)
 
         return self._precision
 
@@ -148,8 +158,8 @@ class GaussianState(State):
 
     @property
     def shift(self):
-        if self._shift is None:
-            self._shift = np.dot(self.precision, self.mean)
+        if self._mode == 'moment' and self._shift is None:
+            self.precision, self.shift = moment_to_natural(mean=self.mean, cov=self.cov)
 
         return self._shift
 
@@ -166,8 +176,6 @@ class GaussianState(State):
 
     def sampler(self):
         multivariate_normal()
-
-
 
     def __mul__(self, other):
         # Make sure that other is also a GaussianState class
@@ -190,8 +198,6 @@ class GaussianState(State):
         # precision + 1e-6
 
         shift = self.shift - other.shift
-        # mean, cov = natural_to_moment(precision, shift)
-        # cov = (cov.T + cov) / 2
         return GaussianState(precision_mat=precision,
                              shift_vec=shift)
 
@@ -199,11 +205,14 @@ class GaussianState(State):
         if (self.cov[0, 0]) > INF:
             return GaussianState(self.mean, self.cov)
 
-        # precision = power * self.precision
-        # shift = power * self.shift
-        # mean, cov = natural_to_moment(precision, shift)
-        cov = self.cov / power
-        cov = (cov.T + cov) / 2
+        if self._mode == 'natural':
+            precision = power * self.precision
+            shift = power * self.shift
+            return GaussianState(precision_mat=precision,
+                                 shift_vec=shift)
+        else:
+            cov = self.cov / power
+            cov = (cov.T + cov) / 2
         return GaussianState(self.mean, cov)
 
     def __eq__(self, other):
@@ -221,14 +230,15 @@ class GaussianState(State):
         :param x:
         :return: -ve of logpdf (x, mean=self.mean, cov=self.cov)
         """
-        from scipy.stats import multivariate_normal
-        if np.isinf(self.cov[0, 0]):
-            return np.nan
-
-        diff = x - self.mean
-        logdet = np.log(2 * np.pi) + np.log(np.linalg.det(self.cov))
-        NLL = 0.5 * (logdet + diff.T @ self.precision @ diff)
-        return NLL
+        # from scipy.stats import multivariate_normal
+        # if np.isinf(self.cov[0, 0]):
+        #     return np.nan
+        #
+        # diff = x - self.mean
+        # logdet = np.log(2 * np.pi) + np.log(np.linalg.det(self.cov))
+        # NLL = 0.5 * (logdet + diff.T @ self.precision @ diff)
+        loglikelihood = multivariate_normal.logpdf(x, mean=self.mean, cov=self.cov, allow_singular=True)
+        return -loglikelihood
         # return -multivariate_normal(mean=self.mean, cov=self.cov).logpdf(x, cond=1e-6)
 
     def rmse(self, x):
@@ -251,32 +261,35 @@ class GaussianState(State):
         return samples
 
     def __repr__(self):
-
-        return str.format('GaussianState \n mean=\n {}, \n cov=\n{})', self.mean, self.cov)
+        if self._mode == 'natural':
+            return str.format('GaussianState \n shift=\n {}, \n precis=\n{})', self.shift, self.precision)
+        else:
+            return str.format('GaussianState \n mean=\n {}, \n cov=\n{})', self.mean, self.cov)
 
     def __str__(self):
         return str.format('mean={},cov={}', self.mean, self.cov)
 
     def copy(self):
-        return GaussianState(self.mean, self.cov)
+        if self._mode == 'natural':
+            return GaussianState.from_natural(precision=self.precision, shift=self.shift)
+        else:
+            return GaussianState(self.mean, self.cov)
 
     @classmethod
     def as_factor(cls, dim):
-        mean = np.zeros((dim,), dtype=float)
-        diag_cov = (np.inf) * np.ones((dim,), dtype=float)
-        cov = np.diag(diag_cov)
-        return cls(mean_vec=mean, cov_mat=cov)
+
+        shift = np.zeros((dim,), dtype=float)
+        precision = np.zeros((dim, dim), dtype=float)
+        return cls(shift_vec=shift, precision_mat=precision)
 
     @classmethod
     def from_natural(cls, precision, shift):
-        c = cls()
+        return cls(precision_mat=precision, shift_vec=shift)
 
     @classmethod
     def as_marginal(cls, dim):
         mean = np.zeros((dim,), dtype=float)
-        # diag_cov = (np.inf) * np.ones((dim,), dtype=float)
-        # cov = np.diag(diag_cov)
-        cov = 99999 * np.eye(dim)
+        cov = LARGE_NUM * np.eye(dim)
         return cls(mean_vec=mean, cov_mat=cov)
 
 

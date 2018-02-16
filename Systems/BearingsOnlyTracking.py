@@ -8,8 +8,8 @@ import autograd.numpy as np
 
 
 Sensor = namedtuple('Sensor', ['x', 'y'])
-Default_Sensor_List = [Sensor(x=-1, y=-1),
-                       Sensor(x=-2, y=-2)]
+Default_Sensor_List = [Sensor(x=5, y=10),
+                       Sensor(x=15, y=2)]
 
 def f(x, t=None, u=None, delta_t=0.1):
     """
@@ -81,6 +81,11 @@ class BearingsOnlyTracking(DynamicSystemModel):
                          init_distribution=init_dist
                          )
 
+    def simulate(self, N, x_zero=None, t_zero=0.0, seed=None):
+        if seed is None:
+            np.random.seed(seed=7952)
+        return super().simulate(N=N, x_zero=x_zero, t_zero=t_zero)
+
 # def numpy_array(x)
 
 if __name__ == '__main__':
@@ -96,6 +101,7 @@ if __name__ == '__main__':
     N = 50
 
     system = BearingsOnlyTracking()
+    np.random.seed(seed=7952)
     data = system.simulate(N)
     x_true, x_noisy, y_true, y_noisy = zip(*data)
 

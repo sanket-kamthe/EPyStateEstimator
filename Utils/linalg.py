@@ -12,21 +12,31 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from scipy.linalg import cholesky
+from scipy.linalg import cholesky, solve
 import numpy as np
 
 JIT = 1e-6
 
 def jittered_chol(a, jitter=None, lower=True, overwrite_a=False, check_finite=True):
-    if jitter is None: jitter = JIT
+    if jitter is None:
+        jitter = JIT
 
-    a = (a + a.T )/2
+    a = (a + a.T)/2
     a = a + jitter * np.eye(a.shape[-1])
     chol_a = cholesky(a, lower=lower,
                       overwrite_a=overwrite_a,
                       check_finite=check_finite)
 
     return chol_a
+
+
+def jittered_solve(a, b, jitter=None, overwrite_a=False, overwrite_b=False, assume_a='gen', transposed=False):
+    if jitter is None:
+        jitter = JIT
+    a = (a + a.T) / 2
+    a = a + jitter * np.eye(a.shape[-1])
+    x = solve(a, b, overwrite_a=overwrite_a, overwrite_b=overwrite_b, assume_a=assume_a, transposed=transposed)
+    return x
 
 
 if __name__=="__main__":

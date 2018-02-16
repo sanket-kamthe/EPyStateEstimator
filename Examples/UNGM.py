@@ -9,8 +9,6 @@ import seaborn as sns
 # if module_path not in sys.path:
 #     sys.path.append(module_path)
 from MomentMatching.newMomentMatch import MomentMatching, UnscentedTransform, TaylorTransform, MonteCarloTransform
-from MomentMatching.TimeSeriesModel import TimeSeriesModel, UniformNonlinearGrowthModel
-from MomentMatching.StateModels import GaussianState
 from ExpectationPropagation import EPNodes
 from MomentMatching.ExpectationPropagation import TopEP
 from Filters.KalmanFilter import KalmanFilterSmoother, PowerKalmanFilterSmoother

@@ -13,9 +13,6 @@
 # limitations under the License.
 
 import numpy as np
-from MomentMatching.newMomentMatch import MomentMatching
-from MomentMatching.TimeSeriesModel import TimeSeriesModel, DynamicSystemModel
-# from MomentMatching.StateModels import GaussianState
 from StateModel import GaussianState
 from itertools import tee
 import logging
