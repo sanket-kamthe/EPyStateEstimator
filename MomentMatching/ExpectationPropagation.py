@@ -324,9 +324,7 @@ class TopEP:
         # print(state.cov)
         if np.linalg.det(state.cov) > 0:
             result_node.forward_factor = (node.forward_factor ** (1-self.damping)) * (state ** (self.damping))
-            result_node.marginal = node.marginal * (result_node.forward_factor / node.forward_factor) ** (1/1)
-
-
+            result_node.marginal = node.marginal * (result_node.forward_factor / node.forward_factor)  # ** (1/1)
 
         return result_node
 

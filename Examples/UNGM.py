@@ -14,33 +14,33 @@ from MomentMatching.ExpectationPropagation import TopEP
 from Filters.KalmanFilter import KalmanFilterSmoother, PowerKalmanFilterSmoother
 from Utils.Metrics import nll, rmse
 from Utils.Plot_Helper import plot_gaussian, plot_gaussian_node
-from Systems import BearingsOnlyTracking
+from Systems import BearingsOnlyTracking, UniformNonlinearGrowthModel
 import logging
 # from ExpectationPropagation import EPNodes
 
 logging.basicConfig(level='critical')
 plt.ion()
 
-SEED = 101
+SEED = 11
 np.random.seed(seed=SEED)
 
 N = 50
 sys_dim = 1
-# system = UniformNonlinearGrowthModel()
-system = BearingsOnlyTracking()
+system = UniformNonlinearGrowthModel()
+# system = BearingsOnlyTracking()
 sys_dim = system.system_dim
 meas_dim = system.measurement_dim
 data = system.simulate(N)
 x_true, x_noisy, y_true, y_noisy = zip(*data)
 
 
-power = 0.6
-damping = 0.8
-EP_iters = 10
+power = 0.5
+damping = 0.5
+EP_iters = 50
 
-transform = UnscentedTransform(n=sys_dim,  beta=0,  alpha=1, kappa=2)
+# transform = UnscentedTransform(n=sys_dim,  beta=0,  alpha=1, kappa=3)
 meas_transform = UnscentedTransform(n=sys_dim, beta=0,  alpha=1, kappa=2)
-# transform = TaylorTransform()
+transform = TaylorTransform()
 # meas_transform = TaylorTransform()
 
 # transform = MonteCarloTransform(dimension_of_state=sys_dim)
