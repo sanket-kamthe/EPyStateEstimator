@@ -1,6 +1,6 @@
 
 from Systems import DynamicSystemModel, GaussianNoise
-from StateModel import GaussianState
+from StateModel import Gaussian
 import numpy as np
 
 
@@ -29,7 +29,7 @@ class UniformNonlinearGrowthModel(DynamicSystemModel):
     """
 
     def __init__(self):
-        init_dist = GaussianState(mean_vec=np.array([0.0]), cov_mat=np.eye(1) * 1)
+        init_dist = Gaussian(mean_vec=np.array([0.0]), cov_mat=np.eye(1) * 1)
         super().__init__(system_dim=1,
                          measurement_dim=1,
                          transition=f,

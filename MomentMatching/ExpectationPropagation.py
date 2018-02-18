@@ -14,7 +14,7 @@
 
 
 import autograd.numpy as np
-from StateModel import GaussianState
+from StateModel import Gaussian
 from Filters.KalmanFilter import KalmanFilterSmoother, PowerKalmanFilterSmoother
 import itertools
 from collections.abc import MutableSequence
@@ -39,14 +39,14 @@ class TimeSeriesNodeForEP:
         self.state_dim=state_dim
         self.factors = ['forward_update', 'measurement_update', 'backward_update']
         if marginal_init is None:
-            self.marginal = GaussianState.as_marginal(self.state_dim)
+            self.marginal = Gaussian.as_marginal(self.state_dim)
         else:
             self.marginal = marginal_init
 
         if factor_init is None:
-            self.measurement_factor = GaussianState.as_factor(self.state_dim)
-            self.back_factor = GaussianState.as_factor(self.state_dim)
-            self.forward_factor = GaussianState.as_factor(self.state_dim)
+            self.measurement_factor = Gaussian.as_factor(self.state_dim)
+            self.back_factor = Gaussian.as_factor(self.state_dim)
+            self.forward_factor = Gaussian.as_factor(self.state_dim)
         else:
             self.measurement_factor, self.back_factor, self.forward_factor = factor_init
 
@@ -57,7 +57,7 @@ class TimeSeriesNodeForEP:
         mean = np.zeros((state_dim,), dtype=float)
         diag_cov = np.inf * np.ones((state_dim,), dtype=float)
         cov = np.diag(diag_cov)
-        return GaussianState(mean_vec=mean, cov_matrix=cov)
+        return Gaussian(mean_vec=mean, cov_matrix=cov)
 
 
     @staticmethod
@@ -67,9 +67,9 @@ class TimeSeriesNodeForEP:
         # self.measurement_factor = self.factor_init(state_dim)
         # self.back_factor = self.factor_init(state_dim)
         # self.forward_factor = self.factor_init(state_dim)
-        return (GaussianState(mean_vec=mean, cov_matrix=cov),
-                     GaussianState(mean_vec=mean, cov_matrix=cov),
-                     GaussianState(mean_vec=mean, cov_matrix=cov))
+        return (Gaussian(mean_vec=mean, cov_matrix=cov),
+                Gaussian(mean_vec=mean, cov_matrix=cov),
+                Gaussian(mean_vec=mean, cov_matrix=cov))
 
     def copy(self):
         marginal_init = self.marginal.copy()

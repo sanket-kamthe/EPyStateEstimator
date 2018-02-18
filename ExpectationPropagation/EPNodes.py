@@ -1,4 +1,4 @@
-from StateModel import GaussianState, GaussianFactor
+from StateModel import Gaussian, GaussianFactor
 from collections.abc import MutableSequence
 import itertools
 
@@ -9,15 +9,15 @@ class TimeSeriesNodeForEP:
         self.t = t
         self.state_dimension=state_dim
         if marginal_init is None:
-            self.marginal = GaussianState.as_marginal(dim=state_dim)
-            assert isinstance(self.marginal, GaussianState)
+            self.marginal = Gaussian.as_marginal(dim=state_dim)
+            assert isinstance(self.marginal, Gaussian)
         else:
             self.marginal = marginal_init
 
         if factor_init is None:
-            self.measurement_factor = GaussianState.as_factor(dim=state_dim)
-            self.back_factor = GaussianState.as_factor(dim=state_dim)
-            self.forward_factor = GaussianState.as_factor(dim=state_dim)
+            self.measurement_factor = Gaussian.as_factor(dim=state_dim)
+            self.back_factor = Gaussian.as_factor(dim=state_dim)
+            self.forward_factor = Gaussian.as_factor(dim=state_dim)
         else:
             self.measurement_factor, self.back_factor, self.forward_factor = factor_init
 

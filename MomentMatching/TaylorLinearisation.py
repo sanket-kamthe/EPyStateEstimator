@@ -16,7 +16,7 @@ import numpy as np
 from .MomentMatch import MappingTransform
 from functools import partial
 from autograd import jacobian
-from StateModel import GaussianState
+from StateModel import Gaussian
 from MomentMatching.auto_grad import logpdf
 
 EPS = 1e-4
@@ -44,7 +44,7 @@ class TaylorTransform(MappingTransform):
 
     def _transform(self, func, state, t=None, u=None, *args, **kwargs):
         # (self, nonlinear_func, distribution, fargs=None, y_observation=None):
-        assert isinstance(state, GaussianState)
+        assert isinstance(state, Gaussian)
         frozen_func = partial(func, t=t, u=u, *args, **kwargs)
         J_t = self.numerical_jacobian(frozen_func, state.mean)
         # J_t = jacobian(frozen_nonlinear_func)(distribution.mean)

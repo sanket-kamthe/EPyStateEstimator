@@ -43,3 +43,7 @@ class State(metaclass=ABCMeta):
     @abstractmethod
     def as_factor(cls, dim):
         pass
+
+    @abstractmethod
+    def copy(self):
+        pass

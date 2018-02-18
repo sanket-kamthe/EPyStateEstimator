@@ -63,7 +63,7 @@ def moment_to_natural(mean, cov):
     return precision, shift
 
 
-class GaussianState(State):
+class Gaussian(State):
     """
 
     Define a Gaussian state model for EP operations in
@@ -179,13 +179,13 @@ class GaussianState(State):
 
     def __mul__(self, other):
         # Make sure that other is also a GaussianState class
-        assert isinstance(other, GaussianState)
+        assert isinstance(other, Gaussian)
         precision = self.precision + other.precision
         shift = self.shift + other.shift
         # mean, cov = natural_to_moment(precision, shift)
         # cov = (cov.T + cov) / 2
-        return GaussianState(precision_mat=precision,
-                             shift_vec=shift)
+        return Gaussian(precision_mat=precision,
+                        shift_vec=shift)
 
     def __truediv__(self, other):
         # Make sure that 'other' is also a GaussianState class
@@ -198,27 +198,27 @@ class GaussianState(State):
         # precision + 1e-6
 
         shift = self.shift - other.shift
-        return GaussianState(precision_mat=precision,
-                             shift_vec=shift)
+        return Gaussian(precision_mat=precision,
+                        shift_vec=shift)
 
     def __pow__(self, power, modulo=None):
         if (self.cov[0, 0]) > INF:
-            return GaussianState(self.mean, self.cov)
+            return Gaussian(self.mean, self.cov)
 
         if self._mode == 'natural':
             precision = power * self.precision
             shift = power * self.shift
-            return GaussianState(precision_mat=precision,
-                                 shift_vec=shift)
+            return Gaussian(precision_mat=precision,
+                            shift_vec=shift)
         else:
             cov = self.cov / power
             cov = (cov.T + cov) / 2
-        return GaussianState(self.mean, cov)
+        return Gaussian(self.mean, cov)
 
     def __eq__(self, other):
         # Make sure that 'other' is also a GaussianState class
         # TODO: Replace assert with a custom Error
-        assert isinstance(other, GaussianState)
+        assert isinstance(other, Gaussian)
         mean_equal = np.allclose(self.mean, other.mean, rtol=RTOL, atol=RTOL)
         cov_equal = np.allclose(self.cov, other.cov, rtol=RTOL, atol=RTOL)
 
@@ -271,9 +271,9 @@ class GaussianState(State):
 
     def copy(self):
         if self._mode == 'natural':
-            return GaussianState.from_natural(precision=self.precision, shift=self.shift)
+            return Gaussian.from_natural(precision=self.precision, shift=self.shift)
         else:
-            return GaussianState(self.mean, self.cov)
+            return Gaussian(self.mean, self.cov)
 
     @classmethod
     def as_factor(cls, dim):
@@ -293,7 +293,7 @@ class GaussianState(State):
         return cls(mean_vec=mean, cov_mat=cov)
 
 
-class GaussianFactor(GaussianState):
+class GaussianFactor(Gaussian):
     def __init__(self, dim):
         mean = np.zeros((dim,), dtype=float)
         diag_cov = np.inf * np.ones((dim,), dtype=float)

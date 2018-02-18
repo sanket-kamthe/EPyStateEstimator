@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import numpy as np
-from StateModel import GaussianState
+from StateModel import Gaussian
 from itertools import tee
 import logging
 
@@ -53,7 +53,7 @@ class KalmanFilterSmoother:
                                             t=t, u=u,
                                             *args, **kwargs)
         xx_cov += self.transition_noise
-        return GaussianState(xx_mean, xx_cov)
+        return Gaussian(xx_mean, xx_cov)
 
     def correct(self, state, meas, t=None, u=None, *args, **kwargs):
 
@@ -70,7 +70,7 @@ class KalmanFilterSmoother:
         mean = state.mean + np.dot(kalman_gain, (meas - z_mean)) # equation 15  in Marc's ACC paper
         cov = state.cov - np.dot(kalman_gain, np.transpose(xz_cross_cov))
 
-        return GaussianState(mean, cov)
+        return Gaussian(mean, cov)
 
     def smooth(self, state, next_state, t=None, u=None, *args, **kwargs):
 
@@ -87,7 +87,7 @@ class KalmanFilterSmoother:
         mean = state.mean + np.dot(J, (next_state.mean - xx_mean))
         cov = state.cov + J @ (next_state.cov - xx_cov) @ J.T
 
-        return GaussianState(mean, cov)
+        return Gaussian(mean, cov)
 
     def kalman_filter(self, measurements, prior_state=None, t_zero=0.0, u=None, *args, **kwargs):
 
@@ -148,7 +148,7 @@ class PowerKalmanFilterSmoother(KalmanFilterSmoother):
                                             *args, **kwargs)
         xx_cov += self.transition_noise
         xx_cov /= self.power
-        return GaussianState(xx_mean, xx_cov)
+        return Gaussian(xx_mean, xx_cov)
 
     def correct(self, state, meas, t=None, u=None, *args, **kwargs):
 
@@ -166,7 +166,7 @@ class PowerKalmanFilterSmoother(KalmanFilterSmoother):
         mean = state.mean + kalman_gain @ (meas - z_mean)  # equation 15  in Marc's ACC paper
         cov = state.cov - kalman_gain @ xz_cross_cov.T
 
-        return GaussianState(mean, cov)
+        return Gaussian(mean, cov)
 
     def smooth(self, state, next_state, t=None, u=None, *args, **kwargs):
 
@@ -184,5 +184,5 @@ class PowerKalmanFilterSmoother(KalmanFilterSmoother):
         mean = state.mean + np.dot(J, (next_state.mean - xx_mean))
         cov = state.cov + J @ (next_state.cov - xx_cov) @ J.T
 
-        return GaussianState(mean, cov)
+        return Gaussian(mean, cov)
 

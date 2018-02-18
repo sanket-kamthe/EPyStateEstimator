@@ -1,6 +1,6 @@
 
 from Systems import DynamicSystemModel, GaussianNoise
-from StateModel import GaussianState
+from StateModel import Gaussian
 from collections import namedtuple
 from functools import partial
 import autograd.numpy as np
@@ -52,8 +52,8 @@ class BearingsOnlyTracking(DynamicSystemModel):
 
     def __init__(self, Q_sigma=0.1, R_sigma=0.05, sensor_list=None, delta_t=0.1):
 
-        init_dist = GaussianState(mean_vec=np.array([0.0, 0.0, 1.0, 0.0]),
-                                  cov_mat=np.eye(4) * [0.1, 0.1, 10, 10])
+        init_dist = Gaussian(mean_vec=np.array([0.0, 0.0, 1.0, 0.0]),
+                             cov_mat=np.eye(4) * [0.1, 0.1, 10, 10])
         if sensor_list is None:
             meas_dim = len(Default_Sensor_List)
         else:

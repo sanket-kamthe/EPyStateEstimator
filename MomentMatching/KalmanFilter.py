@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import numpy as np
-from StateModel import GaussianState
+from StateModel import Gaussian
 from MomentMatching import MomentMatching as transform
 
 
@@ -24,7 +24,7 @@ def predict(self, prior_state, t=None, u=None, *args, **kwargs):
                                         *args, **kwargs)
     xx_cov += self.transition_noise
     xx_cov /= self.power
-    return GaussianState(xx_mean, xx_cov)
+    return Gaussian(xx_mean, xx_cov)
 
 
 def correct(self, state, meas, t=None, u=None, *args, **kwargs):
@@ -42,7 +42,7 @@ def correct(self, state, meas, t=None, u=None, *args, **kwargs):
     mean = state.mean + kalman_gain @ (meas - z_mean)  # equation 15  in Marc's ACC paper
     cov = state.cov - kalman_gain @ xz_cross_cov.T
 
-    return GaussianState(mean, cov)
+    return Gaussian(mean, cov)
 
 
 def smooth(self, state, next_state, t=None, u=None, *args, **kwargs):
@@ -60,4 +60,4 @@ def smooth(self, state, next_state, t=None, u=None, *args, **kwargs):
     mean = state.mean + np.dot(J, (next_state.mean - xx_mean))
     cov = state.cov + J @ (next_state.cov - xx_cov) @ J.T
 
-    return GaussianState(mean, cov)
+    return Gaussian(mean, cov)

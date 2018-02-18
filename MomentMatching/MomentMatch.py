@@ -15,7 +15,7 @@
 from abc import ABCMeta, abstractmethod
 import numpy as np
 # import functools
-from StateModel import GaussianState
+from StateModel import Gaussian
 
 
 class MomentMatching():
@@ -126,7 +126,7 @@ class KalmanFilterMapping(MomentMatching):
     def project(self, func, distribution,  meas=None, noise=None, t=None, u=None, *args, **kwargs):
         if meas is None:
             return self._predict(func, distribution, noise, t=t, u=u, *args, **kwargs)
-        elif isinstance(meas, GaussianState):
+        elif isinstance(meas, Gaussian):
             return self._smooth(func, distribution, meas, noise, t=t, u=u, *args, **kwargs)
         else:
             return self._correct(func, distribution, meas, noise, t=t, u=u, *args, **kwargs)
@@ -140,7 +140,7 @@ class KalmanFilterMapping(MomentMatching):
                                              t=t, u=u,
                                              *args, **kwargs)
         xx_cov += noise_cov
-        return GaussianState(xx_mean, xx_cov)
+        return Gaussian(xx_mean, xx_cov)
     
     def _smooth(self, func, state, next_state, noise_cov, t=None, u=None, *args, **kwargs):
 
@@ -156,7 +156,7 @@ class KalmanFilterMapping(MomentMatching):
         mean = state.mean + np.dot(smoother_gain, (next_state.mean - xx_mean))
         cov = state.cov + smoother_gain @ (next_state.cov - xx_cov) @ smoother_gain.T
 
-        return GaussianState(mean, cov)
+        return Gaussian(mean, cov)
 
     def _correct(self, func, state, meas, noise_cov, t=None, u=None, *args, **kwargs):
 
@@ -169,7 +169,7 @@ class KalmanFilterMapping(MomentMatching):
         mean = state.mean + np.dot(kalman_gain, (meas - z_mean))  # equation 15  in Marc's ACC paper ###
         cov = state.cov - np.dot(kalman_gain, np.transpose(xz_cross_cov)) ###
 
-        return GaussianState(mean, cov)
+        return Gaussian(mean, cov)
 
 class PowerKalmanFilterMapping(MomentMatching):
 
@@ -187,7 +187,7 @@ class PowerKalmanFilterMapping(MomentMatching):
     def project(self, func, distribution, meas=None, noise=None, t=None, u=None, *args, **kwargs):
         if meas is None:
             return self._predict(func, distribution, noise, t=t, u=u, *args, **kwargs)
-        elif isinstance(meas, GaussianState):
+        elif isinstance(meas, Gaussian):
             return self._smooth(func, distribution, meas, noise, t=t, u=u, *args, **kwargs)
         else:
             return self._correct(func, distribution, meas, noise, t=t, u=u, *args, **kwargs)
@@ -205,7 +205,7 @@ class PowerKalmanFilterMapping(MomentMatching):
         xx_cov /= self.power
 
         xx_cov = (xx_cov.T + xx_cov)/2
-        return GaussianState(xx_mean, xx_cov)
+        return Gaussian(xx_mean, xx_cov)
 
     def _smooth(self, func, state, next_state, noise_cov, t=None, u=None, *args, **kwargs):
 
@@ -224,7 +224,7 @@ class PowerKalmanFilterMapping(MomentMatching):
         cov = state.cov + smoother_gain @ (next_state.cov - xx_cov) @ smoother_gain.T
 
         cov = (cov + cov.T) /2
-        return GaussianState(mean, cov)
+        return Gaussian(mean, cov)
 
     def _correct(self, func, state, meas, noise_cov, t=None, u=None, *args, **kwargs):
 
@@ -242,7 +242,7 @@ class PowerKalmanFilterMapping(MomentMatching):
 
         cov = (cov + cov.T) / 2
 
-        return GaussianState(mean, cov)
+        return Gaussian(mean, cov)
 
 
     # def sys_noise(self):

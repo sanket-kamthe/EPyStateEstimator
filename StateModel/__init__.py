@@ -1,2 +1,2 @@
 from .StateModel import State
-from .GaussianState import GaussianState, GaussianFactor
+from .Gaussian import Gaussian, GaussianFactor
