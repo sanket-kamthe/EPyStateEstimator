@@ -37,8 +37,8 @@ def h(x, t=None, u=None, sensor_list=None):
     for sensor in sensor_list:
         theta = np.arctan((x[1] - sensor.y) / (x[0] - sensor.x))
 
-        if theta < 0:
-            theta += 2*np.pi
+        # if theta < 0:
+        #     theta += 2*np.pi
 
         measurements.append(theta)
 

@@ -46,7 +46,7 @@ class MomentMatching:
         for key in self.params:
             self.__setattr__(key, self.params[key])
 
-    def _transform(self, func, state, t=None, u=None, *args, **kwargs):
+    def _transform(self, func, state):
         """
         Returns the gaussian approximation the integral
 
@@ -61,14 +61,15 @@ class MomentMatching:
         return NotImplementedError
 
     def __call__(self, func, state, t=None, u=None, *args, **kwargs):
-        return self._transform(func=func, state=state, t=t, u=u, *args, **kwargs)
+        # func_out = partial(self._transform,  t=None, u=None, *args, **kwargs)
+        return self._transform(func=func, state=state)
 
 
 class UnscentedTransform(MomentMatching):
     """
     
     """
-    def __init__(self, n=1, alpha=1, beta=0, kappa=1):
+    def __init__(self, n=1, alpha=1, beta=2, kappa=1):
 
         self.w_m, self.W = self._weights(n, alpha, beta, kappa)
         self.param_lambda = alpha * alpha * (n + kappa) - n
@@ -119,15 +120,15 @@ class UnscentedTransform(MomentMatching):
 
         return w_m, W
 
-    def _transform(self, func, state, t=None, u=None, *args, **kwargs):
+    def _transform(self, func, state):
 
-        frozen_func = partial(func, t=t, u=u, *args, **kwargs)
+        # frozen_func = partial(func, t=t, u=u, *args, **kwargs)
 
         sigma_pts = self._sigma_points(state.mean, state.cov)
         Xi = []
         for x in sigma_pts:
             x = np.asanyarray(x)
-            result = np.asanyarray(frozen_func(x))
+            result = np.asanyarray(func(x))
             Xi.append(result)
 
         Y = np.asarray(Xi)
@@ -148,18 +149,18 @@ class MonteCarloTransform(MomentMatching):
                          dimension_of_state=dimension_of_state,
                          number_of_samples=number_of_samples)
 
-    def _transform(self, func, state, t=None, u=None, *args, **kwargs):
+    def _transform(self, func, state):
         # (self, nonlinear_func, distribution, fargs=None):
 
         # assert isinstance(state, GaussianState)
-        frozen_func = partial(func, t=t, u=u, *args, **kwargs)
+        # frozen_func = partial(func, t=t, u=u, *args, **kwargs)
 
         samples = state.sample(self.number_of_samples)
 
         Xi = []
         for x in samples:
             x = np.asanyarray(x)
-            result = np.asanyarray(frozen_func(x))
+            result = np.asanyarray(func(x))
             Xi.append(result)
 
         # Y = np.asarray(Xi)
@@ -204,13 +205,13 @@ class TaylorTransform(MomentMatching):
 
         return np.array(jacobian).T
 
-    def _transform(self, func, state, t=None, u=None, *args, **kwargs):
+    def _transform(self, func, state):
         # (self, nonlinear_func, distribution, fargs=None, y_observation=None):
         # assert isinstance(state, GaussianState)
-        frozen_func = partial(func, t=t, u=u, *args, **kwargs)
-        J_t = self.numerical_jacobian(frozen_func, state.mean)
+        # frozen_func = partial(func, t=t, u=u, *args, **kwargs)
+        J_t = self.numerical_jacobian(func, state.mean)
         # J_t = jacobian(frozen_func)(state.mean)
-        mean = frozen_func(state.mean)
+        mean = func(state.mean)
         cov = J_t @ state.cov @ J_t.T
         cross_cov = state.cov @ J_t.T
         return mean, cov, cross_cov

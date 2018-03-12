@@ -20,6 +20,7 @@ from MomentMatching.baseMomentMatch import UnscentedTransform, MonteCarloTransfo
 from MomentMatching.baseMomentMatch import EPS
 from MomentMatching.StateModels import GaussianState
 
+
 SEED = 120816
 
 class TestFunctions:
@@ -81,7 +82,7 @@ class TestTaylorTransform(unittest.TestCase):
 class TestUnscentedTransform(unittest.TestCase):
     def setUp(self):
         np.random.seed(seed=SEED)
-        self.dim = 1
+        self.dim = 3
         self.mean = np.random.randn(self.dim) * 0.0
         self.cov = 0.25 * np.eye(self.dim)
         self.transform = UnscentedTransform(n=self.dim)

@@ -26,8 +26,8 @@ np.random.seed(seed=SEED)
 
 N = 50
 sys_dim = 1
-system = UniformNonlinearGrowthModel()
-# system = BearingsOnlyTracking()
+# system = UniformNonlinearGrowthModel()
+system = BearingsOnlyTracking()
 sys_dim = system.system_dim
 meas_dim = system.measurement_dim
 data = system.simulate(N)

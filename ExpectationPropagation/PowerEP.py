@@ -17,25 +17,8 @@ from numpy.linalg import LinAlgError
 from functools import partial
 
 
-#TODO: only reason we need dynamic system is for transition, multiple dispatch or
-# TODO: or isInstance based swtiching should reduce dependencies
 
-# class PowerEP():
-#
-#     def func
-#
-#     def _curried_func(self, func, t=None, u=None, *args, **kwargs):
-#         return partial(func,t=t, u=u, *args, **kwargs)
-#
-#
-#     def update(self, approx_methd, match_with, node, *args, **kwargs):
-#         if match_with is None:
-#             self.fwd_update(approx_methd, match_with, node, args, kwargs)
-#
-#     def __call__(self, approx_methd, match_with, node, *args, **kwargs):
-#         return self.update(approx_methd, match_with, node, *args, **kwargs)
-
-class PowerDynamicSystemEP(DynamicSystemEP):
+class DynamicSystemPowerEP(DynamicSystemEP):
 
     def __init__(self, system, ep_project, measurements,
                  power=1, damping=1):
@@ -61,7 +44,7 @@ class PowerDynamicSystemEP(DynamicSystemEP):
             result_node = node.copy()
 
         result_node.marginal = (node.forward_factor ** (1 - self.damping)) * (state ** (self.damping))
-        result_node.measurement_factor = node.marginal * (result_node.forward_factor / node.forward_factor)
+        result_node.forward_factor = node.marginal * (result_node.forward_factor / node.forward_factor)
         return result_node
 
     def meas_update(self, node, meas, t=None, u=None):

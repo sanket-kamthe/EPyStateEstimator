@@ -1,6 +1,6 @@
 
 import numpy as np
-from ExpectationPropagation import DynamicSystemEP, PowerDynamicSystemEP
+from ExpectationPropagation import DynamicSystemEP, DynamicSystemPowerEP
 from Systems import UniformNonlinearGrowthModel, BearingsOnlyTracking
 from MomentMatching import KalmanFilterMapping, PowerKalmanFilterMapping
 from ExpectationPropagation import EPNodes
@@ -47,7 +47,7 @@ EP_obj = DynamicSystemEP(system=system,
                          ep_project=ep_projection,
                          measurements=y_noisy)
 
-powerEP_obj = PowerDynamicSystemEP(system=system,
+powerEP_obj = DynamicSystemPowerEP(system=system,
                                    ep_project=power_ep_projection,
                                    measurements=y_noisy,
                                    power=power,
