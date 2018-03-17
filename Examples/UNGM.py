@@ -39,9 +39,9 @@ damping = 0.5
 EP_iters = 50
 
 # transform = UnscentedTransform(n=sys_dim,  beta=0,  alpha=1, kappa=3)
-meas_transform = UnscentedTransform(n=sys_dim, beta=0,  alpha=1, kappa=2)
+# meas_transform = UnscentedTransform(n=sys_dim, beta=0,  alpha=1, kappa=2)
 transform = TaylorTransform()
-# meas_transform = TaylorTransform()
+meas_transform = TaylorTransform()
 
 # transform = MonteCarloTransform(dimension_of_state=sys_dim)
 # meas_transform = MonteCarloTransform(dimension_of_state=sys_dim)

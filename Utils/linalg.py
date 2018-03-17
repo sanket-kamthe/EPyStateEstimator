@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from scipy.linalg import cholesky, solve
+from scipy.linalg import cholesky, solve, solve_triangular
 import numpy as np
 
 JIT = 1e-6

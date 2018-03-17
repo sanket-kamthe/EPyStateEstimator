@@ -342,8 +342,8 @@ class TopEP:
             # logger.debug('[measurement_factor:: t={} mean={} cov={}]]'.format(node.t,
             #                                                                   node.measurement_factor.mean,
             #
-        if np.linalg.det(measurement_cavity.cov) < 0:
-            return node.copy()
+        # if np.linalg.det(measurement_cavity.cov) < 0:
+        #     return node.copy()
         #                                                              node.measurement_factor.cov))
 
         result = node.copy()
@@ -360,13 +360,13 @@ class TopEP:
         #                                        match_with=obs,
         #                                        fargs=None)
 
-        if np.linalg.det(state.cov) > 0:
+        # if np.linalg.det(state.cov) > 0:
             # result.marginal = state.copy()
             #
             # result.measurement_factor = result.marginal / measurement_cavity
 
-            result.measurement_factor, result.marginal = \
-                self.power_update(projected_marginal=state,
+        result.measurement_factor, result.marginal = \
+            self.power_update(projected_marginal=state,
                                   factor=node.measurement_factor,
                                   marginal=node.marginal,
                                   cavity=measurement_cavity)
@@ -386,8 +386,8 @@ class TopEP:
         #                                                            back_cavity.mean,
         #                                                            back_cavity.cov))
 
-        if np.linalg.det(back_cavity.cov) < 0:
-            return node.copy()
+        # if np.linalg.det(back_cavity.cov) < 0:
+        #     return node.copy()
 
         result_node = node.copy()
 
@@ -399,12 +399,12 @@ class TopEP:
         #                                             match_with=forward_cavity,
         #                                             fargs=fargs)
 
-        if (np.linalg.det(state.cov)>0):
+        # if (np.linalg.det(state.cov)>0):
             # print(state.cov)
 
-            result_node.marginal = state.copy()
-            result_node.back_factor = result_node.marginal / back_cavity
-            result_node.back_factor, result_node.marginal = \
+            # result_node.marginal = state.copy()
+            # result_node.back_factor = result_node.marginal / back_cavity
+        result_node.back_factor, result_node.marginal = \
             self.power_update(projected_marginal=state,
                               factor=node.back_factor,
                               marginal=node.marginal,

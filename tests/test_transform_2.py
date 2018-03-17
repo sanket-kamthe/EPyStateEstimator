@@ -2,11 +2,12 @@ import pytest
 import numpy as np
 from StateModel import Gaussian
 from MomentMatching.newMomentMatch import UnscentedTransform, MonteCarloTransform, TaylorTransform
+dim = 2
+A = np.random.randn(dim, dim)
 
-
-def linear(x):
-    dim = x.shape[0]
-    A = np.random.randn(dim, dim)
+def linear(x, dim=1, A=A):
+    # dim = x.shape[0]
+    # A = np.random.randn(dim, dim)
     A = A @ A.T
     B = np.random.randn(dim, ) * 0
     y = A @ x + B
@@ -31,7 +32,7 @@ def transform(request):
 
 
 @pytest.fixture(scope="module",
-                params=[linear, sinusoidal, softplus])
+                params=[linear, sinusoidal, softplus], ids=['linear', 'sinusoidal', 'softplus'])
 def func(request):
     func = request.param
     return func
@@ -43,8 +44,9 @@ def distribution(dim):
     return Gaussian(mean, cov)
 
 def test_transforms(transform, func):
-    state = distribution(1)
+    state = distribution(dim)
     transform = transform(state.dim)
     pred_mean, pred_cov, pred_cross_cov = transform(func, state)
     assert pytest.approx(pred_mean, rel=1e-1, abs=1e-1) == state.mean
+    assert pytest.approx(pred_cov, rel=1e-1, abs=1e-1) == state.cov
 

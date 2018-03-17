@@ -27,22 +27,24 @@ def f(x, t=None, u=None, delta_t=0.1):
     return x_out
 
 
-def h(x, t=None, u=None, sensor_list=None):
+def h(x, t=None, u=None, sensor_list=Default_Sensor_List):
     """
 
     """
-    if sensor_list is None:
-        sensor_list = Default_Sensor_List
-    measurements = []
-    for sensor in sensor_list:
-        theta = np.arctan((x[1] - sensor.y) / (x[0] - sensor.x))
-
-        # if theta < 0:
-        #     theta += 2*np.pi
-
-        measurements.append(theta)
-
-    return np.array(measurements)
+    all_ys = [x[1] - sensor.y for sensor in sensor_list]
+    all_xs = [x[0] - sensor.x for sensor in sensor_list]
+    theta = np.arctan2(all_ys, all_xs)
+    return theta
+    # for sensor in sensor_list:
+    #     # theta = np.arctan((x[1] - sensor.y) / (x[0] - sensor.x))
+    #     theta = np.arctan2((x[1] - sensor.y) , (x[0] - sensor.x))
+    #
+    #     # if theta < 0:
+    #     #     theta += 2*np.pi
+    #
+    #     measurements.append(theta)
+    #
+    # return np.array(measurements)
 
 
 class BearingsOnlyTracking(DynamicSystemModel):
@@ -50,7 +52,7 @@ class BearingsOnlyTracking(DynamicSystemModel):
 
     """
 
-    def __init__(self, Q_sigma=0.1, R_sigma=0.05, sensor_list=None, delta_t=0.1):
+    def __init__(self, Q_sigma=0.1, R_sigma=0.05, sensor_list=Default_Sensor_List, delta_t=0.1):
 
         init_dist = Gaussian(mean_vec=np.array([0.0, 0.0, 1.0, 0.0]),
                              cov_mat=np.eye(4) * [0.1, 0.1, 10, 10])

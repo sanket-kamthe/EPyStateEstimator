@@ -202,8 +202,8 @@ class Gaussian(State):
                         shift_vec=shift)
 
     def __pow__(self, power, modulo=None):
-        if (self.cov[0, 0]) > INF:
-            return Gaussian(self.mean, self.cov)
+        # if (self.cov[0, 0]) > INF:
+            # return Gaussian(self.mean, self.cov)
 
         if self._mode == 'natural':
             precision = power * self.precision
