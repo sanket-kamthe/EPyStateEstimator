@@ -54,9 +54,9 @@ class UnscentedTransform(MappingTransform):
         # weights w_m are for computing mean and weights w_c are
         # used for covarince calculation
 
-        w_m = w_m + 1 / (2 * (n + param_lambda))
+        w_m = w_m + 1 / (2 * (n_plus_lambda))
         w_c = w_c + w_m
-        w_m[0] = param_lambda / (n + param_lambda)
+        w_m[0] = param_lambda / (n_plus_lambda)
         w_c[0] = w_m[0] + (1 - alpha * alpha + beta)
 
         w_left = np.eye(2 * n + 1) - np.array(w_m)
@@ -64,14 +64,14 @@ class UnscentedTransform(MappingTransform):
 
         return w_m, W
 
-    def _transform(self, func, state, t=None, u=None, *args, **kwargs):
-        frozen_func = partial(func, t=t, u=u, *args, **kwargs)
+    def _transform(self, func, state):
+        # frozen_func = partial(func, t=t, u=u, *args, **kwargs)
 
         sigma_pts = self._sigma_points(state.mean, state.cov)
         Xi = []
         for x in sigma_pts:
             x = np.asanyarray(x)
-            Xi.append(frozen_func(x))
+            Xi.append(func(x))
 
         Y = np.asarray(Xi)
 
@@ -80,6 +80,3 @@ class UnscentedTransform(MappingTransform):
         cross_cov = np.asarray(sigma_pts).T @ self.W @ Y
 
         return mean, cov, cross_cov
-
-    def __call__(self, func, state, t=None, u=None, *args, **kwargs):
-        return self._transform(func=func, state=state, t=t, u=u, *args, **kwargs)

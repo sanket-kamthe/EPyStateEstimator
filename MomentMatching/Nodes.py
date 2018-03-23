@@ -148,6 +148,7 @@ def node_system(nodes, system_model, measurements, farg_list=None):
         for i in range(N):
             f_kwargs = {'t': t, 'u': None}
             t += system_model.dt
+            farg_list.append(f_kwargs)
 
     for node, f_kwarg in zip(nodes, farg_list):
         setattr(node, 'trans_func', partial(system_model.transition, **f_kwarg))

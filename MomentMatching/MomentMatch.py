@@ -95,7 +95,7 @@ class MappingTransform:
         for key in self.params:
             self.__setattr__(key, self.params[key])
 
-    def _transform(self, func, state, t=None, u=None, *args, **kwargs):
+    def _transform(self, func, state):
         """
         Returns the gaussian approximation the integral
 
@@ -108,8 +108,8 @@ class MappingTransform:
         """
         return NotImplementedError
 
-    def __call__(self, func, state, t=None, u=None, *args, **kwargs):
-        return self._transform(func=func, state=state, t=t, u=u, *args, **kwargs)
+    def __call__(self, func, state):
+        return self._transform(func=func, state=state)
 
 
 class KalmanFilterMapping(MomentMatching):

@@ -2,15 +2,17 @@ import pytest
 import numpy as np
 from StateModel import Gaussian
 from MomentMatching.newMomentMatch import UnscentedTransform, MonteCarloTransform, TaylorTransform
-dim = 2
-A = np.random.randn(dim, dim)
+from MomentMatching import UnscentedTransform, TaylorTransform
 
-def linear(x, dim=1, A=A):
+dim = 1
+A = np.random.randn(dim, dim)
+A = A @ A.T
+B = np.zeros(shape=(dim, ), dtype=float )
+
+def linear(x):
     # dim = x.shape[0]
     # A = np.random.randn(dim, dim)
-    A = A @ A.T
-    B = np.random.randn(dim, ) * 0
-    y = A @ x + B
+    y = np.dot(A, x)
     return y
 
 

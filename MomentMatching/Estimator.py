@@ -21,10 +21,14 @@
 #     back
 #     meas
 from StateModel import Gaussian
-
+import numpy as np
+from scipy.linalg import solve_triangular
 # Kalman estimator
 
-class estimator:
+class Estimator:
+    '''
+
+    '''
     def __init__(self, trans_map, meas_map,
                  trans_noise=None, meas_noise=None,
                  power=1):
@@ -65,7 +69,7 @@ class estimator:
         xx_cov /= self.power
 
         # J = xx_cross_cov @ np.linalg.pinv(xx_cov)
-        J = np.linalg.solve(xx_cov, xx_cross_cov.T).T
+        J = np.linalg.solve(xx_cov.T, xx_cross_cov.T).T
         mean = state.mean + np.dot(J, (next_state.mean - xx_mean))
         cov = state.cov + J @ (next_state.cov - xx_cov) @ J.T
         smoothed_state = Gaussian(mean, cov)

@@ -17,7 +17,13 @@ from .MomentMatch import MappingTransform
 from functools import partial
 from autograd import jacobian
 from StateModel import Gaussian
-from MomentMatching.auto_grad import logpdf
+# from MomentMatching.auto_grad import logpdf
+from autograd.scipy.stats import multivariate_normal
+# from autograd.scipy.stats import multivariate_normal.logpdf as logpdf
+
+# logpdf = multivariate_normal.logpdf
+# from scipy.stats. import log
+# from scipy.stats.
 
 EPS = 1e-4
 
@@ -42,13 +48,13 @@ class TaylorTransform(MappingTransform):
 
         return np.array(jacobian).T
 
-    def _transform(self, func, state, t=None, u=None, *args, **kwargs):
+    def _transform(self, func, state):
         # (self, nonlinear_func, distribution, fargs=None, y_observation=None):
         assert isinstance(state, Gaussian)
-        frozen_func = partial(func, t=t, u=u, *args, **kwargs)
-        J_t = self.numerical_jacobian(frozen_func, state.mean)
+        # frozen_func = partial(func, t=t, u=u, *args, **kwargs)
+        J_t = self.numerical_jacobian(func, state.mean)
         # J_t = jacobian(frozen_nonlinear_func)(distribution.mean)
-        mean = frozen_func(state.mean)
+        mean = func(state.mean)
         cov = J_t @ state.cov @ J_t.T
         cross_cov = state.cov @ J_t.T
         return mean, cov, cross_cov
@@ -57,7 +63,7 @@ class TaylorTransform(MappingTransform):
         meanz = nonlinear_func(distribution.mean)  # z = f(x)
         linear_c = jacobian(nonlinear_func)(distribution.mean)  # linear factor A
         covz = linear_c @ distribution.cov @ linear_c.T  # predictive covariance sz = var(f(x)) = A * Sigma * A^T
-        logZi = logpdf(data, meanz, covz)
+        logZi = multivariate_normal.logpdf(data, meanz, covz)
 
         return logZi
 
