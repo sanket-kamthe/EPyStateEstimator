@@ -150,9 +150,10 @@ def node_system(nodes, system_model, measurements, farg_list=None):
             t += system_model.dt
             farg_list.append(f_kwargs)
 
-    for node, f_kwarg in zip(nodes, farg_list):
+    for node, measurement, f_kwarg in zip(nodes, measurements, farg_list):
         setattr(node, 'trans_func', partial(system_model.transition, **f_kwarg))
         setattr(node, 'meas_func', system_model.measurement)
+        setattr(node, meas, measurement)
 
         out_nodes.append(node)
 
@@ -160,9 +161,12 @@ def node_system(nodes, system_model, measurements, farg_list=None):
 
 
 class Node:
-    def __init__(self, dim, prev_node=None, next_node=None, factor_init=None, marginal_init=None):
+    def __init__(self, dim, index=0, prev_node=None, next_node=None, factor_init=None, marginal_init=None):
         self.next_node = next_node
-        self.prev_node = prev_node
+        self.prev_node = prev_node,
+        self.index = index
+        self.power = 1
+        self.damping = 1
 
         self.dim = dim
         if marginal_init is None:
@@ -181,7 +185,7 @@ class Node:
 
         self.converged = False
 
-    def __copy__(self):
+    def copy(self):
         cls = self.__class__
         newone = cls.__new__(cls)
         newone.__dict__.update(self.__dict__)
@@ -189,8 +193,12 @@ class Node:
 
     def fwd_update(self, proj_trans):
         fwd_cavity = self.marginal / self.forward_factor
-        prev_node = self.prev_node.copy()
-        back_cavity = prev_node.marginal / prev_node.back_factor
+        old_fwd_factor = self
+        try:
+            prev_node = self.prev_node.copy()
+            back_cavity = prev_node.marginal / prev_node.back_factor
+        except AttributeError:
+            back_cavity = self.prior
 
         try:
             state = proj_trans(self.trans_func, back_cavity)
@@ -216,8 +224,12 @@ class Node:
 
     def back_update(self, proj_back):
 
-        back_cavity = node.marginal / node.back_factor
-        next_node = self.next_node.copy()
+        back_cavity = self.marginal / self.back_factor
+
+        try:
+            next_node = self.next_node.copy()
+        except AttributeError:
+            return
         # forward_cavity = next_node.marginal / next_node.forward_factor
 
         try:
@@ -261,7 +273,7 @@ class Node:
 
 
 def build_nodes(N, dim, prior=None):
-    nodes = [Node(dim) for _ in range(N)]
+    nodes = [Node(dim, index=i) for i in range(N)]
 
     for i, node in enumerate(nodes):
         if i == 0:
