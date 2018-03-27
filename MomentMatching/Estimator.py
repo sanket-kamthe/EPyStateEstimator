@@ -22,8 +22,9 @@
 #     meas
 from StateModel import Gaussian
 import numpy as np
-from scipy.linalg import solve_triangular
+# from scipy.linalg import solve_triangular
 # Kalman estimator
+
 
 class Estimator:
     '''
@@ -31,12 +32,13 @@ class Estimator:
     '''
     def __init__(self, trans_map, meas_map,
                  trans_noise=None, meas_noise=None,
-                 power=1):
+                 power=1, damping=1):
         self.trans_map = trans_map
         self.meas_map = meas_map
         self.transition_noise = trans_noise
         self.measurement_noise = meas_noise
         self.power = power
+        self.damping = damping
 
     def proj_trans(self, func, state):
         xx_mean, xx_cov, _ = self.trans_map(func, state)
@@ -74,3 +76,11 @@ class Estimator:
         cov = state.cov + J @ (next_state.cov - xx_cov) @ J.T
         smoothed_state = Gaussian(mean, cov)
         return smoothed_state
+
+    # @property
+    # def power(self):
+    #     return self._power
+    #
+    # @power.setter
+    # def power(self, power):
+    #     s

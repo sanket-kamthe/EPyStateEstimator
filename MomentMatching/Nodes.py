@@ -189,6 +189,7 @@ class Node:
 
     def fwd_update(self, proj_trans):
         fwd_cavity = self.marginal / self.forward_factor
+        old_forward_factor = self.forward_factor
         prev_node = self.prev_node.copy()
         back_cavity = prev_node.marginal / prev_node.back_factor
 
@@ -198,7 +199,7 @@ class Node:
             return
 
         self.forward_factor = (self.forward_factor ** (1 - self.damping)) * (state ** (self.damping))
-        self.marginal = self.marginal * (self.forward_factor / self.forward_factor)
+        self.marginal = self.marginal * (self.forward_factor / old_forward_factor)
 
     def meas_update(self, proj_meas):
         measurement_cavity = self.marginal / self.measurement_factor
@@ -216,7 +217,7 @@ class Node:
 
     def back_update(self, proj_back):
 
-        back_cavity = node.marginal / node.back_factor
+        back_cavity = self.marginal / self.back_factor
         next_node = self.next_node.copy()
         # forward_cavity = next_node.marginal / next_node.forward_factor
 
