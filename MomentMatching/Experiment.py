@@ -14,16 +14,11 @@
 
 
 from .Nodes import build_nodes, node_estimator, node_system
-from MomentMatching import UnscentedTransform
-class Experiment:
-    def __init__(self, system,
-                 trans_map=UnscentedTransform,
-                 meas_map=UnscentedTransform,
-                 estimator=None,
-                 power=1, damping=1):
 
-        dim = system.system_dim
-        nodes = build_nodes()
+class Experiment:
+    def __init__(self, nodes, dynamic_system, estimator):
+
+        pass
     def run_as(self, mode):
         pass
     def save(self, params):

@@ -14,6 +14,7 @@
 
 import numpy as np
 from .MomentMatch import MappingTransform
+from Utils.linalg import  jittered_chol
 from functools import partial
 
 
@@ -33,15 +34,17 @@ class UnscentedTransform(MappingTransform):
 
     def _sigma_points(self, mean, cov, *args):
         sqrt_n_plus_lambda = np.sqrt(self.n + self.param_lambda)
-        jittered_cov = cov + 1e-4 * np.eye(self.n)
-        L = np.linalg.cholesky(jittered_cov)
+
+        # jittered_cov = cov + 1e-4 * np.eye(self.n)
+        L = jittered_chol(cov)
 
         scaledL = sqrt_n_plus_lambda * L
         mean_plus_L = mean + scaledL
         mean_minus_L = mean - scaledL
-        list_sigma_points = [mean.tolist()] + mean_plus_L.tolist() + mean_minus_L.tolist()
+        # list_sigma_points = [mean.tolist()] + mean_plus_L.tolist() + mean_minus_L.tolist()
 
-        return list_sigma_points
+        # return list_sigma_points
+        return np.vstack((mean, mean_plus_L, mean_minus_L))
 
     @staticmethod
     def _weights(n, alpha, beta, kappa):
@@ -68,13 +71,13 @@ class UnscentedTransform(MappingTransform):
         # frozen_func = partial(func, t=t, u=u, *args, **kwargs)
 
         sigma_pts = self._sigma_points(state.mean, state.cov)
-        Xi = []
-        for x in sigma_pts:
-            x = np.asanyarray(x)
-            Xi.append(func(x))
+        # Xi = []
+        # for x in sigma_pts:
+        #     x = np.asanyarray(x)
+        #     Xi.append(func(x))
 
-        Y = np.asarray(Xi)
-
+        # Y = np.asarray(Xi)
+        Y = func(np.asanyarray(sigma_pts))
         mean = self.w_m @ Y
         cov = Y.T @ self.W @ Y
         cross_cov = np.asarray(sigma_pts).T @ self.W @ Y

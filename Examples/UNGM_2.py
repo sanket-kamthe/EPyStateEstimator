@@ -37,7 +37,7 @@ x_true, x_noisy, y_true, y_noisy = zip(*data)
 power = 0.5
 damping = 0.5
 
-transform = UnscentedTransform(dim=1,  beta=2,  alpha=1, kappa=3)
+transform = UnscentedTransform(dim=1,  beta=2,  alpha=1, kappa=2)
 meas_transform = UnscentedTransform(dim=1, beta=2,  alpha=1, kappa=2)
 
 estim = Estimator(trans_map=transform,

@@ -144,7 +144,7 @@ class UnscentedTransform(MomentMatching):
 class MonteCarloTransform(MomentMatching):
     def __init__(self, dimension_of_state=1, number_of_samples=None):
         if number_of_samples is None:
-            number_of_samples = 1000
+            number_of_samples = int(1e4)
         super().__init__(approximation_method='Monte Carlo Sampling',
                          dimension_of_state=dimension_of_state,
                          number_of_samples=number_of_samples)
@@ -165,7 +165,8 @@ class MonteCarloTransform(MomentMatching):
 
         # Y = np.asarray(Xi)
 
-        propagated_samples = np.asarray(Xi)
+        # propagated_samples = np.asarray(Xi)
+        propagated_samples = func(samples)
         mean = np.mean(propagated_samples, axis=0)
         cov, cross_cov = \
             self.sample_covariance(propagated_samples.T,

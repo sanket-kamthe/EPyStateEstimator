@@ -1,10 +1,10 @@
 import pytest
 import numpy as np
 from StateModel import Gaussian
-from MomentMatching.newMomentMatch import UnscentedTransform, MonteCarloTransform, TaylorTransform
-from MomentMatching import UnscentedTransform, TaylorTransform
+# from MomentMatching.newMomentMatch import UnscentedTransform, MonteCarloTransform, TaylorTransform
+from MomentMatching import UnscentedTransform, TaylorTransform, MonteCarloTransform
 
-dim = 1
+dim = 3
 A = np.random.randn(dim, dim)
 A = A @ A.T
 B = np.zeros(shape=(dim, ), dtype=float )
@@ -12,11 +12,12 @@ B = np.zeros(shape=(dim, ), dtype=float )
 def linear(x):
     # dim = x.shape[0]
     # A = np.random.randn(dim, dim)
-    y = np.dot(A, x)
+    # y = np.einsum('ij,kj -> k', A, x)
+    y = A @ x
     return y
 
 
-def sinusoidal(x):
+def sinusoidal(x, t=0, u=0):
     y = np.sin(0.5 * x)
     return 2 * y
 
