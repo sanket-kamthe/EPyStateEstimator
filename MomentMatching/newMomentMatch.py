@@ -61,8 +61,8 @@ class MomentMatching:
         return NotImplementedError
 
     def __call__(self, func, state, t=None, u=None, *args, **kwargs):
-        # func_out = partial(self._transform,  t=None, u=None, *args, **kwargs)
-        return self._transform(func=func, state=state)
+        func_out = partial(func,  t=t, u=u, *args, **kwargs)
+        return self._transform(func=func_out, state=state)
 
 
 class UnscentedTransform(MomentMatching):

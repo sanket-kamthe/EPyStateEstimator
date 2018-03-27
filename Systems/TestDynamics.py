@@ -4,13 +4,11 @@ from StateModel import Gaussian
 import numpy as np
 
 
-def f(x, t, u=None):
+def f(x, t, u=0):
     """
-    Unified Nonlinear growth model (noise not included)
-    Transition function: x_(t+1) = f(x_t, t)
-    x_out = x/2 + 25x/(1+x^2) + 8 cos(1.2*t)
+    test function
     """
-    x_out = 0.5 * x + ((25 * x) / (1 + x ** 2)) + (8 * np.cos(1.2 * t))
+    x_out = x % 10 + 0.1 * t + 0.01 * u
     return x_out
 
 
@@ -20,23 +18,23 @@ def h(x, t=None, u=None):
     Measurement function: y_t = h(x_t)
     y = x^2/20
     """
-    return (x ** 2)/20
+    return x * 100
 
 
-class UniformNonlinearGrowthModel(DynamicSystemModel):
+class TestDynamics(DynamicSystemModel):
     """
 
     """
 
     def __init__(self):
-        init_dist = Gaussian(mean_vec=np.array([0.1]), cov_mat=np.eye(1) * 1)
+        init_dist = Gaussian(mean_vec=np.array([0.0]), cov_mat=np.eye(1) * 0.0001)
         super().__init__(system_dim=1,
                          measurement_dim=1,
                          transition=f,
                          measurement=h,
                          system_noise=GaussianNoise(dimension=1,
-                                                    cov=np.eye(1) * 1),
+                                                    cov=np.eye(1) * 0),
                          measurement_noise=GaussianNoise(dimension=1,
-                                                         cov=np.eye(1) * 1),
+                                                         cov=np.eye(1) * 0),
                          init_distribution=init_dist
                          )

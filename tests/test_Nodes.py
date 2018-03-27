@@ -1,5 +1,6 @@
 import pytest
-from MomentMatching.Nodes import build_nodes
+from MomentMatching.Nodes import build_nodes, node_system
+from Systems import TestDynamics
 
 
 def test_build_nodes(N=5, dim=2):
@@ -15,6 +16,17 @@ def test_build_nodes_index(N=5, dim=2):
 
     for i, node in enumerate(nodes):
         assert node.index == i
+
+
+def test_node_system(N=23, dim=1):
+    system = TestDynamics()
+    data = system.simulate(N)
+    x_true, x_noisy, y_true, y_noisy = zip(*data)
+    nodes = build_nodes(N, dim)
+    nodes = node_system(nodes, system, y_noisy)
+    for i, node in enumerate(nodes):
+        assert node.trans_func(i) == 0.1 * i + i%10
+        assert node.meas == y_noisy[i]
 
 
 # def test_

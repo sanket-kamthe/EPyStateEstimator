@@ -15,6 +15,7 @@
 import numpy as np
 from StateModel import Gaussian
 from itertools import tee
+from functools import partial
 import logging
 
 FORMAT = "[ %(funcName)10s() ] %(message)s"
@@ -140,23 +141,25 @@ class PowerKalmanFilterSmoother(KalmanFilterSmoother):
                          system_model=system_model,
                          meas_moment_matching=meas_moment_matching)
 
-
     def predict(self, prior_state, t=None, u=None, *args, **kwargs):
-        xx_mean, xx_cov, _ = self.transform(self.transition,
-                                            prior_state,
-                                            t=t, u=u,
-                                            *args, **kwargs)
+        func = partial(self.transition, t=t, u=u, *args, **kwargs)
+        xx_mean, xx_cov, _ = self.transform(func, prior_state)
+        # xx_mean, xx_cov, _ = self.transform(self.transition,
+        #                                     prior_state,
+        #                                     t=t, u=u,
+        #                                     *args, **kwargs)
         xx_cov += self.transition_noise
         xx_cov /= self.power
         return Gaussian(xx_mean, xx_cov)
 
     def correct(self, state, meas, t=None, u=None, *args, **kwargs):
-
-        z_mean, z_cov, xz_cross_cov = \
-            self.meas_transform(self.measurement,
-                                state,
-                                t=t, u=u,
-                                *args, **kwargs)
+        func = partial(self.measurement, t=t, u=u, *args, **kwargs)
+        z_mean, z_cov, xz_cross_cov = self.meas_transform(func, state)
+        # z_mean, z_cov, xz_cross_cov = \
+        #     self.meas_transform(self.measurement,
+        #                         state,
+        #                         t=t, u=u,
+        #                         *args, **kwargs)
 
         z_cov += self.measurement_noise
         z_cov /= self.power
@@ -169,12 +172,13 @@ class PowerKalmanFilterSmoother(KalmanFilterSmoother):
         return Gaussian(mean, cov)
 
     def smooth(self, state, next_state, t=None, u=None, *args, **kwargs):
-
-        xx_mean, xx_cov, xx_cross_cov = \
-            self.transform(self.transition,
-                           state,
-                           t=t, u=u,
-                           *args, **kwargs)
+        func = partial(self.transition, t=t, u=u, *args, **kwargs)
+        xx_mean, xx_cov, xx_cross_cov = self.transform(func, state)
+        # xx_mean, xx_cov, xx_cross_cov = \
+        #     self.transform(self.transition,
+        #                    state,
+        #                    t=t, u=u,
+        #                    *args, **kwargs)
 
         xx_cov += self.transition_noise
         xx_cov /= self.power

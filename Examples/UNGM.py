@@ -24,10 +24,10 @@ plt.ion()
 SEED = 11
 np.random.seed(seed=SEED)
 
-N = 50
+N = 5
 sys_dim = 1
-# system = UniformNonlinearGrowthModel()
-system = BearingsOnlyTracking()
+system = UniformNonlinearGrowthModel()
+# system = BearingsOnlyTracking()
 sys_dim = system.system_dim
 meas_dim = system.measurement_dim
 data = system.simulate(N)
@@ -38,10 +38,10 @@ power = 0.5
 damping = 0.5
 EP_iters = 50
 
-# transform = UnscentedTransform(n=sys_dim,  beta=0,  alpha=1, kappa=3)
-# meas_transform = UnscentedTransform(n=sys_dim, beta=0,  alpha=1, kappa=2)
-transform = TaylorTransform()
-meas_transform = TaylorTransform()
+transform = UnscentedTransform(n=sys_dim,  beta=2,  alpha=1, kappa=3)
+meas_transform = UnscentedTransform(n=sys_dim, beta=2,  alpha=1, kappa=2)
+# transform = TaylorTransform()
+# meas_transform = TaylorTransform()
 
 # transform = MonteCarloTransform(dimension_of_state=sys_dim)
 # meas_transform = MonteCarloTransform(dimension_of_state=sys_dim)
