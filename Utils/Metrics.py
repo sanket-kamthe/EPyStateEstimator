@@ -17,3 +17,5 @@ def rmse(state_list, true_list):
 
     mean_sqaured_err = sum(result)/len(result)
     return np.sqrt(mean_sqaured_err)
+
+

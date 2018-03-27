@@ -272,7 +272,7 @@ class Node:
         raise OverLoadError
 
 
-def build_nodes(N, dim, prior=None):
+def build_nodes(N, dim, estimator=None, system=None):
     nodes = [Node(dim, index=i) for i in range(N)]
 
     for i, node in enumerate(nodes):
@@ -287,4 +287,11 @@ def build_nodes(N, dim, prior=None):
 
         node.next_node = nodes[i + 1]
         node.prev_node = nodes[i - 1]
+
+    if estimator is not None:
+        nodes = node_estimator(nodes=nodes, estimator=estimator)
+
+    if system is not None:
+        nodes = node_system(nodes=nodes, system_model=system)
+
     return nodes
