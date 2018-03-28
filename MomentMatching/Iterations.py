@@ -13,6 +13,9 @@
 # limitations under the License.
 
 from Utils.Metrics import node_metrics
+from MomentMatching.Database import insert_experiment_data, Exp_Data
+
+
 
 def kalman_filter(nodes):
     for node in nodes:
@@ -39,18 +42,22 @@ def ep_update(nodes):
         node.back_update()
 
 
-def ep_iterations(nodes, max_iter=100, fwd_back=True, x_true=None  ):
+def ep_iterations(nodes, max_iter=100, x_true=None, conn=None, exp_data=None):
+    db = conn.cursor()
+    exp_data = exp_data._asdict()
 
-    if fwd_back:
-        ep_fwd_back_updates(nodes)
-        max_iter -= 1
-    if x_true is not None:
-        rmse, nll = node_metrics(nodes, x_true=x_true)
-        print('\n EP Pass {} NLL = {}, RMSE = {}'.format(1, nll, rmse))
-        # print()
     for i in range(max_iter):
         # ep_update(nodes)
         ep_fwd_back_updates(nodes)
         if x_true is not None:
-            rmse, nll = node_metrics(nodes, x_true=x_true)
-            print('\n EP Pass {} NLL = {}, RMSE = {}'.format(i + 2, nll, rmse))
+            exp_data['Iter'] += 1
+            exp_data['RMSE'], exp_data['NLL'] = node_metrics(nodes, x_true=x_true)
+            exp_data['Mean'] = [node.marginal.mean for node in nodes]
+            exp_data['Variance'] = [node.marginal.cov for node in nodes]
+            exp_data['Nodes'] = nodes
+            # data = Exp_Data._make(exp_data.values())
+            insert_experiment_data(db=db, table_name='UNGM_EXP', data=exp_data)
+            # print('\n EP Pass {} NLL = {}, RMSE = {}'.format(i+1,
+            #                                                  exp_data['NLL'],
+            #                                                  exp_data['RMSE']))
+            conn.commit()
