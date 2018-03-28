@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from Utils.Metrics import node_metrics
 
 def kalman_filter(nodes):
     for node in nodes:
@@ -38,12 +39,18 @@ def ep_update(nodes):
         node.back_update()
 
 
-def ep_iterations(nodes, max_iter=100, fwd_back=True):
+def ep_iterations(nodes, max_iter=100, fwd_back=True, x_true=None  ):
 
     if fwd_back:
         ep_fwd_back_updates(nodes)
         max_iter -= 1
-
+    if x_true is not None:
+        rmse, nll = node_metrics(nodes, x_true=x_true)
+        print('\n EP Pass {} NLL = {}, RMSE = {}'.format(1, nll, rmse))
+        # print()
     for i in range(max_iter):
         # ep_update(nodes)
         ep_fwd_back_updates(nodes)
+        if x_true is not None:
+            rmse, nll = node_metrics(nodes, x_true=x_true)
+            print('\n EP Pass {} NLL = {}, RMSE = {}'.format(i + 2, nll, rmse))

@@ -44,7 +44,7 @@ class MonteCarloTransform(MappingTransform):
         x_dim = x_samples.shape[0]
         y_dim = y_samples.shape[0]
         total_cov = np.cov(x_samples, y_samples, bias=True)
-        cov = total_cov[0:y_dim, 0:y_dim]
+        cov = total_cov[x_dim:, x_dim:]
         cross_cov = total_cov[0:x_dim, x_dim:]
 
         return cov, cross_cov

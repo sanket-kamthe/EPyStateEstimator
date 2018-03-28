@@ -29,9 +29,9 @@ EPS = 1e-4
 
 
 class TaylorTransform(MappingTransform):
-    def __init__(self, dimension_of_state=1, eps=EPS):
+    def __init__(self, dim=1, eps=EPS):
         super().__init__(approximation_method='Taylor 1st Order',
-                         dimension_of_state=dimension_of_state,
+                         dimension_of_state=dim,
                          eps=eps)
 
     @staticmethod
