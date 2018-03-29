@@ -106,15 +106,14 @@ def create_experiment_table(db, table_name='UNGM_EXP'):
                 NLL REAL,
                 Mean pickle,
                 Variance pickle,
-                Nodes Nodes, 
                 UNIQUE (Transform, Seed, Iter, Power, Damping)
                 )""".format(table_name)
     db.execute(schema)
 
 
 experiment_data_string = "INSERT OR IGNORE INTO {}" \
-                         " (Transform, Seed, Iter, Power, Damping, RMSE, NLL, Mean, Variance, Nodes)" \
-                         "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ? )"
+                         " (Transform, Seed, Iter, Power, Damping, RMSE, NLL, Mean, Variance)" \
+                         "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ? )"
 
 
 def insert_experiment_data(db, table_name, data):
