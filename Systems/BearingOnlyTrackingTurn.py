@@ -9,9 +9,7 @@ import numpy
 
 Sensor = namedtuple('Sensor', ['x', 'y'])
 Default_Sensor_List = [Sensor(x=-10, y=10),
-                       Sensor(x=10, y=10),
-                       Sensor(x=-10, y=-10),
-                       Sensor(x=10, y=-10)]
+                       Sensor(x=-10, y=-10)]
 
 def f(x, t=None, u=None, delta_t=0.1):
     """
@@ -19,15 +17,16 @@ def f(x, t=None, u=None, delta_t=0.1):
     x_t+1 = F_t * x_t + G_t*w_t
     x_t = [x_t, y_t, \dot x_t, \dot y_t]
     """
-    f_t = np.array([[1,  0,  delta_t,       0],
-                  [0,    1,        0, delta_t],
-                  [0,    0,        1,       0],
-                  [0,    0,        0,       1]
+    dt = delta_t
+
+    f_t = np.array([[1,    dt,       0,       0],
+                    [0,    1,        0,       0],
+                    [0,    0,        1,      dt],
+                    [0,    0,        0,       1]
                   ])
 
     # x_out = f_t @ x
     x_out = np.einsum('ij, kj->ki', f_t, np.atleast_2d(x))
-    # x_out = np.squeeze(x_out)
     return x_out
 
 
@@ -35,11 +34,11 @@ def h(x, t=None, u=None, sensor_list=Default_Sensor_List):
     """
 
     """
-    x = np.atleast_2d(x)
-    all_ys = [x[:, 1] - sensor.y for sensor in sensor_list]
+    all_ys = [x[:, 2] - sensor.y for sensor in sensor_list]
     all_xs = [x[:, 0] - sensor.x for sensor in sensor_list]
-    theta = np.arctan2(all_ys, all_xs)
-    return theta.T
+    return np.sqrt(np.array(all_xs) ** 2 + np.array(all_ys) **2 ).T
+    # theta = np.arctan2(all_ys, all_xs)
+    # return theta.T
     # for sensor in sensor_list:
     #     # theta = np.arctan((x[1] - sensor.y) / (x[0] - sensor.x))
     #     theta = np.arctan2((x[1] - sensor.y) , (x[0] - sensor.x))
@@ -52,15 +51,15 @@ def h(x, t=None, u=None, sensor_list=Default_Sensor_List):
     # return np.array(measurements)
 
 
-class BearingsOnlyTracking(DynamicSystemModel):
+class BearingsOnlyTrackingTurn(DynamicSystemModel):
     """
 
     """
 
-    def __init__(self, Q_sigma=0.01, R_sigma=0.05, sensor_list=Default_Sensor_List, delta_t=0.1):
+    def __init__(self, Q_sigma=1e-3, R_sigma=1, sensor_list=Default_Sensor_List, delta_t=1):
 
         init_dist = Gaussian(mean_vec=np.array([0.0, 0.0, 1.0, 0.0]),
-                             cov_mat=np.eye(4) * [0.1, 0.1, 1, 1])
+                             cov_mat=np.eye(4) * [0.1, 0.1, 10, 10])
         if sensor_list is None:
             meas_dim = len(Default_Sensor_List)
         else:
@@ -68,16 +67,22 @@ class BearingsOnlyTracking(DynamicSystemModel):
 
         transition = partial(f, delta_t=delta_t)
         measurement = partial(h, sensor_list=sensor_list)
+        dt = delta_t
+        F2 = np.array([[(dt**4)/4,       (dt**3)/2],
+                       [(dt**3)/2,       (dt**4)/4]
+                       ])
+        system_noise_cov = np.kron(np.eye(2), F2) * Q_sigma
 
-        system_noise_cov = np.array([[(delta_t**3)/3,        0.0, (delta_t**2)/2, 0.0],
-                                     [0.0,        (delta_t**3)/3, 0,   (delta_t**2)/2],
-                                     [(delta_t**2)/2,          0, delta_t,          0],
-                                     [0,          (delta_t**2)/2, 0,          delta_t]
-                                     ]) * Q_sigma
+        # system_noise_cov = np.array([
+        #                              [(dt**4)/4,       (dt**3)/2,       0.0,         0.0],
+        #                              [dt**3)/2,            dt**2,       0.0,         0.0],
+        #                              [0,                       0,  dt**4)/4,   (dt**3)/2],
+        #                              [0,                       0, (dt**3)/2,       dt**2]
+        #                             ]) * Q_sigma
 
         system_noise = GaussianNoise(dimension=4, cov=system_noise_cov)
         meas_noise = GaussianNoise(dimension=meas_dim,
-                                   cov=np.eye(meas_dim) * (R_sigma))
+                                   cov=np.eye(meas_dim) * (R_sigma**2))
 
         super().__init__(system_dim=4,
                          measurement_dim=meas_dim,

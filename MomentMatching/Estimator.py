@@ -44,22 +44,23 @@ class Estimator:
         xx_mean, xx_cov, _ = self.trans_map(func, state)
         xx_cov += self.transition_noise
         xx_cov /= self.power
-
+        # np.linalg.cholesky(xx_cov)
         pred_state = Gaussian(xx_mean, xx_cov)
         return pred_state
 
     def proj_meas(self, func, state, meas):
+        np.linalg.cholesky(state.cov)
         z_mean, z_cov, xz_cross_cov = \
             self.meas_map(func, state)
 
         z_cov += self.measurement_noise
         z_cov /= self.power
-
+        np.linalg.cholesky(z_cov)
         # kalman_gain = np.matmul(xz_cross_cov, np.linalg.pinv(z_cov))
         kalman_gain = np.linalg.solve(z_cov, xz_cross_cov.T).T
         mean = state.mean + kalman_gain @ (meas - z_mean)  # equation 15  in Marc's ACC paper
         cov = state.cov - kalman_gain @ xz_cross_cov.T
-
+        # np.linalg.cholesky(cov)
         corrected_state = Gaussian(mean, cov)
         return corrected_state
 
@@ -74,6 +75,7 @@ class Estimator:
         J = np.linalg.solve(xx_cov, xx_cross_cov.T).T
         mean = state.mean + np.dot(J, (next_state.mean - xx_mean))
         cov = state.cov + J @ (next_state.cov - xx_cov) @ J.T
+        # np.linalg.cholesky(cov)
         smoothed_state = Gaussian(mean, cov)
         return smoothed_state
 

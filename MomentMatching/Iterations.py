@@ -57,7 +57,7 @@ def ep_iterations(nodes, max_iter=100, x_true=None, conn=None, exp_data=None):
             exp_data['Nodes'] = nodes
             # data = Exp_Data._make(exp_data.values())
             insert_experiment_data(db=db, table_name='UNGM_EXP', data=exp_data)
-            # print('\n EP Pass {} NLL = {}, RMSE = {}'.format(i+1,
-            #                                                  exp_data['NLL'],
-            #                                                  exp_data['RMSE']))
+            print('\n EP Pass {} NLL = {}, RMSE = {}'.format(i+1,
+                                                             exp_data['NLL'],
+                                                             exp_data['RMSE']))
             conn.commit()

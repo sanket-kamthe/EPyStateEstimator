@@ -17,7 +17,7 @@ import itertools
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from Systems import UniformNonlinearGrowthModel
+from Systems import UniformNonlinearGrowthModel, BearingsOnlyTracking, BearingsOnlyTrackingTurn
 from MomentMatching import UnscentedTransform, MonteCarloTransform, TaylorTransform
 from MomentMatching.Estimator import Estimator
 from MomentMatching.Nodes import build_nodes, node_estimator, node_system
@@ -32,8 +32,10 @@ import itertools
 def select_transform(id='UT', dim=1, samples=int(1e4)):
 
     if id.upper() == 'UT':
-        transition_transform = UnscentedTransform(dim=dim, beta=2, alpha=1, kappa=3)
-        measurement_transform = UnscentedTransform(dim=dim, beta=2, alpha=1, kappa=2)
+        alpha = np.sqrt(3/dim)
+        beta = 3/dim - 1
+        transition_transform = UnscentedTransform(dim=dim, beta=beta, alpha=alpha, kappa=0)
+        measurement_transform = UnscentedTransform(dim=dim, beta=beta, alpha=alpha, kappa=0)
 
     elif id.upper() == 'TT':
         transition_transform = TaylorTransform(dim=dim)
@@ -50,8 +52,8 @@ def select_transform(id='UT', dim=1, samples=int(1e4)):
     return transition_transform, measurement_transform
 
 
-def power_sweep(trans_id='UT', power=1, damping=1):
-    transform, meas_transform = select_transform(id=trans_id)
+def power_sweep(trans_id='UT', power=1, damping=1, dim=1, samples=int(1e5)):
+    transform, meas_transform = select_transform(id=trans_id, dim=dim, samples=samples)
 
     exp_data = Exp_Data(Transform=trans_id,
                         Seed=SEED,
@@ -81,9 +83,11 @@ def power_sweep(trans_id='UT', power=1, damping=1):
 SEED = 11
 
 np.random.seed(seed=SEED)
-sys_dim = 1
+sys_dim = 4
 N = 50
-system = UniformNonlinearGrowthModel()
+# system = UniformNonlinearGrowthModel()
+system = BearingsOnlyTracking()
+# system = BearingsOnlyTrackingTurn()
 data = system.simulate(N)
 x_true, x_noisy, y_true, y_noisy = zip(*data)
 
@@ -96,10 +100,10 @@ insert_dynamics_data(db, table_name=table_name, data=data, seed=SEED)
 con.commit()
 # con.close()
 
-power = 1
-damping = 1
+power = 0.5
+damping = 0.6
 
-trans_id = 'UT'
+trans_id = 'TT'
 transform, meas_transform = select_transform(id=trans_id)
 
 exp_data = Exp_Data(Transform=trans_id,
@@ -120,12 +124,12 @@ estim = Estimator(trans_map=transform,
                   power=power,
                   damping=damping)
 
-nodes = build_nodes(N=N, dim=1)
+nodes = build_nodes(N=N, dim=sys_dim)
 nodes = node_estimator(nodes=nodes, estimator=estim)
 nodes = node_system(nodes=nodes, system_model=system, measurements=y_noisy)
 
 
-plt.plot(x_true, 'r--', label='X_true')
+# plt.plot(x_true[:, 0], 'r--', label='X_true')
 # kalman_filter(nodes)
 # filt_mean = [node.marginal.mean for node in nodes]
 
@@ -138,14 +142,15 @@ plt.plot(x_true, 'r--', label='X_true')
 
 # smoothed_mean = [node.marginal.mean for node in nodes]
 create_experiment_table(db=con.cursor())
-x = 10
-y = 10
-power_range = np.linspace(0.1, 1.0, num=x)
-damp_range = np.linspace(0.1, 1.0, num=y)
-trans = ['MCT', 'TT', 'UT']
-print(len(list(itertools.product(trans, power_range, damp_range))))
-for trans, power, damping in itertools.product(trans, power_range, damp_range):
-    power_sweep(trans_id=trans, power=power, damping=damping)
+power_sweep(trans_id=trans_id, power=power, damping=damping, dim=sys_dim, )
+# x = 10
+# y = 10
+# power_range = np.linspace(0.1, 1.0, num=x)
+# damp_range = np.linspace(0.1, 1.0, num=y)
+# trans = ['MCT', 'TT', 'UT']
+# print(len(list(itertools.product(trans, power_range, damp_range))))
+# for trans, power, damping in itertools.product(trans, power_range, damp_range):
+#     power_sweep(trans_id=trans, power=power, damping=damping)
 # ep_iterations(nodes, max_iter=100, conn=con, x_true=x_true, exp_data=exp_data)
 # EP_mean = [node.marginal.mean for node in nodes]
 # plot_gaussian_node(nodes)

@@ -44,7 +44,7 @@ def natural_to_moment(precision, shift):
                              assume_a='pos')
 
     except LinAlgError:
-        print('possible bad precision matrix {}'.format(precision))
+        # print('possible bad precision matrix {}'.format(precision))
         raise LinAlgError
     mean = np.dot(cov, shift)
     return mean, cov
@@ -55,7 +55,7 @@ def moment_to_natural(mean, cov):
     try:
         precision = jittered_solve(cov, np.eye(N=dim), assume_a='pos')
     except LinAlgError:
-        print('possible bad covariance matrix {}'.format(cov))
+        # print('possible bad covariance matrix {}'.format(cov))
         raise LinAlgError
 
     # precision = np.linalg.pinv(cov)
@@ -63,7 +63,7 @@ def moment_to_natural(mean, cov):
     return precision, shift
 
 
-class Gaussian(State):
+class Gaussian:
     """
 
     Define a Gaussian state model for EP operations in
@@ -142,8 +142,8 @@ class Gaussian(State):
         return self._cov
 
     @cov.setter
-    def cov(self, cov):
-        self._cov = cov
+    def cov(self, value):
+        self._cov = value
 
     @property
     def precision(self):
@@ -205,15 +205,15 @@ class Gaussian(State):
         # if (self.cov[0, 0]) > INF:
             # return Gaussian(self.mean, self.cov)
 
-        if self._mode == 'natural':
-            precision = power * self.precision
-            shift = power * self.shift
-            return Gaussian(precision_mat=precision,
+        # if self._mode == 'natural':
+        precision = power * self.precision
+        shift = power * self.shift
+        return Gaussian(precision_mat=precision,
                             shift_vec=shift)
-        else:
-            cov = self.cov / power
-            cov = (cov.T + cov) / 2
-        return Gaussian(self.mean, cov)
+        # else:
+        #     cov = self.cov / power
+        #     cov = (cov.T + cov) / 2
+        # return Gaussian(self.mean, cov)
 
     def __eq__(self, other):
         # Make sure that 'other' is also a GaussianState class
@@ -267,7 +267,10 @@ class Gaussian(State):
             return str.format('GaussianState \n mean=\n {}, \n cov=\n{})', self.mean, self.cov)
 
     def __str__(self):
-        return str.format('mean={},cov={}', self.mean, self.cov)
+        if self._mode == 'natural':
+            return str.format('shift={}, precis={}', self.shift, self.precision)
+        else:
+            return str.format('mean={},cov={}', self.mean, self.cov)
 
     def copy(self):
         if self._mode == 'natural':
@@ -280,7 +283,8 @@ class Gaussian(State):
 
         shift = np.zeros((dim,), dtype=float)
         precision = np.zeros((dim, dim), dtype=float)
-        return cls(shift_vec=shift, precision_mat=precision)
+        factor = cls(shift_vec=shift, precision_mat=precision, cov_mat=None)
+        return factor
 
     @classmethod
     def from_natural(cls, precision, shift):
@@ -295,8 +299,11 @@ class Gaussian(State):
 
 class GaussianFactor(Gaussian):
     def __init__(self, dim):
-        mean = np.zeros((dim,), dtype=float)
-        diag_cov = np.inf * np.ones((dim,), dtype=float)
-        cov = np.diag(diag_cov)
-        super().__init__(mean_vec=mean,
-                         cov_mat=cov)
+        shift = np.zeros((dim,), dtype=float)
+        precision = np.zeros((dim, dim), dtype=float)
+        super().__init__(shift_vec=shift, precision_mat=precision, cov_mat=None)
+        # mean = np.zeros((dim,), dtype=float)
+        # diag_cov = np.inf * np.ones((dim,), dtype=float)
+        # cov = np.diag(diag_cov)
+        # super().__init__(mean_vec=mean,
+        #                  cov_mat=cov)
