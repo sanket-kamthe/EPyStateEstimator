@@ -14,7 +14,7 @@
 
 
 import numpy as np
-from StateModel import Gaussian
+from StateModel import Gaussian, GaussianFactor
 from .ExpectationPropagation import TopEP
 from numpy.linalg import LinAlgError
 from functools import partial, partialmethod
@@ -153,7 +153,7 @@ def node_system(nodes, system_model, measurements, farg_list=None):
     for node, measurement, f_kwarg in zip(nodes, measurements, farg_list):
         setattr(node, 'trans_func', partial(system_model.transition, **f_kwarg))
         setattr(node, 'meas_func', system_model.measurement)
-        setattr(node, 'meas', measurement)
+        setattr(node, 'meas', np.squeeze(measurement))
 
         out_nodes.append(node)
 
@@ -250,6 +250,7 @@ class Node:
     def power_update(self, projected_marginal, factor, marginal, cavity):
         damping = self.damping
         power = self.power
+        # if power == 1
         # projected_marginal = project(f, tilted_marginal)  # PowerEP equation 21
         new_factor = (factor ** (1 - damping)) * ((projected_marginal / cavity) ** damping)  # PowerEP equation 22
         new_marginal = marginal * ((projected_marginal / marginal) ** (damping / power))  # PowerEP equation 23

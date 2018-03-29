@@ -77,7 +77,7 @@ class UnscentedTransform(MappingTransform):
         #     Xi.append(func(x))
 
         # Y = np.asarray(Xi)
-        Y = func(np.asanyarray(sigma_pts))
+        Y = func(sigma_pts)
         mean = self.w_m @ Y
         cov = Y.T @ self.W @ Y
         cross_cov = np.asarray(sigma_pts).T @ self.W @ Y

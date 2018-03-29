@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from numpy.linalg import LinAlgError
 
-from Systems import UniformNonlinearGrowthModel
+from Systems import UniformNonlinearGrowthModel, BearingsOnlyTracking, BearingsOnlyTrackingTurn
 from MomentMatching import UnscentedTransform, MonteCarloTransform, TaylorTransform
 from MomentMatching.Estimator import Estimator
 from MomentMatching.Nodes import build_nodes, node_estimator, node_system
@@ -51,8 +51,8 @@ def select_transform(id='UT', dim=1, samples=int(5e4)):
     return transition_transform, measurement_transform
 
 
-def power_sweep(trans_id='UT', power=1, damping=1):
-    transform, meas_transform = select_transform(id=trans_id)
+def power_sweep(trans_id='UT', power=1, damping=1, dim=1, samples=int(1e5)):
+    transform, meas_transform = select_transform(id=trans_id, dim=dim, samples=samples)
 
     exp_data = Exp_Data(Transform=trans_id,
                         Seed=SEED,
@@ -82,9 +82,11 @@ def power_sweep(trans_id='UT', power=1, damping=1):
 SEED = 11
 
 np.random.seed(seed=SEED)
-sys_dim = 1
+sys_dim = 4
 N = 50
-system = UniformNonlinearGrowthModel()
+# system = UniformNonlinearGrowthModel()
+system = BearingsOnlyTracking()
+# system = BearingsOnlyTrackingTurn()
 data = system.simulate(N)
 x_true, x_noisy, y_true, y_noisy = zip(*data)
 
@@ -97,10 +99,10 @@ insert_dynamics_data(db, table_name=table_name, data=data, seed=SEED)
 con.commit()
 # con.close()
 
-power = 1
-damping = 1
+power = 0.5
+damping = 0.6
 
-trans_id = 'UT'
+trans_id = 'TT'
 transform, meas_transform = select_transform(id=trans_id)
 
 exp_data = Exp_Data(Transform=trans_id,
@@ -121,12 +123,12 @@ estim = Estimator(trans_map=transform,
                   power=power,
                   damping=damping)
 
-nodes = build_nodes(N=N, dim=1)
+nodes = build_nodes(N=N, dim=sys_dim)
 nodes = node_estimator(nodes=nodes, estimator=estim)
 nodes = node_system(nodes=nodes, system_model=system, measurements=y_noisy)
 
 
-plt.plot(x_true, 'r--', label='X_true')
+# plt.plot(x_true[:, 0], 'r--', label='X_true')
 # kalman_filter(nodes)
 # filt_mean = [node.marginal.mean for node in nodes]
 

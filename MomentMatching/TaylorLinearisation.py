@@ -53,8 +53,10 @@ class TaylorTransform(MappingTransform):
         assert isinstance(state, Gaussian)
         # frozen_func = partial(func, t=t, u=u, *args, **kwargs)
         J_t = self.numerical_jacobian(func, state.mean)
-        # J_t = jacobian(frozen_nonlinear_func)(distribution.mean)
+        # J_t = jacobian(func)(state.mean)
+        J_t = np.squeeze(J_t)
         mean = func(state.mean)
+        mean = np.squeeze(mean)
         cov = J_t @ state.cov @ J_t.T
         cross_cov = state.cov @ J_t.T
         return mean, cov, cross_cov
