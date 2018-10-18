@@ -45,7 +45,7 @@ def ep_update(nodes):
 def ep_iterations(nodes, max_iter=100, x_true=None, conn=None, exp_data=None):
     db = conn.cursor()
     exp_data = exp_data._asdict()
-
+    del exp_data['Nodes']
     for i in range(max_iter):
         # ep_update(nodes)
         ep_fwd_back_updates(nodes)
@@ -54,7 +54,7 @@ def ep_iterations(nodes, max_iter=100, x_true=None, conn=None, exp_data=None):
             exp_data['RMSE'], exp_data['NLL'] = node_metrics(nodes, x_true=x_true)
             exp_data['Mean'] = [node.marginal.mean for node in nodes]
             exp_data['Variance'] = [node.marginal.cov for node in nodes]
-            exp_data['Nodes'] = nodes
+            # exp_data['Nodes'] = nodes
             # data = Exp_Data._make(exp_data.values())
             insert_experiment_data(db=db, table_name='UNGM_EXP', data=exp_data)
             print('\n EP Pass {} NLL = {}, RMSE = {}'.format(i+1,
