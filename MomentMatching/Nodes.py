@@ -17,6 +17,7 @@ import numpy as np
 from StateModel import Gaussian, GaussianFactor
 from .ExpectationPropagation import TopEP
 from numpy.linalg import LinAlgError
+from Utils import validate_covariance
 from functools import partial, partialmethod
 
 class OverLoadError(Exception):
@@ -192,7 +193,7 @@ class Node:
         return newone
 
     def fwd_update(self, proj_trans):
-        fwd_cavity = self.marginal / self.forward_factor
+        # fwd_cavity = self.marginal / self.forward_factor
         old_forward_factor = self.forward_factor
         try:
             prev_node = self.prev_node.copy()
@@ -202,25 +203,33 @@ class Node:
 
         try:
             state = proj_trans(self.trans_func, back_cavity)
+            validate_covariance(state)
+
+
+
+            fwd_factor = (self.forward_factor ** (1 - self.damping)) * (state ** (self.damping))
+            marginal = self.marginal * (self.forward_factor / old_forward_factor)
+            validate_covariance(marginal)
         except LinAlgError:
             return
 
-        self.forward_factor = (self.forward_factor ** (1 - self.damping)) * (state ** (self.damping))
-        self.marginal = self.marginal * (self.forward_factor / old_forward_factor)
+        self.forward_factor, self.marginal = fwd_factor, marginal
 
     def meas_update(self, proj_meas):
         measurement_cavity = self.marginal / self.measurement_factor
 
         try:
             state = proj_meas(self.meas_func, measurement_cavity, self.meas)
+            validate_covariance(state)
+
+
+            self.measurement_factor, self.marginal = \
+                self.power_update(projected_marginal=state,
+                                  factor=self.measurement_factor,
+                                  marginal=self.marginal,
+                                  cavity=measurement_cavity)
         except LinAlgError:
             return
-
-        self.measurement_factor, self.marginal = \
-            self.power_update(projected_marginal=state,
-                              factor=self.measurement_factor,
-                              marginal=self.marginal,
-                              cavity=measurement_cavity)
 
     def back_update(self, proj_back):
 
@@ -236,15 +245,17 @@ class Node:
             state = proj_back(next_node.trans_func,
                               back_cavity,
                               next_node.marginal)
+            validate_covariance(state)
+
+
+
+            self.back_factor, self.marginal = \
+                self.power_update(projected_marginal=state,
+                                  factor=self.back_factor,
+                                  marginal=self.marginal,
+                                  cavity=back_cavity)
         except LinAlgError:
             return
-
-
-        self.back_factor, self.marginal = \
-            self.power_update(projected_marginal=state,
-                              factor=self.back_factor,
-                              marginal=self.marginal,
-                              cavity=back_cavity)
 
 
     def power_update(self, projected_marginal, factor, marginal, cavity):
@@ -254,6 +265,8 @@ class Node:
         # projected_marginal = project(f, tilted_marginal)  # PowerEP equation 21
         new_factor = (factor ** (1 - damping)) * ((projected_marginal / cavity) ** damping)  # PowerEP equation 22
         new_marginal = marginal * ((projected_marginal / marginal) ** (damping / power))  # PowerEP equation 23
+
+        validate_covariance(new_marginal)
 
         return new_factor, new_marginal
 

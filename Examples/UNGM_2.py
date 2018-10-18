@@ -14,28 +14,30 @@
 
 import numpy as np
 import itertools
-import matplotlib.pyplot as plt
-import seaborn as sns
+# import matplotlib.pyplot as plt
+# import seaborn as sns
 
 from Systems import UniformNonlinearGrowthModel, BearingsOnlyTracking, BearingsOnlyTrackingTurn
 from MomentMatching import UnscentedTransform, MonteCarloTransform, TaylorTransform
 from MomentMatching.Estimator import Estimator
 from MomentMatching.Nodes import build_nodes, node_estimator, node_system
 from MomentMatching.Iterations import kalman_filter, kalman_smoother, ep_update, ep_iterations
-from Utils.Plot_Helper import plot_gaussian_node
+# from Utils.Plot_Helper import plot_gaussian_node
 from MomentMatching.Database import create_dynamics_table, insert_dynamics_data
 import sqlite3
 from MomentMatching.Database import create_experiment_table, Exp_Data
 import itertools
 
 
-def select_transform(id='UT', dim=1, samples=int(1e4)):
+def select_transform(id='UT', dim=1, samples=int(1e5)):
 
     if id.upper() == 'UT':
         alpha = np.sqrt(3/dim)
-        beta = 3/dim - 1
-        transition_transform = UnscentedTransform(dim=dim, beta=beta, alpha=alpha, kappa=0)
-        measurement_transform = UnscentedTransform(dim=dim, beta=beta, alpha=alpha, kappa=0)
+        # beta = 3/dim - 1
+        beta = 2
+        kappa = 1e-3
+        transition_transform = UnscentedTransform(dim=dim, beta=beta, alpha=alpha, kappa=kappa)
+        measurement_transform = UnscentedTransform(dim=dim, beta=beta, alpha=alpha, kappa=kappa)
 
     elif id.upper() == 'TT':
         transition_transform = TaylorTransform(dim=dim)
@@ -73,20 +75,20 @@ def power_sweep(trans_id='UT', power=1, damping=1, dim=1, samples=int(1e5)):
                       power=power,
                       damping=damping)
 
-    nodes = build_nodes(N=N, dim=1)
+    nodes = build_nodes(N=N, dim=dim)
     nodes = node_estimator(nodes=nodes, estimator=estim)
     nodes = node_system(nodes=nodes, system_model=system, measurements=y_noisy)
 
-    ep_iterations(nodes, max_iter=100, conn=con, x_true=x_true, exp_data=exp_data)
+    ep_iterations(nodes, max_iter=20, conn=con, x_true=x_true, exp_data=exp_data)
 
 
-SEED = 11
+SEED = 100
 
 np.random.seed(seed=SEED)
-sys_dim = 4
-N = 50
-# system = UniformNonlinearGrowthModel()
-system = BearingsOnlyTracking()
+sys_dim = 1
+N = 100
+system = UniformNonlinearGrowthModel()
+# system = BearingsOnlyTracking()
 # system = BearingsOnlyTrackingTurn()
 data = system.simulate(N)
 x_true, x_noisy, y_true, y_noisy = zip(*data)
@@ -101,9 +103,9 @@ con.commit()
 # con.close()
 
 power = 0.5
-damping = 0.6
+damping = 0.5
 
-trans_id = 'TT'
+trans_id = 'UT'
 transform, meas_transform = select_transform(id=trans_id)
 
 exp_data = Exp_Data(Transform=trans_id,

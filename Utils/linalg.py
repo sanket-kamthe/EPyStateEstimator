@@ -38,6 +38,12 @@ def jittered_solve(a, b, jitter=None, overwrite_a=False, overwrite_b=False, assu
     x = solve(a, b, overwrite_a=overwrite_a, overwrite_b=overwrite_b, assume_a=assume_a, transposed=transposed)
     return x
 
+def validate_covariance(state):
+
+    np.linalg.cholesky(state.cov)
+
+
+
 
 if __name__=="__main__":
     np.random.RandomState(seed=100)
