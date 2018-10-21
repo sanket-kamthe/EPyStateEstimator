@@ -30,7 +30,7 @@ class MonteCarloTransform(MappingTransform):
 
         # propagated_samples = np.asarray(Xi)
         propagated_samples = func(samples)
-        mean = np.mean(propagated_samples, axis=0)
+        mean = np.mean(propagated_samples, axis=-2)
         cov, cross_cov = \
             self.sample_covariance(propagated_samples.T,
                                    samples.T)

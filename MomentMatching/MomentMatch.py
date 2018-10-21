@@ -99,11 +99,11 @@ class MappingTransform:
         """
         Returns the gaussian approximation the integral
 
-        \int f(x) q (x) dx, where q(x) is the distribution and f(x) is the non-linear function
+        :math: \int f(x) q (x) dx, where q(x) is the distribution and f(x) is the non-linear function
         The result is exact when f(x) is a linear function.
         :param nonlinear_func:
         :param distribution: object of type GaussianState for example
-        :return: distribution of y =  \int f(x) q (x) dx in the form of a tuple
+        :return: distribution of y = :math: \int f(x) q (x) dx in the form of a tuple
         mean (y), variance (yyT), cross_covariance(xyT)
         """
         return NotImplementedError
@@ -170,6 +170,7 @@ class KalmanFilterMapping(MomentMatching):
         cov = state.cov - np.dot(kalman_gain, np.transpose(xz_cross_cov)) ###
 
         return Gaussian(mean, cov)
+
 
 class PowerKalmanFilterMapping(MomentMatching):
 

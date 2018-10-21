@@ -19,6 +19,7 @@ from MomentMatching.StateModels import GaussianState, moment_to_natural, natural
 # from scipy.stats import multivariate_normal
 from scipy import stats
 
+
 class Test1DGaussianStateModel(unittest.TestCase):
     def setUp(self):
         self.dim = 1

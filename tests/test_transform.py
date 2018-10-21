@@ -7,13 +7,16 @@ from MomentMatching import UnscentedTransform, TaylorTransform, MonteCarloTransf
 dim = 3
 A = np.random.randn(dim, dim)
 A = A @ A.T
+A = np.eye(dim)
 B = np.zeros(shape=(dim, ), dtype=float )
 
-def linear(x):
+
+def linear(x, A=A):
     # dim = x.shape[0]
     # A = np.random.randn(dim, dim)
-    # y = np.einsum('ij,kj -> k', A, x)
-    y = A @ x
+    x = np.atleast_2d(x)
+    y = np.einsum('ij,kj -> ki', A, x)
+    # y = A @ x
     return y
 
 
@@ -43,7 +46,7 @@ def func(request):
 
 def distribution(dim):
     mean = np.random.randn(dim) * 0.0
-    cov = np.eye(dim) * 0.1
+    cov = np.eye(dim) * 0.25
     return Gaussian(mean, cov)
 
 def test_transforms(transform, func):
