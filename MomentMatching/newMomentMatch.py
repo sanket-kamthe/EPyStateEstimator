@@ -18,10 +18,13 @@
 import autograd.numpy as np
 from MomentMatching.StateModels import GaussianState
 from autograd import jacobian
+from Utils.linalg import jittered_chol
 from functools import partial
-from MomentMatching.auto_grad import logpdf
+from autograd.scipy.stats.multivariate_normal import logpdf
+# from MomentMatching.auto_grad import logpdf
 from collections import namedtuple
 import logging
+from numpy.linalg import LinAlgError
 FORMAT = "[ %(funcName)10s() ] %(message)s"
 
 # from scipy.stats import multivariate_normal
@@ -43,12 +46,13 @@ class MomentMatching:
         for key in self.params:
             self.__setattr__(key, self.params[key])
 
-    def _transform(self, func, state, t=None, u=None, *args, **kwargs):
+    def _transform(self, func, state):
         """
         Returns the gaussian approximation the integral
 
         \int f(x) q (x) dx, where q(x) is the distribution and f(x) is the non-linear function
         The result is exact when f(x) is a linear function.
+
         :param nonlinear_func:
         :param distribution: object of type GaussianState for example
         :return: distribution of y =  \int f(x) q (x) dx in the form of a tuple
@@ -57,14 +61,15 @@ class MomentMatching:
         return NotImplementedError
 
     def __call__(self, func, state, t=None, u=None, *args, **kwargs):
-        return self._transform(func=func, state=state, t=t, u=u, *args, **kwargs)
+        func_out = partial(func,  t=t, u=u, *args, **kwargs)
+        return self._transform(func=func_out, state=state)
 
 
 class UnscentedTransform(MomentMatching):
     """
     
     """
-    def __init__(self, n=1, alpha=1, beta=0, kappa=1):
+    def __init__(self, n=1, alpha=1, beta=2, kappa=1):
 
         self.w_m, self.W = self._weights(n, alpha, beta, kappa)
         self.param_lambda = alpha * alpha * (n + kappa) - n
@@ -77,8 +82,14 @@ class UnscentedTransform(MomentMatching):
     def _sigma_points(self, mean, cov, *args):
 
         sqrt_n_plus_lambda = np.sqrt(self.n + self.param_lambda)
-        jittered_cov = cov + 1e-6*np.eye(self.n)
-        L = np.linalg.cholesky(jittered_cov)
+        # jittered_cov = cov + 1e-6*np.eye(self.n)
+
+        try:
+            # L = np.linalg.cholesky(jittered_cov)
+            L = jittered_chol(cov)
+        except LinAlgError:
+            print('bad covariance {}'.format(cov))
+
 
         scaledL = sqrt_n_plus_lambda * L
         mean_plus_L = mean + scaledL
@@ -102,27 +113,29 @@ class UnscentedTransform(MomentMatching):
         w_m = w_m + 1 / (2 * (n + param_lambda))
         w_c = w_c + w_m
         w_m[0] = param_lambda / (n + param_lambda)
-        w_c[0] = w_m[0] + (1 - alpha * alpha + beta)
+        w_c[0] = w_m[0] + (1 - (alpha ** 2) + beta)
 
         w_left = np.eye(2 * n +1) - np.array(w_m)
         W = w_left.T @ np.diag(w_c) @ w_left
 
         return w_m, W
 
-    def _transform(self, func, state, t=None, u=None, *args, **kwargs):
+    def _transform(self, func, state):
 
-        frozen_func = partial(func, t=t, u=u, *args, **kwargs)
+        # frozen_func = partial(func, t=t, u=u, *args, **kwargs)
 
         sigma_pts = self._sigma_points(state.mean, state.cov)
         Xi = []
         for x in sigma_pts:
             x = np.asanyarray(x)
-            Xi.append(frozen_func(x))
+            result = np.asanyarray(func(x))
+            Xi.append(result)
 
         Y = np.asarray(Xi)
 
         mean = self.w_m @ Y
         cov = Y.T @ self.W @ Y
+        cov = (cov + cov.T)/2
         cross_cov = np.asarray(sigma_pts).T @ self.W @ Y
 
         return mean, cov, cross_cov
@@ -130,24 +143,47 @@ class UnscentedTransform(MomentMatching):
 
 class MonteCarloTransform(MomentMatching):
     def __init__(self, dimension_of_state=1, number_of_samples=None):
+        if number_of_samples is None:
+            number_of_samples = int(1e4)
         super().__init__(approximation_method='Monte Carlo Sampling',
                          dimension_of_state=dimension_of_state,
                          number_of_samples=number_of_samples)
 
-    def _transform(self, func, state, t=None, u=None, *args, **kwargs):
+    def _transform(self, func, state):
         # (self, nonlinear_func, distribution, fargs=None):
 
-        assert isinstance(state, GaussianState)
-        frozen_func = partial(func, t=t, u=u, *args, **kwargs)
+        # assert isinstance(state, GaussianState)
+        # frozen_func = partial(func, t=t, u=u, *args, **kwargs)
 
         samples = state.sample(self.number_of_samples)
 
-        propagated_samples = frozen_func(samples)
+        Xi = []
+        for x in samples:
+            x = np.asanyarray(x)
+            result = np.asanyarray(func(x))
+            Xi.append(result)
+
+        # Y = np.asarray(Xi)
+
+        # propagated_samples = np.asarray(Xi)
+        propagated_samples = func(samples)
         mean = np.mean(propagated_samples, axis=0)
-        cov = np.cov(propagated_samples.T)
-        cross_cov = np.cov(samples.T, propagated_samples.T)
+        cov, cross_cov = \
+            self.sample_covariance(propagated_samples.T,
+                                   samples.T)
+        # cov = np.cov(propagated_samples.T, bias=True)
+        # cross_cov = np.cov(samples.T, propagated_samples.T)
 
         return mean, cov, cross_cov
+
+    @staticmethod
+    def sample_covariance(y_samples, x_samples):
+        x_dim = x_samples.shape[0]
+        y_dim = y_samples.shape[0]
+        total_cov = np.cov(x_samples, y_samples, bias=True)
+        cov = total_cov[0:y_dim, 0:y_dim]
+        cross_cov = total_cov[0:x_dim, x_dim:]
+        return cov, cross_cov
 
 
 class TaylorTransform(MomentMatching):
@@ -170,13 +206,13 @@ class TaylorTransform(MomentMatching):
 
         return np.array(jacobian).T
 
-    def _transform(self, func, state, t=None, u=None, *args, **kwargs):
+    def _transform(self, func, state):
         # (self, nonlinear_func, distribution, fargs=None, y_observation=None):
-        assert isinstance(state, GaussianState)
-        frozen_func = partial(func, t=t, u=u, *args, **kwargs)
-        J_t = self.numerical_jacobian(frozen_func, state.mean)
-        # J_t = jacobian(frozen_nonlinear_func)(distribution.mean)
-        mean = frozen_func(state.mean)
+        # assert isinstance(state, GaussianState)
+        # frozen_func = partial(func, t=t, u=u, *args, **kwargs)
+        J_t = self.numerical_jacobian(func, state.mean)
+        # J_t = jacobian(frozen_func)(state.mean)
+        mean = func(state.mean)
         cov = J_t @ state.cov @ J_t.T
         cross_cov = state.cov @ J_t.T
         return mean, cov, cross_cov
@@ -225,15 +261,15 @@ if __name__ == '__main__':
 
     res = unscented_transform.project(f, distribution)
 
-    print(f"The transformed mean is {res.mean} and the expected mean is {a * xx_mean + b}")
+    print("The transformed mean is {} and the expected mean is {}".format(res.mean, a * xx_mean + b))
 
-    print(f"The transformed cov is {res.cov} and the expected cov is {a * xx_sigma * a}")
+    print("The transformed cov is {} and the expected cov is {}".format(res.cov, a * xx_sigma * a))
 
     mct = MonteCarloTransform(1, number_of_samples=1000)
 
     res2 = mct.predict(f, distribution)
-    print(f"The MCT transformed mean is {res2} and the expected mean is {a * xx_mean + b}")
+    print("The MCT transformed mean is {} and the expected mean is {}".format(res.mean, a * xx_mean + b))
 
-    print(f"The transformed cov is {res2} and the expected cov is {a * xx_sigma * a}")
+    print("The MCT transformed cov is {} and the expected cov is {}".format(res.cov, a * xx_sigma * a))
 
 

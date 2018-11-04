@@ -13,85 +13,73 @@
 # limitations under the License.
 
 import numpy as np
+from .MomentMatch import MappingTransform
+from Utils.linalg import  jittered_chol
+from functools import partial
 
 
-class KalmanFilterSmoother:
+class UnscentedTransform(MappingTransform):
+    """
 
-    def __init__(self, transition_model, observation_model, moment_matching):
-        self.transition_model = transition_model
-        self.observation_model = observation_model
-        self.moment_matching = moment_matching
+    """
 
-    def predict(self, x_mean, xx_sigma):
-        # we don't need cross covariance here, ignore it
-        pred_mean, _, pred_sigma = self.transition_model.predict_transition(x_mean, xx_sigma)
+    def __init__(self, dim=1, alpha=1, beta=2, kappa=1):
+        self.w_m, self.W = self._weights(dim, alpha, beta, kappa)
+        self.param_lambda = alpha * alpha * (dim + kappa) - dim
+        super().__init__(approximation_method='Unscented Transform',
+                         n=dim,
+                         alpha=alpha,
+                         beta=beta,
+                         kappa=kappa)
 
-        return pred_mean, pred_sigma
+    def _sigma_points(self, mean, cov, *args):
+        sqrt_n_plus_lambda = np.sqrt(self.n + self.param_lambda)
 
-    def correct(self, z_observation, x_mean, x_sigma):
-        # Todo : Check if it is better to pass inverse always or to use Cholesky for stability
-        # (Numpy lstq or solve may work)
-        z_mean, xz_sigma, z_sigma = self.observation_model.predict_observation(x_mean, x_sigma)
+        # jittered_cov = cov + 1e-4 * np.eye(self.n)
+        L = jittered_chol(cov)
 
-        # calculate Kalman Gain K
-        K = np.matmul(xz_sigma, np.linalg.inv(z_sigma))
-        corrected_mean = x_mean + np.dot(K, (z_observation - z_mean)) # equation 15  in Marc's ACC paper
-        corrected_sigma = x_sigma - np.dot(K, np.transpose(xz_sigma))
-        return corrected_mean, corrected_sigma
+        scaledL = sqrt_n_plus_lambda * L
+        mean_plus_L = mean + scaledL
+        mean_minus_L = mean - scaledL
+        # list_sigma_points = [mean.tolist()] + mean_plus_L.tolist() + mean_minus_L.tolist()
 
-    def smooth(self, x_mean, x_sigma, x_next_mean, x_next_sigma):
-        xx_mean, xx_cross_sigma, xx_sigma = self.transition_model.predict_transition(x_mean, x_sigma)
+        # return list_sigma_points
+        return np.vstack((mean, mean_plus_L, mean_minus_L))
 
-        # calculate smoother gain J_t
-        J = np.dot(xx_cross_sigma, np.linalg.inv(xx_sigma))
+    @staticmethod
+    def _weights(n, alpha, beta, kappa):
+        param_lambda = alpha * alpha * (n + kappa) - n
+        n_plus_lambda = n + param_lambda
 
-        smoothed_mean = x_mean + np.dot(J, (x_next_mean - xx_mean))
-        smoothed_sigma = x_sigma + np.dot (np.dot(J, x_next_sigma - xx_sigma), np.transpose(J))
-        return smoothed_mean, smoothed_sigma
+        w_m = np.zeros([2 * n + 1], dtype=np.float)
+        w_c = np.zeros([2 * n + 1], dtype=np.float)
 
+        # weights w_m are for computing mean and weights w_c are
+        # used for covarince calculation
 
-class TransitionModel:
+        w_m = w_m + 1 / (2 * (n_plus_lambda))
+        w_c = w_c + w_m
+        w_m[0] = param_lambda / (n_plus_lambda)
+        w_c[0] = w_m[0] + (1 - alpha * alpha + beta)
 
-    def __init__(self, ndims, transition_function, moment_matching, noise_covariance):
-        # Todo : Add check functions to make sure that transition function is correct
-        self.ndims = ndims
-        assert (self._check_tranistion_function(transition_function))
-        self.transition_function = transition_function
-        self.moment_matching = moment_matching
-        self.Q = noise_covariance
+        w_left = np.eye(2 * n + 1) - np.array(w_m)
+        W = w_left.T @ np.diag(w_c) @ w_left
 
+        return w_m, W
 
-    def _check_tranistion_function(self, transition_function):
-        """
-        This function checks whether the transition function is valid
+    def _transform(self, func, state):
+        # frozen_func = partial(func, t=t, u=u, *args, **kwargs)
 
-        :param transition_function: a function handle or a matrix
-        :return: Boolean True if transition function is invalid
+        sigma_pts = self._sigma_points(state.mean, state.cov)
+        # Xi = []
+        # for x in sigma_pts:
+        #     x = np.asanyarray(x)
+        #     Xi.append(func(x))
 
-        """
+        # Y = np.asarray(Xi)
+        Y = func(sigma_pts)
+        mean = self.w_m @ Y
+        cov = Y.T @ self.W @ Y
+        cross_cov = np.asarray(sigma_pts).T @ self.W @ Y
 
-    def predict_transition(self, mean, covariance):
-
-        # Only to show the interface
-        pred_mean = None
-        pred_cross_sigma = None
-        pred_sigma = None
-        return pred_mean, pred_cross_sigma, pred_sigma
-
-
-class MomentMatching:
-
-    def __init__(self, given_function, noise_covariance):
-        self.given_function = given_function
-        self.noise = noise_covariance
-
-    def _mean(self, mean, covariance):
-        self.given_function(mean, covariance)
-        return approximate_mean
-
-    def _covariance(self, approximate_mean, mean, covariance):
-        return approximate_cross_covariance, approximate_covariance
-
-    def get_moments(self, mean, covariance):
-        return NotImplementedError
-        #return pred_mean, pred_cross_covariance, pred_covariance
+        return mean, cov, cross_cov

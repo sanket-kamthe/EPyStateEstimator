@@ -15,8 +15,7 @@
 
 import unittest
 import numpy as np
-from MomentMatching.TimeSeriesModel import GaussianNoise, DynamicSystemModel
-
+from Systems.DynamicSystem import GaussianNoise, DynamicSystemModel
 SEED = 12345
 
 
@@ -29,7 +28,7 @@ def dummy_transition(x, u=None, t=None, *args, **kwargs):
     return result
 
 
-def dummy_measure(x, *args, **kwargs):
+def dummy_measurement(x, *args, **kwargs):
     result = dict()
     result['x'] = x
     # result['args']
@@ -80,7 +79,7 @@ class TestDynamicSystem(unittest.TestCase):
         dyn_sys = DynamicSystemModel(system_dim=sys_dim,
                                      measurement_dim=meas_dim,
                                      transition=dummy_transition,
-                                     measurement=dummy_measure,
+                                     measurement=dummy_measurement,
                                      system_noise=GaussianNoise(dimension=sys_dim),
                                      measurement_noise=GaussianNoise(dimension=meas_dim))
         self.system = dyn_sys

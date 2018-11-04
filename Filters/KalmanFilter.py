@@ -13,16 +13,16 @@
 # limitations under the License.
 
 import numpy as np
-from MomentMatching.newMomentMatch import MomentMatching
-from MomentMatching.TimeSeriesModel import TimeSeriesModel, DynamicSystemModel
-from MomentMatching.StateModels import GaussianState
+from StateModel import Gaussian
 from itertools import tee
+from functools import partial
 import logging
 
 FORMAT = "[ %(funcName)10s() ] %(message)s"
 
 logging.basicConfig(filename='kalman_filter.log', level=logging.FATAL, format=FORMAT)
 logger = logging.getLogger(__name__)
+
 
 def pairwise(x):
     node, next_node = tee(x)
@@ -31,11 +31,16 @@ def pairwise(x):
 
 
 class KalmanFilterSmoother:
-    def __init__(self, moment_matching, system_model):
-        assert isinstance(system_model, DynamicSystemModel)  # make sure we are working with the time series model.
-        assert isinstance(moment_matching, MomentMatching)
+    def __init__(self, moment_matching, system_model, meas_moment_matching=None):
+        # assert isinstance(system_model, DynamicSystemModel)  # make sure we are working with the time series model.
+        # assert isinstance(moment_matching, MomentMatching)
 
         self.transform = moment_matching
+
+        if meas_moment_matching is None:
+            self.meas_transform = moment_matching
+        else:
+            self.meas_transform = meas_moment_matching
         self.transition = system_model.transition
         self.measurement = system_model.measurement
         self.transition_noise = system_model.system_noise.cov
@@ -49,24 +54,24 @@ class KalmanFilterSmoother:
                                             t=t, u=u,
                                             *args, **kwargs)
         xx_cov += self.transition_noise
-        return GaussianState(xx_mean, xx_cov)
+        return Gaussian(xx_mean, xx_cov)
 
     def correct(self, state, meas, t=None, u=None, *args, **kwargs):
 
         z_mean, z_cov, xz_cross_cov = \
-            self.transform(self.measurement,
-                           state,
-                           t=t, u=u,
-                           *args, **kwargs)
+            self.meas_transform(self.measurement,
+                                state,
+                                t=t, u=u,
+                                *args, **kwargs)
 
         z_cov += self.measurement_noise
 
         # kalman_gain = np.matmul(xz_cross_cov, np.linalg.pinv(z_cov))
-        kalman_gain = np.linalg.solve(z_cov, xz_cross_cov)
+        kalman_gain = np.linalg.solve(z_cov, xz_cross_cov.T).T
         mean = state.mean + np.dot(kalman_gain, (meas - z_mean)) # equation 15  in Marc's ACC paper
         cov = state.cov - np.dot(kalman_gain, np.transpose(xz_cross_cov))
 
-        return GaussianState(mean, cov)
+        return Gaussian(mean, cov)
 
     def smooth(self, state, next_state, t=None, u=None, *args, **kwargs):
 
@@ -79,11 +84,11 @@ class KalmanFilterSmoother:
         xx_cov += self.transition_noise
 
         # J = xx_cross_cov @ np.linalg.pinv(xx_cov)
-        J = np.linalg.solve(xx_cov, xx_cross_cov)
+        J = np.linalg.solve(xx_cov, xx_cross_cov.T).T
         mean = state.mean + np.dot(J, (next_state.mean - xx_mean))
         cov = state.cov + J @ (next_state.cov - xx_cov) @ J.T
 
-        return GaussianState(mean, cov)
+        return Gaussian(mean, cov)
 
     def kalman_filter(self, measurements, prior_state=None, t_zero=0.0, u=None, *args, **kwargs):
 
@@ -123,119 +128,65 @@ class KalmanFilterSmoother:
 
         return list(reversed(result))
 
-class KalmanFilterSmootherOld:
-    def __init__(self, moment_matching, system_model):
-        """
-        moment matching implements the transfer function needed.
 
-        """
-        assert isinstance(system_model, TimeSeriesModel)  # make sure we are working with the time series model.
-        assert isinstance(moment_matching, MomentMatching)
+class PowerKalmanFilterSmoother(KalmanFilterSmoother):
 
-        self.transition = self.system_model.transition_function
-        self.observation_model = self.system_model.measurement_function
-        self.init_dist = system_model.init_dist
-        self.moment_matching = moment_matching
-        self.predict = moment_matching.predict
-        self.system_model = system_model
+    def __init__(self, moment_matching, system_model, power=1, meas_moment_matching=None):
+        self.power = power
+        # if meas_moment_matching is None:
+        #     self.meas_transform = moment_matching
+        # else:
+        #     self.meas_transform = meas_moment_matching
+        super().__init__(moment_matching=moment_matching,
+                         system_model=system_model,
+                         meas_moment_matching=meas_moment_matching)
 
-    #         self.init_dist = system_model.init_dist
+    def predict(self, prior_state, t=None, u=None, *args, **kwargs):
+        func = partial(self.transition, t=t, u=u, *args, **kwargs)
+        xx_mean, xx_cov, _ = self.transform(func, prior_state)
+        # xx_mean, xx_cov, _ = self.transform(self.transition,
+        #                                     prior_state,
+        #                                     t=t, u=u,
+        #                                     *args, **kwargs)
+        xx_cov += self.transition_noise #/self.power
+        xx_cov /= self.power
+        return Gaussian(xx_mean, xx_cov)
 
-    def kalman_filter(self, noisy_observations, prior_distribution=None):
+    def correct(self, state, meas, t=None, u=None, *args, **kwargs):
+        func = partial(self.measurement, t=t, u=u, *args, **kwargs)
+        z_mean, z_cov, xz_cross_cov = self.meas_transform(func, state)
+        # z_mean, z_cov, xz_cross_cov = \
+        #     self.meas_transform(self.measurement,
+        #                         state,
+        #                         t=t, u=u,
+        #                         *args, **kwargs)
 
-        if prior_distribution is None:
-            x_distribution = self.system_model.init_distribution
-        else:
-            x_distribution = prior_distribution
+        z_cov += self.measurement_noise
+        z_cov /= self.power
+        np.linalg.cholesky(z_cov)
+        # kalman_gain = np.matmul(xz_cross_cov, np.linalg.pinv(z_cov))
+        kalman_gain = np.linalg.solve(z_cov, xz_cross_cov.T).T
+        mean = state.mean + np.squeeze(kalman_gain @ (meas - z_mean).T)  # equation 15  in Marc's ACC paper
+        cov = state.cov - kalman_gain @ xz_cross_cov.T
+        np.linalg.cholesky(cov)
+        return Gaussian(mean.T, cov)
 
-        for observation in noisy_observations:
-            x_filtered_distribution = self._step_kalman_filter(x_distribution, observation)
-            yield x_filtered_distribution
-            x_distribution = x_filtered_distribution
+    def smooth(self, state, next_state, t=None, u=None, *args, **kwargs):
+        func = partial(self.transition, t=t, u=u, *args, **kwargs)
+        xx_mean, xx_cov, xx_cross_cov = self.transform(func, state)
+        # xx_mean, xx_cov, xx_cross_cov = \
+        #     self.transform(self.transition,
+        #                    state,
+        #                    t=t, u=u,
+        #                    *args, **kwargs)
 
-    def _filter(self, x_distribution, t, z_measurement):
-        pred_mean, pred_cov, _ = self.predict(self.transition, x_distribution, t)
+        xx_cov += self.transition_noise #/self.power
+        xx_cov /= self.power
 
-        # Add transition Noise Q_t
-        pred_cov = pred_cov + self.system_model.Q.cov
-        pred_distribution = GaussianState(pred_mean, pred_cov)
+        # J = xx_cross_cov @ np.linalg.pinv(xx_cov)
+        J = np.linalg.solve(xx_cov, xx_cross_cov.T).T
+        mean = state.mean + np.dot(J, (next_state.mean - xx_mean))
+        cov = state.cov + J @ (next_state.cov - xx_cov) @ J.T
 
-        z_mean, z_cov, xz_cross_cov = self.predict(self.measurement, pred_distribution)
-        # Add measurement Noise R_t
-        z_cov = z_cov + self.system_model.R.cov
+        return Gaussian(mean, cov)
 
-        K = np.matmul(xz_cross_cov, np.linalg.inv(z_cov))
-        corrected_mean = pred_mean + np.dot(K, (z_measurement - z_mean))  # equation 15  in Marc's ACC paper
-        corrected_cov = pred_cov - np.dot(K, np.transpose(xz_cross_cov))
-        filtered_distribution = GaussianState(corrected_mean, corrected_cov)
-        return filtered_distribution
-
-    def _smoother(self, x_distribution, x_next_distribution, t):
-        xx_mean, xx_cov, xx_cross_cov, = self.predict(self.transition, x_distribution, t)
-        # Add transition Noise Q_t
-        xx_cov = xx_cov + self.system_model.Q.cov
-
-        # calculate smoother gain J_t
-        J = np.dot(xx_cross_cov, np.linalg.inv(xx_cov))
-
-        smoothed_mean = x_distribution.mean + np.dot(J, (x_next_distribution.mean - xx_mean))
-        smoothed_cov = x_distribution.cov + np.dot(np.dot(J, x_next_distribution.cov - xx_cov), J.T)
-        smoothed_distribution = GaussianState(smoothed_mean, smoothed_cov)
-        return smoothed_distribution
-
-    def _step_kalman_filter(self, x_distribution, z_observation):
-        """
-        This is a single step in kalman filter
-
-        1) Given x_mean and x_sigma predict the t+1 value using transistion
-            function and moment matching method
-
-        2) Project latent state through  measurement function to obtain predcitive
-           observation density
-
-        3) correct the density using Kalman gain
-
-
-        We use x as latent state distribution
-        """
-
-        x_t_plus_1 = self.moment_matching.predict(self.system_model.transition_function, x_distribution)
-
-        pred_mean, pred_cov = self.predict(self.transition, x_distribution)
-        pred_distribution = GaussianState(pred_mean, pred_cov)
-
-        z_mean, xz_sigma, z_sigma = self.predict(self.measurement, pred_distribution)
-
-        # calculate Kalman Gain K
-        K = np.matmul(xz_sigma, np.linalg.inv(z_sigma))
-        corrected_mean = x_mean + np.dot(K, (z_observation - z_mean))  # equation 15  in Marc's ACC paper
-        corrected_cov = x_sigma - np.dot(K, np.transpose(xz_sigma))
-        x_distribution_new = GaussianState(corrected_mean, corrected_cov)
-        yield x_distribution_new
-
-    def _predict(self, x_mean, xx_sigma):
-        # we don't need cross covariance here, ignore it
-        pred_mean, _, pred_sigma = self.transition_model.predict_transition(x_mean, xx_sigma)
-
-        return pred_mean, pred_sigma
-
-    def correct(self, z_observation, x_mean, x_sigma):
-        # Todo : Check if it is better to pass inverse always or to use Cholesky for stability
-        # (Numpy lstq or solve may work)
-        z_mean, xz_sigma, z_sigma = self.observation_model.predict_observation(x_mean, x_sigma)
-
-        # calculate Kalman Gain K
-        K = np.matmul(xz_sigma, np.linalg.inv(z_sigma))
-        corrected_mean = x_mean + np.dot(K, (z_observation - z_mean))  # equation 15  in Marc's ACC paper
-        corrected_sigma = x_sigma - np.dot(K, np.transpose(xz_sigma))
-        return corrected_mean, corrected_sigma
-
-    def smooth(self, x_mean, x_sigma, x_next_mean, x_next_sigma):
-        xx_mean, xx_cross_sigma, xx_sigma = self.transition_model.predict_transition(x_mean, x_sigma)
-
-        # calculate smoother gain J_t
-        J = np.dot(xx_cross_sigma, np.linalg.inv(xx_sigma))
-
-        smoothed_mean = x_mean + np.dot(J, (x_next_mean - xx_mean))
-        smoothed_sigma = x_sigma + np.dot(np.dot(J, x_next_sigma - xx_sigma), np.transpose(J))
-        return smoothed_mean, smoothed_sigma

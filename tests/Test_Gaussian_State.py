@@ -15,8 +15,10 @@
 import unittest
 import random
 import numpy as np
-from ..MomentMatching.StateModels import GaussianState, moment_to_natural, natural_to_moment
+from MomentMatching.StateModels import GaussianState, moment_to_natural, natural_to_moment
 # from scipy.stats import multivariate_normal
+from scipy import stats
+
 
 class Test1DGaussianStateModel(unittest.TestCase):
     def setUp(self):
@@ -128,7 +130,7 @@ class TestGaussianStatePower(unittest.TestCase):
         assert (self.state2 == self.state1)
 
     def test_power_integer(self):
-        self.pow = random.randint(2, 7)
+        self.pow = random.randint(3, 7)
         self.state2 = self.state1
         for _ in range(self.pow-1):
             self.state2 = self.state2 * self.state1
@@ -151,11 +153,12 @@ class TestGaussianSamples(unittest.TestCase):
     def test_samples(self):
 
         # print(self.mean.shape)
-        N = 100
-        # rd= multivariate_normal(mean=self.mean, cov=self.cov)
+        N = 2 ** 10
         samples = self.state.sample(N)
         sample_mean = np.mean(samples, axis=0)
         np.testing.assert_allclose(samples.shape, (N, self.mean.shape[0]))
+        W, p = stats.shapiro(samples)
+        assert (W>0.9)
 
 
 if __name__ == '__main__':

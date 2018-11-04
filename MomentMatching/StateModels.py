@@ -35,7 +35,9 @@ RTOL, ATOL = 1e-3, 1e-5
 
 
 def natural_to_moment(precision, shift):
-    cov = np.linalg.pinv(precision)
+    dim = precision.shape[0]
+    cov = np.linalg.solve(precision, np.eye(N=dim))
+    # cov = np.linalg.pinv(precision)
     mean = np.dot(cov, shift)
     return mean, cov
 
@@ -106,7 +108,7 @@ class GaussianState:
     @property
     def precision(self):
         if self._precision is None:
-            self._precision = np.linalg.pinv(self.cov)  # TODO: Change to more stable solve later
+            self._precision = np.linalg.solve(self.cov, np.eye(self.dim))
         return self._precision
 
     @property
@@ -118,37 +120,42 @@ class GaussianState:
 
     def __mul__(self, other):
         # Make sure that other is also a GaussianState class
-        assert isinstance(other, GaussianState)
+        # assert isinstance(other, GaussianState)
         precision = self.precision + other.precision
         shift = self.shift + other.shift
         mean, cov = natural_to_moment(precision, shift)
+        cov = (cov.T + cov) / 2
         return GaussianState(mean, cov)
 
     def __truediv__(self, other):
         # Make sure that 'other' is also a GaussianState class
         # TODO: Replace assert with a custom Error
-        assert isinstance(other, GaussianState)
+        # assert isinstance(other, GaussianState)
         precision = self.precision - other.precision
-        if precision < 0:
-            warnings.warn('Negative Precision!!!')
+        # if precision < 0:
+        #     warnings.warn('Negative Precision!!!')
             # print(precision)
             # precision + 1e-6
 
         shift = self.shift - other.shift
         mean, cov = natural_to_moment(precision, shift)
+        cov = (cov.T + cov) / 2
+
         return GaussianState(mean, cov)
 
     def __pow__(self, power, modulo=None):
 
-        precision = power * self.precision
-        shift = power * self.shift
-        mean, cov = natural_to_moment(precision, shift)
-        return GaussianState(mean, cov)
+        # precision = power * self.precision
+        # shift = power * self.shift
+        # mean, cov = natural_to_moment(precision, shift)
+        cov = self.cov / power
+        cov = (cov.T + cov) / 2
+        return GaussianState(self.mean, cov)
 
     def __eq__(self, other):
         # Make sure that 'other' is also a GaussianState class
         # TODO: Replace assert with a custom Error
-        assert isinstance(other, GaussianState)
+        # assert isinstance(other, GaussianState)
         mean_equal = np.allclose(self.mean, other.mean, rtol=RTOL, atol=RTOL)
         cov_equal = np.allclose(self.cov, other.cov, rtol=RTOL, atol=RTOL)
 
@@ -161,8 +168,8 @@ class GaussianState:
         :return: -ve of logpdf (x, mean=self.mean, cov=self.cov)
         """
         from scipy.stats import multivariate_normal
-        if np.isinf(self.cov):
-            return np.nan
+        # if np.testing.self.cov) or np.linalg.det(self.cov)<0.0:
+        #     return np.nan
 
         return -multivariate_normal(mean=self.mean, cov=self.cov).logpdf(x)
 
@@ -172,7 +179,7 @@ class GaussianState:
         :param x:
         :return:
         """
-        return np.square(self.mean - x)
+        return np.square (np.linalg.norm(self.mean - x))
 
     def sample(self, number_of_samples):
 
@@ -194,3 +201,10 @@ class GaussianState:
 
     def copy(self):
         return GaussianState(self.mean, self.cov)
+
+    @classmethod
+    def from_params(cls, *params):
+        mean_vec, cov_matrix = params
+        return cls.__init__(mean_vec=mean_vec, cov_matrix=cov_matrix)
+
+
