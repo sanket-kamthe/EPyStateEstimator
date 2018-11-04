@@ -8,7 +8,8 @@ import seaborn as sns
 # module_path = os.path.abspath(os.path.join('..'))
 # if module_path not in sys.path:
 #     sys.path.append(module_path)
-from MomentMatching.newMomentMatch import MomentMatching, UnscentedTransform, TaylorTransform, MonteCarloTransform
+# from MomentMatching.newMomentMatch import MomentMatching, UnscentedTransform, TaylorTransform, MonteCarloTransform
+from MomentMatching import MomentMatching, UnscentedTransform, TaylorTransform, MonteCarloTransform
 from ExpectationPropagation import EPNodes
 from MomentMatching.ExpectationPropagation import TopEP
 from Filters.KalmanFilter import KalmanFilterSmoother, PowerKalmanFilterSmoother
@@ -19,15 +20,15 @@ import logging
 # from ExpectationPropagation import EPNodes
 
 logging.basicConfig(level='critical')
-plt.ion()
+# plt.ion()
 
-SEED = 11
+SEED = 1000
 np.random.seed(seed=SEED)
 
-N = 5
+N = 50
 sys_dim = 1
-system = UniformNonlinearGrowthModel()
-# system = BearingsOnlyTracking()
+# system = UniformNonlinearGrowthModel()
+system = BearingsOnlyTracking()
 sys_dim = system.system_dim
 meas_dim = system.measurement_dim
 data = system.simulate(N)
@@ -35,16 +36,16 @@ x_true, x_noisy, y_true, y_noisy = zip(*data)
 
 
 power = 0.5
-damping = 0.5
-EP_iters = 50
+damping = 1.0
+EP_iters = 15
 
-transform = UnscentedTransform(n=sys_dim,  beta=2,  alpha=1, kappa=3)
-meas_transform = UnscentedTransform(n=sys_dim, beta=2,  alpha=1, kappa=2)
-# transform = TaylorTransform()
-# meas_transform = TaylorTransform()
+# transform = UnscentedTransform(dim=sys_dim,  beta=2,  alpha=1, kappa=3)
+# meas_transform = UnscentedTransform(dim=sys_dim, beta=2,  alpha=1, kappa=2)
+transform = TaylorTransform()
+meas_transform = TaylorTransform()
 
-# transform = MonteCarloTransform(dimension_of_state=sys_dim)
-# meas_transform = MonteCarloTransform(dimension_of_state=sys_dim)
+transform = MonteCarloTransform(dim=sys_dim, number_of_samples=int(1e5))
+meas_transform = MonteCarloTransform(dim=sys_dim)
 def _power_sweep(power, damping):
     transform = UnscentedTransform(n=sys_dim, beta=0, alpha=1, kappa=2)
     meas_transform = UnscentedTransform(n=sys_dim, beta=0, alpha=1, kappa=2)
@@ -102,9 +103,9 @@ print('\n Smoother {} NLL = {}, RMSE = {}'.format(1, nll(EP3, x_true), rmse(EP3,
 # EP2Filt = list(EP.kalman_filter(EPSmthd, y_noisy, list(range(0, N))))
 # EP2Smthd = EP.kalman_smoother(EP2Filt)
 
-plt.plot(x_true, 'r--', label='X_true')
+plt.plot(np.squeeze(x_true), 'r--', label='X_true')
 # plt.plot([x.mean for x in result],  'b-', label='Kalman Filter')
-plt.plot(x_filt_mean, 'b-', label='EP as Kalman Filter')
+plt.plot(np.squeeze(x_filt_mean), 'b-', label='EP as Kalman Filter')
 # plt.plot([x.mean for x in smoothed],  'm-', label='Kalman Smoother')
 plt.plot([x.marginal.mean for x in EPSmthd], 'g-', label='EP as Kalman Smoother')
 
@@ -117,7 +118,7 @@ EP1 = [node.marginal for node in EPSmthd]
 # EP2 = [node.marginal for node in EP2Smthd]
 
 plt.figure()
-plt.plot(x_true, 'r--', label='X_true')
+plt.plot(np.squeeze(x_true), 'r--', label='X_true')
 plot_gaussian(EP1, label='EP Pass 1')
 # plot_gaussian(EP2, label='EP Pass 2')
 plt.legend()
@@ -131,7 +132,7 @@ for i, Nodes in enumerate(EPNodesList):
 # print('\n EP Pass {} NLL = {}, RMSE = {}'.format(i+1, nll(EP1, x_true), rmse(EP1, x_true)))
 EP3 = [node.marginal for node in EPNodesList[-1]]
 plot_gaussian(EP3, label='EP Pass {}'.format(EP_iters))
-plt.plot(x_true, 'r--', label='X_true')
+plt.plot(np.squeeze(x_true), 'r--', label='X_true')
 plt.legend()
 plt.show()
 
