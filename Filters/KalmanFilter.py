@@ -148,7 +148,7 @@ class PowerKalmanFilterSmoother(KalmanFilterSmoother):
         #                                     prior_state,
         #                                     t=t, u=u,
         #                                     *args, **kwargs)
-        xx_cov += self.transition_noise
+        xx_cov += self.transition_noise #/self.power
         xx_cov /= self.power
         return Gaussian(xx_mean, xx_cov)
 
@@ -163,13 +163,13 @@ class PowerKalmanFilterSmoother(KalmanFilterSmoother):
 
         z_cov += self.measurement_noise
         z_cov /= self.power
-
+        np.linalg.cholesky(z_cov)
         # kalman_gain = np.matmul(xz_cross_cov, np.linalg.pinv(z_cov))
         kalman_gain = np.linalg.solve(z_cov, xz_cross_cov.T).T
-        mean = state.mean + kalman_gain @ (meas - z_mean)  # equation 15  in Marc's ACC paper
+        mean = state.mean + np.squeeze(kalman_gain @ (meas - z_mean).T)  # equation 15  in Marc's ACC paper
         cov = state.cov - kalman_gain @ xz_cross_cov.T
-
-        return Gaussian(mean, cov)
+        np.linalg.cholesky(cov)
+        return Gaussian(mean.T, cov)
 
     def smooth(self, state, next_state, t=None, u=None, *args, **kwargs):
         func = partial(self.transition, t=t, u=u, *args, **kwargs)
@@ -180,7 +180,7 @@ class PowerKalmanFilterSmoother(KalmanFilterSmoother):
         #                    t=t, u=u,
         #                    *args, **kwargs)
 
-        xx_cov += self.transition_noise
+        xx_cov += self.transition_noise #/self.power
         xx_cov /= self.power
 
         # J = xx_cross_cov @ np.linalg.pinv(xx_cov)

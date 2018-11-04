@@ -248,9 +248,10 @@ class TopEP:
 
             # GaussianState(mean_vec=np.array([0.1]),
             #                            cov_matrix=0.1 * np.eye(1, dtype=float))
-
+        i = 0
         for node, obs, fargs in zip(Nodes, observations, fargs_list):
 
+            # print(f"Kalman filter iter {i}")
             # logger.debug('[obs={}][filter: t = {}]'.format(obs, fargs))
             # logger.debug('[prior:: t={} mean={} cov={}]]'.format(node.t, node.marginal.mean, node.marginal.cov))
 
@@ -265,6 +266,7 @@ class TopEP:
             #         mean={corrected_state.marginal.mean} cov={corrected_state.marginal.cov}]]')
             yield corrected_state
             prior = corrected_state.copy()
+            i += 1
 
     def power_update(self, projected_marginal, factor, marginal, cavity):
         damping = self.damping
@@ -360,10 +362,10 @@ class TopEP:
         #                                        match_with=obs,
         #                                        fargs=None)
 
-        # if np.linalg.det(state.cov) > 0:
-            # result.marginal = state.copy()
-            #
-            # result.measurement_factor = result.marginal / measurement_cavity
+        if np.linalg.det(state.cov) < 0:
+            result.marginal = state.copy()
+
+            result.measurement_factor = result.marginal / measurement_cavity
 
         result.measurement_factor, result.marginal = \
             self.power_update(projected_marginal=state,
