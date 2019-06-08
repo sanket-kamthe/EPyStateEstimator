@@ -35,6 +35,7 @@ def ep_fwd_back_updates(nodes):
     for node in reversed(nodes):
         node.back_update()
 
+
 def ep_update(nodes):
     for node in nodes:
         node.fwd_update()

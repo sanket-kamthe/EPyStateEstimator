@@ -49,6 +49,7 @@ def distribution(dim):
     cov = np.eye(dim) * 0.25
     return Gaussian(mean, cov)
 
+
 def test_transforms(transform, func):
     state = distribution(dim)
     transform = transform(state.dim)

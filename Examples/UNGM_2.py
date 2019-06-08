@@ -82,16 +82,16 @@ def power_sweep(trans_id='UT', power=1, damping=1, dim=1, samples=int(1e5)):
 SEED = 100
 
 np.random.seed(seed=SEED)
-sys_dim = 1
+sys_dim = 4
 N = 100
 system = UniformNonlinearGrowthModel()
-# system = BearingsOnlyTracking()
+system = BearingsOnlyTracking()
 # system = BearingsOnlyTrackingTurn()
 data = system.simulate(N)
 x_true, x_noisy, y_true, y_noisy = zip(*data)
 
 
-con = sqlite3.connect("temp.db", detect_types=sqlite3.PARSE_DECLTYPES)
+con = sqlite3.connect("temp_bear.db", detect_types=sqlite3.PARSE_DECLTYPES)
 db = con.cursor()
 table_name = 'UNGM_SIM'
 create_dynamics_table(db, name=table_name)

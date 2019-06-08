@@ -32,6 +32,7 @@ def power_update(self, projected_marginal, factor, marginal, cavity):
 
     return new_factor, new_marginal
 
+
 def forward_update(self, node, prev_node, fargs):
 
     forward_cavity = node.marginal / node.forward_factor

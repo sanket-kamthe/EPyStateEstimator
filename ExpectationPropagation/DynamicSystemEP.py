@@ -33,13 +33,13 @@ class TimeSeriesEP(metaclass=ABCMeta):
     def back_update(self, node, next_node):
         pass
 
-    @abstractmethod
-    def project_transition(self, distribution):
-        pass
-
-    @abstractmethod
-    def project_measurement(self, distribution):
-        pass
+    # @abstractmethod
+    # def project_transition(self, distribution):
+    #     pass
+    #
+    # @abstractmethod
+    # def project_measurement(self, distribution):
+    #     pass
 
 
 class DynamicSystemEP(TimeSeriesEP):

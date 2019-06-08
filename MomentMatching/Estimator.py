@@ -43,18 +43,19 @@ class Estimator:
     def proj_trans(self, func, state):
         xx_mean, xx_cov, _ = self.trans_map(func, state)
         xx_cov += self.transition_noise
-        xx_cov /= self.power
+        # xx_cov /= self.power
         # np.linalg.cholesky(xx_cov)
         pred_state = Gaussian(xx_mean, xx_cov)
         return pred_state
 
     def proj_meas(self, func, state, meas):
+        meas = np.atleast_1d(meas)
         np.linalg.cholesky(state.cov)
         z_mean, z_cov, xz_cross_cov = \
             self.meas_map(func, state)
 
         z_cov += self.measurement_noise
-        z_cov /= self.power
+        # z_cov /= self.power
         np.linalg.cholesky(z_cov)
         # kalman_gain = np.matmul(xz_cross_cov, np.linalg.pinv(z_cov))
         kalman_gain = np.linalg.solve(z_cov, xz_cross_cov.T).T
@@ -69,7 +70,7 @@ class Estimator:
             self.trans_map(func, state)
 
         xx_cov += self.transition_noise
-        xx_cov /= self.power
+        # xx_cov /= self.power
 
         # J = xx_cross_cov @ np.linalg.pinv(xx_cov)
         J = np.linalg.solve(xx_cov, xx_cross_cov.T).T

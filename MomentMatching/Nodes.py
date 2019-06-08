@@ -20,8 +20,10 @@ from numpy.linalg import LinAlgError
 from Utils import validate_covariance
 from functools import partial, partialmethod
 
+
 class OverLoadError(Exception):
     pass
+
 
 class TimeSeriesNodeForEP:
     def __init__(self, t, state_dim=1, marginal_init=None, factor_init=None):
@@ -60,6 +62,7 @@ class TimeSeriesNodeForEP:
                                    (self.measurement_factor, self.back_factor, self.forward_factor))
         return str_rep
 
+
 class TimeSeriesNodeForEP:
     def __init__(self, t, state_dim=1,
                  marginal_init=None,
@@ -92,7 +95,8 @@ class TimeSeriesNodeForEP:
                                    factor_init=factor_init)
 
     def __repr__(self):
-        str_rep = '''{}.t={}, state_dim={}, marginal_init={},
+        str_rep = '''{}.t={}, state_dim={},
+         marginal_init={},
          factor_init={})'''.format(self.__class__,
                                    self.t,
                                    self.marginal,
@@ -185,7 +189,6 @@ class Node:
 
         self.factors = ['forward_update', 'measurement_update', 'backward_update']
 
-
     def copy(self):
         cls = self.__class__
         newone = cls.__new__(cls)
@@ -205,10 +208,8 @@ class Node:
             state = proj_trans(self.trans_func, back_cavity)
             validate_covariance(state)
 
-
-
-            fwd_factor = (self.forward_factor ** (1 - self.damping)) * (state ** (self.damping))
-            marginal = self.marginal * (self.forward_factor / old_forward_factor)
+            fwd_factor = (self.forward_factor ** (1 - self.damping)) * (state ** self.damping)
+            marginal = self.marginal * (fwd_factor / old_forward_factor) ** (1 / self.power)
             validate_covariance(marginal)
         except LinAlgError:
             return
@@ -221,7 +222,6 @@ class Node:
         try:
             state = proj_meas(self.meas_func, measurement_cavity, self.meas)
             validate_covariance(state)
-
 
             self.measurement_factor, self.marginal = \
                 self.power_update(projected_marginal=state,
@@ -247,8 +247,6 @@ class Node:
                               next_node.marginal)
             validate_covariance(state)
 
-
-
             self.back_factor, self.marginal = \
                 self.power_update(projected_marginal=state,
                                   factor=self.back_factor,
@@ -257,14 +255,14 @@ class Node:
         except LinAlgError:
             return
 
-
     def power_update(self, projected_marginal, factor, marginal, cavity):
         damping = self.damping
         power = self.power
         # if power == 1
         # projected_marginal = project(f, tilted_marginal)  # PowerEP equation 21
-        new_factor = (factor ** (1 - damping)) * ((projected_marginal / cavity) ** damping)  # PowerEP equation 22
-        new_marginal = marginal * ((projected_marginal / marginal) ** (damping / power))  # PowerEP equation 23
+        marginal_ratio = (projected_marginal / marginal)
+        new_factor = factor * (marginal_ratio ** damping)  # PowerEP equation 22
+        new_marginal = marginal * (marginal_ratio ** (damping / power))  # PowerEP equation 23
 
         validate_covariance(new_marginal)
 
@@ -286,7 +284,7 @@ class Node:
         raise OverLoadError
 
 
-def build_nodes(N, dim, estimator=None, system=None):
+def build_nodes(N , dim, estimator=None, system=None):
     nodes = [Node(dim, index=i) for i in range(N)]
 
     for i, node in enumerate(nodes):

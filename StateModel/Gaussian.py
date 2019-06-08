@@ -100,13 +100,13 @@ class Gaussian:
         #         self.dim = dim
 
         if mean_vec is not None:
-            self.mean = mean_vec
+            self.mean = np.atleast_1d(mean_vec)
             self.cov = cov_mat
             self._mode = 'moment'
 
         if shift_vec is not None:
             self.precision = precision_mat
-            self.shift = shift_vec
+            self.shift = np.atleast_1d(shift_vec)
             self._mode = 'natural'
 
         # super(multivariate_normal, self).__init__(mean=mean_vec,
