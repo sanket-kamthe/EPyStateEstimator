@@ -51,7 +51,7 @@ def select_transform(id='UT', dim=1, samples=int(5e4)):
     return transition_transform, measurement_transform
 
 
-def power_sweep(trans_id='UT', power=1, damping=1, dim=1, samples=int(1e5)):
+def power_sweep(trans_id='UT', power=1, damping=1, dim=1, samples=int(1e3)):
     transform, meas_transform = select_transform(id=trans_id, dim=dim, samples=samples)
 
     exp_data = Exp_Data(Transform=trans_id,
@@ -142,11 +142,11 @@ nodes = node_system(nodes=nodes, system_model=system, measurements=y_noisy)
 # smoothed_mean = [node.marginal.mean for node in nodes]
 create_experiment_table(db=con.cursor())
 db = con.cursor()
-x = 10
-y = 10
+x = 3
+y = 3
 power_range = np.linspace(0.1, 1.0, num=x)
 damp_range = np.linspace(0.1, 1.0, num=y)
-trans = ['TT', 'UT', 'MCT']
+trans = ['UT',  'MCT',  'TT']
 total = len(list(itertools.product(trans, power_range, damp_range)))
 i = 0
 query_str= "SELECT RMSE" \
@@ -162,7 +162,7 @@ for trans, power, damping in itertools.product(trans, power_range, damp_range):
     print('done {}/{} '.format(i, total))
     try:
         if len(exits) == 0:
-            power_sweep(trans_id=trans, power=power, damping=damping)
+            power_sweep(trans_id=trans, power=power, damping=damping, dim=sys_dim)
     except LinAlgError:
         print('failed for power={},'
               ' damping={}, transform={:s}'.format(power, damping, trans))
