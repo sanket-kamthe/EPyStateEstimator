@@ -41,8 +41,8 @@ def select_transform(id='UT', dim=1, samples=int(5e4)):
         measurement_transform = TaylorTransform(dim=dim)
 
     elif id.upper() == 'MCT':
-        transition_transform = MonteCarloTransform(dim=1, number_of_samples=samples)
-        measurement_transform = MonteCarloTransform(dim=1, number_of_samples=samples)
+        transition_transform = MonteCarloTransform(dim=dim, number_of_samples=samples)
+        measurement_transform = MonteCarloTransform(dim=dim, number_of_samples=samples)
 
     else:
         transition_transform = UnscentedTransform(dim=dim, beta=2, alpha=1, kappa=3)
@@ -51,7 +51,7 @@ def select_transform(id='UT', dim=1, samples=int(5e4)):
     return transition_transform, measurement_transform
 
 
-def power_sweep(trans_id='UT', power=1, damping=1, dim=1, samples=int(1e3)):
+def power_sweep(trans_id='UT', power=1, damping=1, dim=1, samples=int(1e4)):
     transform, meas_transform = select_transform(id=trans_id, dim=dim, samples=samples)
 
     exp_data = Exp_Data(Transform=trans_id,
@@ -76,22 +76,22 @@ def power_sweep(trans_id='UT', power=1, damping=1, dim=1, samples=int(1e3)):
     nodes = node_estimator(nodes=nodes, estimator=estim)
     nodes = node_system(nodes=nodes, system_model=system, measurements=y_noisy)
 
-    ep_iterations(nodes, max_iter=20, conn=con, x_true=x_true, exp_data=exp_data)
+    ep_iterations(nodes, max_iter=50, conn=con, x_true=x_true, exp_data=exp_data)
 
 
-SEED = 100
+SEED = 101
 
 np.random.seed(seed=SEED)
-sys_dim = 4
+sys_dim = 1
 N = 100
 system = UniformNonlinearGrowthModel()
-system = BearingsOnlyTracking()
+# system = BearingsOnlyTracking()
 # system = BearingsOnlyTrackingTurn()
 data = system.simulate(N)
 x_true, x_noisy, y_true, y_noisy = zip(*data)
 
 
-con = sqlite3.connect("temp_bear.db", detect_types=sqlite3.PARSE_DECLTYPES)
+con = sqlite3.connect("/home/sanket/Dropbox/data/temp_ungm.db", detect_types=sqlite3.PARSE_DECLTYPES)
 db = con.cursor()
 table_name = 'UNGM_SIM'
 create_dynamics_table(db, name=table_name)
@@ -142,11 +142,11 @@ nodes = node_system(nodes=nodes, system_model=system, measurements=y_noisy)
 # smoothed_mean = [node.marginal.mean for node in nodes]
 create_experiment_table(db=con.cursor())
 db = con.cursor()
-x = 3
-y = 3
+x = 20
+y = 20
 power_range = np.linspace(0.1, 1.0, num=x)
 damp_range = np.linspace(0.1, 1.0, num=y)
-trans = ['UT',  'MCT',  'TT']
+trans = ['UT',  'TT']
 total = len(list(itertools.product(trans, power_range, damp_range)))
 i = 0
 query_str= "SELECT RMSE" \
@@ -155,11 +155,13 @@ query_str= "SELECT RMSE" \
 for trans, power, damping in itertools.product(trans, power_range, damp_range):
     # "EXITS(SELECT RMSE from UNGM_EXP WHERE Transform={}, "
     query = query_str.format(trans, SEED, power, damping)
+    print('running {}/{} power={}/ Damping={} '.format(i, total, power, damping))
 
     db.execute(query)
     exits = db.fetchall()
     i += 1
     print('done {}/{} '.format(i, total))
+    print('')
     try:
         if len(exits) == 0:
             power_sweep(trans_id=trans, power=power, damping=damping, dim=sys_dim)
