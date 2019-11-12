@@ -91,7 +91,8 @@ data = system.simulate(N)
 x_true, x_noisy, y_true, y_noisy = zip(*data)
 
 
-con = sqlite3.connect("/home/sanket/Dropbox/data/temp_ungm.db", detect_types=sqlite3.PARSE_DECLTYPES)
+con = sqlite3.connect("temp_ungm.db", detect_types=sqlite3.PARSE_DECLTYPES)
+# con = sqlite3.connect("/home/ubuntu/temp_ungm.db", detect_types=sqlite3.PARSE_DECLTYPES)
 db = con.cursor()
 table_name = 'UNGM_SIM'
 create_dynamics_table(db, name=table_name)

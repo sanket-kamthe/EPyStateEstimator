@@ -53,8 +53,12 @@ def ep_iterations(nodes, max_iter=100, x_true=None, conn=None, exp_data=None):
         if x_true is not None:
             exp_data['Iter'] += 1
             exp_data['RMSE'], exp_data['NLL'] = node_metrics(nodes, x_true=x_true)
-            exp_data['Mean'] = [node.marginal.mean for node in nodes]
-            exp_data['Variance'] = [node.marginal.cov for node in nodes]
+            exp_data['Mean'] = []
+            exp_data['Variance'] = []
+
+            # exp_data['Mean'] = [node.marginal.mean for node in nodes]
+            # exp_data['Variance'] = [node.marginal.cov for node in nodes]
+
             # exp_data['Nodes'] = nodes
             # data = Exp_Data._make(exp_data.values())
             insert_experiment_data(db=db, table_name='UNGM_EXP', data=exp_data)
