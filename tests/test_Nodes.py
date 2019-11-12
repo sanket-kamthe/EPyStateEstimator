@@ -1,5 +1,4 @@
-import pytest
-from MomentMatching.Nodes import build_nodes, node_system
+from ExpectationPropagation.Nodes import build_nodes, node_system
 from Systems import TestDynamics
 
 

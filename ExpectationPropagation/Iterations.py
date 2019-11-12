@@ -13,8 +13,7 @@
 # limitations under the License.
 
 from Utils.Metrics import node_metrics
-from MomentMatching.Database import insert_experiment_data, Exp_Data
-
+from Utils.Database import insert_experiment_data
 
 
 def kalman_filter(nodes):

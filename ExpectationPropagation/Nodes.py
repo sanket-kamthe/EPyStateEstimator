@@ -15,7 +15,6 @@
 
 import numpy as np
 from StateModel import Gaussian, GaussianFactor
-from .ExpectationPropagation import TopEP
 from numpy.linalg import LinAlgError
 from Utils import validate_covariance
 from functools import partial, partialmethod
