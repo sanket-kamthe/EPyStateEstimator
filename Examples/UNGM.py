@@ -1,4 +1,6 @@
 
+import sys
+sys.path.append('/Users/marc/research/code/pyStateEstimator')
 import numpy as np
 import itertools
 import matplotlib.pyplot as plt

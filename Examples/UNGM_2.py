@@ -11,6 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import sys
+import os
+path = os.getcwd()
+sys.path.append(path+'/../')
 
 import numpy as np
 import itertools
@@ -147,6 +151,7 @@ y = 10
 power_range = np.linspace(0.1, 1.0, num=x)
 damp_range = np.linspace(0.1, 1.0, num=y)
 trans = ['TT', 'UT', 'MCT']
+trans = ['MCT']
 total = len(list(itertools.product(trans, power_range, damp_range)))
 i = 0
 query_str= "SELECT RMSE" \

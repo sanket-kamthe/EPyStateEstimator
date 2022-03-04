@@ -125,7 +125,7 @@ class DynamicSystemModel(DynamicSystem):
     def simulate(self, N, x_zero=None, t_zero=0.0):
 
         if x_zero is None:
-            x_zero = np.random.multivariate_normal(mean=self.init_state.mean,
+            x_zero = np.random.multivariate_normal(mean=self.init_state.mean.ravel(),
                                                    cov=self.init_state.cov)
 
         return list(self._simulate(N=N, x_zero=x_zero, t_zero=t_zero))

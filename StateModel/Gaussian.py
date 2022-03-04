@@ -100,13 +100,13 @@ class Gaussian:
         #         self.dim = dim
 
         if mean_vec is not None:
-            self.mean = mean_vec
+            self.mean = mean_vec.reshape(-1,1)
             self.cov = cov_mat
             self._mode = 'moment'
 
         if shift_vec is not None:
             self.precision = precision_mat
-            self.shift = shift_vec
+            self.shift = shift_vec.reshape(-1,1)
             self._mode = 'natural'
 
         # super(multivariate_normal, self).__init__(mean=mean_vec,
@@ -123,7 +123,7 @@ class Gaussian:
 
     @mean.setter
     def mean(self, mean):
-        self._mean = mean
+        self._mean = mean.reshape(-1,1)
 
     @property
     def dim(self):
@@ -165,7 +165,7 @@ class Gaussian:
 
     @shift.setter
     def shift(self, value):
-        self._shift = value
+        self._shift = value.reshape(-1,1)
 
     @property
     def chol_cov(self):
@@ -255,7 +255,7 @@ class Gaussian:
 
         # return multivariate_normal(mean=self.mean, cov=self.cov).rvs(number_of_samples)
 
-        samples = np.random.multivariate_normal(mean=self.mean,
+        samples = np.random.multivariate_normal(mean=self.mean.ravel(),
                                                 cov=self.cov,
                                                 size=number_of_samples)
         return samples
