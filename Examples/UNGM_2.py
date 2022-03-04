@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+import sys
+
+sys.path.append('/home/marc/research/git/pyStateEstimator')
+
 import numpy as np
 import itertools
 # import matplotlib.pyplot as plt
@@ -155,11 +160,13 @@ query_str= "SELECT RMSE" \
 for trans, power, damping in itertools.product(trans, power_range, damp_range):
     # "EXITS(SELECT RMSE from UNGM_EXP WHERE Transform={}, "
     query = query_str.format(trans, SEED, power, damping)
-
+   
     db.execute(query)
     exits = db.fetchall()
     i += 1
     print('done {}/{} '.format(i, total))
+
+    print("(Trafo, damping, power) = (" + trans + ", " + str(damping) + ", " + str(power) + ")")
     try:
         if len(exits) == 0:
             power_sweep(trans_id=trans, power=power, damping=damping)

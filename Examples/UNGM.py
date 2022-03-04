@@ -3,6 +3,11 @@ import numpy as np
 import itertools
 import matplotlib.pyplot as plt
 import seaborn as sns
+
+import sys
+
+sys.path.append('/home/marc/research/git/pyStateEstimator')
+
 # import os
 # import sys
 # module_path = os.path.abspath(os.path.join('..'))

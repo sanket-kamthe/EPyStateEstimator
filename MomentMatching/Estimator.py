@@ -58,7 +58,7 @@ class Estimator:
         np.linalg.cholesky(z_cov)
         # kalman_gain = np.matmul(xz_cross_cov, np.linalg.pinv(z_cov))
         kalman_gain = np.linalg.solve(z_cov, xz_cross_cov.T).T
-        mean = state.mean + kalman_gain @ (meas - z_mean)  # equation 15  in Marc's ACC paper
+        mean = state.mean + kalman_gain @ (meas - z_mean).reshape(-1,1)  # equation 15  in Marc's ACC paper
         cov = state.cov - kalman_gain @ xz_cross_cov.T
         # np.linalg.cholesky(cov)
         corrected_state = Gaussian(mean, cov)

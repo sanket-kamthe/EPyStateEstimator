@@ -59,7 +59,7 @@ def moment_to_natural(mean, cov):
         raise LinAlgError
 
     # precision = np.linalg.pinv(cov)
-    shift = precision @ mean
+    shift = precision @ mean.reshape([-1,1])
     return precision, shift
 
 
@@ -255,7 +255,7 @@ class Gaussian:
 
         # return multivariate_normal(mean=self.mean, cov=self.cov).rvs(number_of_samples)
 
-        samples = np.random.multivariate_normal(mean=self.mean,
+        samples = np.random.multivariate_normal(mean=self.mean.ravel(),
                                                 cov=self.cov,
                                                 size=number_of_samples)
         return samples

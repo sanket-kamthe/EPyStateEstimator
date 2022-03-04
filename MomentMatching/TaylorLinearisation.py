@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import numpy as np
-from .MomentMatch import MappingTransform
+from MomentMatching.MomentMatch import MappingTransform
 from functools import partial
 from autograd import jacobian
 from StateModel import Gaussian
@@ -54,7 +54,7 @@ class TaylorTransform(MappingTransform):
         # frozen_func = partial(func, t=t, u=u, *args, **kwargs)
         J_t = self.numerical_jacobian(func, state.mean)
         # J_t = jacobian(func)(state.mean)
-        J_t = np.squeeze(J_t)
+        # J_t = np.reshape(J_t, [-1, state.cov.shape[1]])
         mean = func(state.mean)
         mean = np.squeeze(mean)
         cov = J_t @ state.cov @ J_t.T
