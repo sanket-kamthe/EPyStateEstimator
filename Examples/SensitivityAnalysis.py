@@ -66,60 +66,49 @@ def power_sweep(con, x_true, y_meas, trans_id='UT', SEED=0, power=1, damping=1, 
 
     ep_iterations(nodes, max_iter=50, conn=con, x_true=x_true, exp_data=exp_data)
 
+
 # %%
 # Set up connection
-con = sqlite3.connect("temp_ungm.db", detect_types=sqlite3.PARSE_DECLTYPES)
+con = sqlite3.connect("temp_ungm_2.db", detect_types=sqlite3.PARSE_DECLTYPES)
 db = con.cursor()
 table_name = 'UNGM_SIM'
 create_experiment_table(db=con.cursor())
-power_range = [1.0, 1.0, 0.8]
-damp_range = [1.0, 0.8, 0.8]
+power_range = np.linspace(0.1, 1.0, num=20)
+damping = 0.4
+Seeds = np.arange(0, 15, 1)
 trans_types = ['TT', 'UT', 'MCT']
+total = len(list(itertools.product(Seeds, trans_types, power_range)))
 
 query_str= "SELECT RMSE" \
            " from UNGM_EXP" \
-           " WHERE Transform='{}' AND Seed = {} AND Power ={} AND Damping = {} AND Iter = 50"
+           " WHERE Transform='{}' AND Seed = {} AND Power = {} AND Damping = {} AND Iter = 50"
+
 
 # %%
 system = UniformNonlinearGrowthModel()
 N = 100
 sys_dim = 1
-max_iter = 50
-num_seeds = 15
-for trans_id in trans_types:
-    transform, meas_transform = select_transform(id=trans_id)
-    for i, SEED in enumerate(range(num_seeds)):
-        np.random.seed(seed=SEED)
-        for power, damping in zip(power_range, damp_range):
-            print(f"trans = {trans_id}, SEED = {SEED}, power = {power}, damping = {damping}")
-            data = system.simulate(N)
-            x_true, x_noisy, y_true, y_noisy = zip(*data)
-            query = query_str.format(trans_id, SEED, power, damping)
-            db.execute(query)
-            exits = db.fetchall()
-            try:
-                if len(exits) == 0:
-                    power_sweep(con, x_noisy, y_noisy, trans_id=trans_id, SEED=SEED, power=power, damping=damping, dim=sys_dim)
-            except LinAlgError:
-                print('failed for seed={}, power={},'
-                    ' damping={}, transform={:s}'.format(SEED, power, damping, trans_id))
-                continue
+i = 0
+for SEED in Seeds:
+    np.random.seed(seed=SEED)
+    data = system.simulate(N)
+    x_true, x_noisy, y_true, y_noisy = zip(*data)
+    for trans_id, power in itertools.product(trans_types, power_range):
+        print(f"running {i}/{total}, SEED = {SEED}, trans = {trans_id}, power = {power}, damping = {damping}")
+        transform, meas_transform = select_transform(id=trans_id)
+        query = query_str.format(trans_id, SEED, power, damping)
+        db.execute(query)
+        exits = db.fetchall()
+        try:
+            if len(exits) == 0:
+                power_sweep(con, x_noisy, y_noisy, trans_id=trans_id, SEED=SEED, power=power, damping=damping, dim=sys_dim)
+        except LinAlgError:
+            print('failed for seed={}, power={},'
+                ' damping={}, transform={:s}'.format(SEED, power, damping, trans_id))
+            continue
+
 
 con.commit()
 con.close()
 
 # %%
-# Remove anomalies
-def remove_anomalies(data, out_num_samples, tolerance):
-    mean = data.mean(axis=0)
-    new_data = []
-    for i, ithdata in enumerate(data):
-        remainder_mean = np.concatenate([data[:i], data[i+1:]]).mean(axis=0)
-        distance = np.abs(mean - remainder_mean).max()
-        if distance < tolerance:
-            new_data.append(ithdata)
-        else:
-            print(f"Anomaly detected at i = {i}")
-
-    return np.array(new_data[:out_num_samples])
-
