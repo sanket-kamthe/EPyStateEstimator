@@ -39,7 +39,7 @@ def select_transform(id='UT', dim=1, samples=int(5e4)):
     return transition_transform, measurement_transform
 
 
-def power_sweep(con, x_true, y_meas, trans_id='UT', SEED=0, power=1, damping=1, dim=1, samples=int(1e4)):
+def power_sweep(con, x_true, y_meas, trans_id='UT', SEED=0, power=1, damping=1, dim=1, samples=int(1e6)):
     transform, meas_transform = select_transform(id=trans_id, dim=dim, samples=samples)
 
     exp_data = Exp_Data(Transform=trans_id,
@@ -68,13 +68,16 @@ def power_sweep(con, x_true, y_meas, trans_id='UT', SEED=0, power=1, damping=1, 
 
 # %%
 # Set up connection
-con = sqlite3.connect("temp_ungm.db", detect_types=sqlite3.PARSE_DECLTYPES)
+con = sqlite3.connect("temp_ungm_mct_redo.db", detect_types=sqlite3.PARSE_DECLTYPES)
 db = con.cursor()
 table_name = 'UNGM_SIM'
 create_experiment_table(db=con.cursor())
 power_range = [1.0, 1.0, 0.8]
 damp_range = [1.0, 0.8, 0.8]
-trans_types = ['TT', 'UT', 'MCT']
+#trans_types = ['TT', 'UT', 'MCT']
+trans_types = ['MCT']
+Seeds = np.arange(15)
+total = len(list(itertools.product(Seeds, trans_types, power_range)))
 
 query_str= "SELECT RMSE" \
            " from UNGM_EXP" \
@@ -86,12 +89,14 @@ N = 100
 sys_dim = 1
 max_iter = 50
 num_seeds = 15
+step = 0
 for trans_id in trans_types:
     transform, meas_transform = select_transform(id=trans_id)
     for i, SEED in enumerate(range(num_seeds)):
         np.random.seed(seed=SEED)
         for power, damping in zip(power_range, damp_range):
-            print(f"trans = {trans_id}, SEED = {SEED}, power = {power}, damping = {damping}")
+            print(f"running {step}/{total}, trans = {trans_id}, SEED = {SEED}, power = {power}, damping = {damping}")
+            step += 1
             data = system.simulate(N)
             x_true, x_noisy, y_true, y_noisy = zip(*data)
             query = query_str.format(trans_id, SEED, power, damping)
@@ -107,19 +112,4 @@ for trans_id in trans_types:
 
 con.commit()
 con.close()
-
-# %%
-# Remove anomalies
-def remove_anomalies(data, out_num_samples, tolerance):
-    mean = data.mean(axis=0)
-    new_data = []
-    for i, ithdata in enumerate(data):
-        remainder_mean = np.concatenate([data[:i], data[i+1:]]).mean(axis=0)
-        distance = np.abs(mean - remainder_mean).max()
-        if distance < tolerance:
-            new_data.append(ithdata)
-        else:
-            print(f"Anomaly detected at i = {i}")
-
-    return np.array(new_data[:out_num_samples])
 
