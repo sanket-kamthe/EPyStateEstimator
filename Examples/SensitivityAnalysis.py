@@ -92,7 +92,7 @@ i = 1
 for SEED in range(15):
     np.random.seed(seed=SEED)
     data = system.simulate(N)
-    x_true, x_noisy, y_true, y_noisy = zip(*data)
+    x_true, y_true, y_noisy = zip(*data)
     for trans_id, power in itertools.product(trans_types, power_range):
         print(f"running {i}/{total}, SEED = {SEED}, trans = {trans_id}, power = {power}, damping = {damping}")
         i += 1
@@ -102,7 +102,7 @@ for SEED in range(15):
         exits = db.fetchall()
         try:
             if len(exits) == 0:
-                power_sweep(con, x_noisy, y_noisy, trans_id=trans_id, SEED=SEED, power=power, damping=damping, dim=sys_dim)
+                power_sweep(con, x_true, y_noisy, trans_id=trans_id, SEED=SEED, power=power, damping=damping, dim=sys_dim)
         except LinAlgError:
             print('failed for seed={}, power={},'
                 ' damping={}, transform={:s}'.format(SEED, power, damping, trans_id))

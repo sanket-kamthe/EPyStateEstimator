@@ -96,10 +96,10 @@ def full_sweep(config, seed_range, trans_types, power_range, damp_range):
         np.random.seed(seed=SEED)
         data = system.simulate(timesteps)
         insert_dynamics_data(db, config.dyn_table_name, data, int(SEED))
-        x_true, x_noisy, y_true, y_noisy = zip(*data)
+        x_true, y_true, y_noisy = zip(*data)
         for trans_id, power, damping in itertools.product(trans_types, power_range, damp_range):
             print(f"running {i}/{total}, SEED = {SEED}, trans = {trans_id}, power = {power}, damping = {damping}")
-            power_sweep(config, x_noisy, y_noisy, trans_id=trans_id, SEED=int(SEED), power=power, damping=damping)
+            power_sweep(config, x_true, y_noisy, trans_id=trans_id, SEED=int(SEED), power=power, damping=damping)
             i += 1
     
 

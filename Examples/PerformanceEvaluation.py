@@ -98,13 +98,13 @@ for trans_id in trans_types:
             print(f"running {step}/{total}, trans = {trans_id}, SEED = {SEED}, power = {power}, damping = {damping}")
             step += 1
             data = system.simulate(N)
-            x_true, x_noisy, y_true, y_noisy = zip(*data)
+            x_true, y_true, y_noisy = zip(*data)
             query = query_str.format(trans_id, SEED, power, damping)
             db.execute(query)
             exits = db.fetchall()
             try:
                 if len(exits) == 0:
-                    power_sweep(con, x_noisy, y_noisy, trans_id=trans_id, SEED=SEED, power=power, damping=damping, dim=sys_dim)
+                    power_sweep(con, x_true, y_noisy, trans_id=trans_id, SEED=SEED, power=power, damping=damping, dim=sys_dim)
             except LinAlgError:
                 print('failed for seed={}, power={},'
                     ' damping={}, transform={:s}'.format(SEED, power, damping, trans_id))
