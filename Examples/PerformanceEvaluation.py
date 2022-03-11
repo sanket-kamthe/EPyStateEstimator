@@ -76,7 +76,7 @@ power_range = [1.0, 1.0, 0.8]
 damp_range = [1.0, 0.8, 0.8]
 #trans_types = ['TT', 'UT', 'MCT']
 trans_types = ['MCT']
-Seeds = np.arange(15)
+Seeds = np.arange(10)
 total = len(list(itertools.product(Seeds, trans_types, power_range)))
 
 query_str= "SELECT RMSE" \
@@ -88,7 +88,7 @@ system = UniformNonlinearGrowthModel()
 N = 100
 sys_dim = 1
 max_iter = 50
-num_seeds = 15
+num_seeds = 10
 step = 0
 for trans_id in trans_types:
     transform, meas_transform = select_transform(id=trans_id)
