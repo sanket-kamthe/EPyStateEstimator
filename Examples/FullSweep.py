@@ -13,8 +13,6 @@
 # limitations under the License.
 
 import numpy as np
-# import matplotlib.pyplot as plt
-from numpy.linalg import LinAlgError
 import sys
 sys.path.append('/home/so/Documents/Projects/pyStateEstimator')
 from Systems import UniformNonlinearGrowthModel, BearingsOnlyTracking
@@ -80,7 +78,13 @@ def power_sweep(config, x_true, y_meas, trans_id='UT', SEED=0, power=1, damping=
     nodes = node_estimator(nodes=nodes, estimator=estim)
     nodes = node_system(nodes=nodes, system_model=system, measurements=y_meas)
 
-    ep_iterations(nodes, max_iter=num_iter, conn=con, x_true=x_true, exp_data=exp_data, table_name=config.exp_table_name, print_result=False)
+    ep_iterations(nodes,
+                  max_iter=num_iter,
+                  conn=con,
+                  x_true=x_true,
+                  exp_data=exp_data,
+                  table_name=config.exp_table_name,
+                  print_result=False)
 
 
 def full_sweep(config, seed_range, trans_types, power_range, damp_range):
@@ -140,4 +144,3 @@ def main(logdir, system):
 
 if __name__ == '__main__':
     main()
-    

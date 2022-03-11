@@ -42,7 +42,7 @@ def ep_update(nodes):
         node.back_update()
 
 
-def ep_iterations(nodes, max_iter=100, x_true=None, conn=None, exp_data=None):
+def ep_iterations(nodes, max_iter=100, x_true=None, conn=None, exp_data=None, table_name='UNGM_EXP', print_result=True):
     db = conn.cursor()
     exp_data = exp_data._asdict()
     del exp_data['Nodes']
@@ -60,8 +60,9 @@ def ep_iterations(nodes, max_iter=100, x_true=None, conn=None, exp_data=None):
 
             # exp_data['Nodes'] = nodes
             # data = Exp_Data._make(exp_data.values())
-            insert_experiment_data(db=db, table_name='UNGM_EXP', data=exp_data)
-            print('\n EP Pass {} NLL = {}, RMSE = {}'.format(i+1,
-                                                             exp_data['NLL'],
-                                                             exp_data['RMSE']))
+            insert_experiment_data(db=db, table_name=table_name, data=exp_data)
+            if print_result:
+                print('\n EP Pass {} NLL = {}, RMSE = {}'.format(i+1,
+                                                                exp_data['NLL'],
+                                                                exp_data['RMSE']))
             conn.commit()

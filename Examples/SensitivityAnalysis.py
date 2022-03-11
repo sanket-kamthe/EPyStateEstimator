@@ -64,7 +64,7 @@ def power_sweep(con, x_true, y_meas, trans_id='UT', SEED=0, power=1, damping=1, 
     nodes = node_estimator(nodes=nodes, estimator=estim)
     nodes = node_system(nodes=nodes, system_model=system, measurements=y_meas)
 
-    ep_iterations(nodes, max_iter=50, conn=con, x_true=x_true, exp_data=exp_data)
+    ep_iterations(nodes, max_iter=50, conn=con, x_true=x_true, exp_data=exp_data, print_result=False)
 
 
 # %%
@@ -88,13 +88,14 @@ query_str= "SELECT RMSE" \
 system = UniformNonlinearGrowthModel()
 N = 100
 sys_dim = 1
-i = 0
-for SEED in Seeds:
+i = 1
+for SEED in range(15):
     np.random.seed(seed=SEED)
     data = system.simulate(N)
     x_true, x_noisy, y_true, y_noisy = zip(*data)
     for trans_id, power in itertools.product(trans_types, power_range):
         print(f"running {i}/{total}, SEED = {SEED}, trans = {trans_id}, power = {power}, damping = {damping}")
+        i += 1
         transform, meas_transform = select_transform(id=trans_id)
         query = query_str.format(trans_id, SEED, power, damping)
         db.execute(query)
