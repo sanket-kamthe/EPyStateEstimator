@@ -85,8 +85,8 @@ def insert_dynamics_data(db, table_name, data, seed):
     query = dynamic_data_string.format(table_name)
     t = 0
     for datum in data:
-        x_true, x_noisy, y_true, y_noisy = datum
-        values = (seed, t, x_true, x_noisy, y_true, y_noisy)
+        x_true, y_true, y_noisy = datum
+        values = (seed, t, x_true, y_true, y_noisy)
         t += 1
 
         db.execute(query, values)

@@ -39,7 +39,7 @@ def select_transform(id='UT', dim=1, samples=int(5e4)):
     return transition_transform, measurement_transform
 
 
-def power_sweep(con, x_true, y_meas, trans_id='UT', SEED=0, power=1, damping=1, dim=1, samples=int(1e6)):
+def power_sweep(con, x_true, y_meas, trans_id='UT', SEED=0, power=1, damping=1, dim=1, samples=int(1e4)):
     transform, meas_transform = select_transform(id=trans_id, dim=dim, samples=samples)
 
     exp_data = Exp_Data(Transform=trans_id,
@@ -64,19 +64,19 @@ def power_sweep(con, x_true, y_meas, trans_id='UT', SEED=0, power=1, damping=1, 
     nodes = node_estimator(nodes=nodes, estimator=estim)
     nodes = node_system(nodes=nodes, system_model=system, measurements=y_meas)
 
-    ep_iterations(nodes, max_iter=50, conn=con, x_true=x_true, exp_data=exp_data)
+    ep_iterations(nodes, max_iter=50, conn=con, x_true=x_true, exp_data=exp_data, print_result=False)
 
 # %%
 # Set up connection
-con = sqlite3.connect("temp_ungm_mct_redo.db", detect_types=sqlite3.PARSE_DECLTYPES)
+con = sqlite3.connect("temp_ungm.db", detect_types=sqlite3.PARSE_DECLTYPES)
 db = con.cursor()
 table_name = 'UNGM_SIM'
 create_experiment_table(db=con.cursor())
 power_range = [1.0, 1.0, 0.8]
 damp_range = [1.0, 0.8, 0.8]
-#trans_types = ['TT', 'UT', 'MCT']
-trans_types = ['MCT']
-Seeds = np.arange(10)
+trans_types = ['TT', 'UT', 'MCT']
+#trans_types = ['MCT']
+Seeds = np.arange(100, 110)
 total = len(list(itertools.product(Seeds, trans_types, power_range)))
 
 query_str= "SELECT RMSE" \
@@ -88,11 +88,10 @@ system = UniformNonlinearGrowthModel()
 N = 100
 sys_dim = 1
 max_iter = 50
-num_seeds = 10
-step = 0
+step = 1
 for trans_id in trans_types:
     transform, meas_transform = select_transform(id=trans_id)
-    for i, SEED in enumerate(range(num_seeds)):
+    for i, SEED in enumerate(Seeds):
         np.random.seed(seed=SEED)
         for power, damping in zip(power_range, damp_range):
             print(f"running {step}/{total}, trans = {trans_id}, SEED = {SEED}, power = {power}, damping = {damping}")
@@ -104,7 +103,7 @@ for trans_id in trans_types:
             exits = db.fetchall()
             try:
                 if len(exits) == 0:
-                    power_sweep(con, x_true, y_noisy, trans_id=trans_id, SEED=SEED, power=power, damping=damping, dim=sys_dim)
+                    power_sweep(con, x_true, y_noisy, trans_id=trans_id, SEED=int(SEED), power=power, damping=damping, dim=sys_dim)
             except LinAlgError:
                 print('failed for seed={}, power={},'
                     ' damping={}, transform={:s}'.format(SEED, power, damping, trans_id))
