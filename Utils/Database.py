@@ -77,16 +77,16 @@ def create_dynamics_table(db, name='UNGM'):
 
 
 dynamic_data_string = "INSERT OR IGNORE INTO {}" \
-                      "(Seed, t, X_true, Y_noisy)" \
-                      " VALUES (?, ?, ?, ?)"
+                      "(Seed, t, X_true, X_noisy, Y_true, Y_noisy)" \
+                      " VALUES (?, ?, ?, ?, ?, ?)"
 
 
 def insert_dynamics_data(db, table_name, data, seed):
     query = dynamic_data_string.format(table_name)
     t = 0
     for datum in data:
-        x_true, y_true, y_noisy = datum
-        values = (seed, t, x_true, y_noisy)
+        x_true, x_noisy, y_true, y_noisy = datum
+        values = (seed, t, x_true, x_noisy, y_true, y_noisy)
         t += 1
 
         db.execute(query, values)
