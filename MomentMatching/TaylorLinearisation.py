@@ -44,7 +44,13 @@ class TaylorTransform(MappingTransform):
             x1 = x.tolist()
             x1[i] = np.array(data) + eps
             x1 = np.array(x1)
-            jacobian.append((f(x1) - z) / eps)
+            
+            x2 = x.tolist()
+            x2[i] = np.array(data) - eps
+            x2 = np.array(x2)
+
+            #jacobian.append((f(x1) - z) / eps) # forward difference
+            jacobian.append( (f(x1) - f(x2)) / (2*eps)) # central difference
 
         return np.array(jacobian).T
 
