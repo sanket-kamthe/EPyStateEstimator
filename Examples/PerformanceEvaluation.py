@@ -64,10 +64,15 @@ def power_sweep(con, x_true, y_meas, trans_id='UT', SEED=0, power=1, damping=1, 
     nodes = node_estimator(nodes=nodes, estimator=estim)
     nodes = node_system(nodes=nodes, system_model=system, measurements=y_meas)
 
-    ep_iterations(nodes, max_iter=50, conn=con, x_true=x_true, exp_data=exp_data, print_result=False)
+    ep_iterations(nodes,
+                  max_iter=50,
+                  conn=con,
+                  x_true=x_true,
+                  exp_data=exp_data,
+                  print_result=False) # This does the full EP iteration + log results
 
 # %%
-# Set up connection
+# Set up connection to database
 con = sqlite3.connect("temp_ungm.db", detect_types=sqlite3.PARSE_DECLTYPES)
 db = con.cursor()
 table_name = 'UNGM_SIM'

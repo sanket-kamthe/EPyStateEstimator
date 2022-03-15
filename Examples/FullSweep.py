@@ -84,7 +84,7 @@ def power_sweep(config, x_true, y_meas, trans_id='UT', SEED=0, power=1, damping=
                   x_true=x_true,
                   exp_data=exp_data,
                   table_name=config.exp_table_name,
-                  print_result=False)
+                  print_result=False) # Full EP sweep + log results
 
 
 def full_sweep(config, seed_range, trans_types, power_range, damp_range):
@@ -104,7 +104,7 @@ def full_sweep(config, seed_range, trans_types, power_range, damp_range):
     
 
 @click.command()
-@click.option('-l', '--logdir', type=str, default="temp.db", help='Set directory for database to save results')
+@click.option('-l', '--logdir', type=str, default="temp.db", help='Set database directory to log results')
 @click.option('-s', '--system', type=click.Choice(['UNGM', 'BOT']), default='UNGM', help='Choose state-space model')
 def main(logdir, system):
     con = sqlite3.connect(logdir, detect_types=sqlite3.PARSE_DECLTYPES)
