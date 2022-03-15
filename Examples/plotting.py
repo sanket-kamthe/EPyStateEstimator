@@ -85,30 +85,26 @@ for i, params in enumerate(zip(power_range, damp_range)):
 
     axs[0, i].set_xticks(xticks)
     axs[0, i].set_title(f"Power: {power}, Damping: {damping}", fontsize=16)
+    axs[0, i].legend(fontsize=12, loc='upper right')
 
     axs[1, i].set_xlabel("Iterations", fontsize=16)
     if i==0:
         axs[1, i].set_ylabel("NLL", fontsize=16)
     xticks = [0, 10, 20, 30, 40, 50]
     axs[1, i].set_xticks(xticks)
-    axs[1, i].ticklabel_format(axis='y', style='sci', scilimits=(4,4))
+    axs[1, i].ticklabel_format(axis='y', style='sci', scilimits=(3,4))
+    axs[1, i].legend(fontsize=12, loc='upper right')
 
     for n in range(2):
        axs[n, i].set_facecolor('#EBEBEB')
        axs[n, i].grid(True, color='w', linestyle='-', zorder=3, linewidth=1)
 
 axs[0, 0].set_ylim(1, 18)
-axs[0, 0].legend(fontsize=12, loc='upper right')
-axs[0, 1].set_ylim(1, 25)
-axs[0, 1].legend(fontsize=12, loc='upper right')
-axs[0, 2].set_ylim(1, 17)
-axs[0, 2].legend(fontsize=12, loc='upper right')
+axs[0, 1].set_ylim(1, 18)
+axs[0, 2].set_ylim(1, 18)
 axs[1, 0].set_ylim(-100, 2000)
-axs[1, 0].legend(fontsize=12, loc='upper right')
 axs[1, 1].set_ylim(-500, 2000)
-axs[1, 1].legend(fontsize=12, loc='upper right')
 axs[1, 2].set_ylim(-500, 3000)
-axs[1, 2].legend(fontsize=12, loc='upper right')
 plt.tight_layout()
 plt.savefig("../figs/ep_comparison.png", dpi=300)
 
