@@ -43,7 +43,7 @@ class MonteCarloTransform(MappingTransform):
     def sample_covariance(y_samples, x_samples):
         x_dim = x_samples.shape[0]
         y_dim = y_samples.shape[0]
-        total_cov = np.cov(x_samples, y_samples, bias=True)
+        total_cov = np.cov(x_samples, y_samples, bias=False)
         cov = total_cov[x_dim:, x_dim:]
         cross_cov = total_cov[0:x_dim, x_dim:]
 
