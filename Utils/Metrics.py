@@ -15,8 +15,8 @@ def rmse(state_list, true_list):
         mse = state.rmse(val)
         result.append(mse)
 
-    mean_sqaured_err = sum(result)/len(result)
-    return np.sqrt(mean_sqaured_err)
+    mean_squared_err = sum(result)/len(result)
+    return np.sqrt(mean_squared_err)
 
 
 def node_metrics(nodes, x_true):

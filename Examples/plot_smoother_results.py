@@ -9,6 +9,7 @@ from MomentMatching.Estimator import Estimator
 from MomentMatching import UnscentedTransform, MonteCarloTransform, TaylorTransform
 from ExpectationPropagation.Nodes import build_nodes, node_estimator, node_system
 from ExpectationPropagation.Iterations import ep_iterations
+from Utils.Metrics import node_metrics
 
 # %%
 def select_transform(id='UT', dim=1, samples=int(1e4)):
@@ -87,6 +88,7 @@ nodes = node_system(nodes=nodes, system_model=system, measurements=y_noisy)
 max_iter = 50
 means = np.zeros((max_iter, timesteps))
 stds = np.zeros((max_iter, timesteps))
+rmse_list, nll_list = [], []
 for i in range(max_iter):
     for node in nodes:
         node.fwd_update()
@@ -96,6 +98,9 @@ for i in range(max_iter):
     for j, node in enumerate(nodes):
         means[i, j] = node.marginal.mean
         stds[i, j] = np.sqrt(node.marginal.cov)
+    rmse_, nll_ = node_metrics(nodes, x_noisy)
+    rmse_list.append(rmse_)
+    nll_list.append(nll_)
 
 # Plot EP smoother results
 iters = [0, 29, 49]
@@ -107,4 +112,19 @@ for i, iter in enumerate(iters):
     axs[i].plot(x_true, 'C3', label='truth')
     axs[i].set_title(f'Seed: {SEED}, Iteration: {iter+1}')
 plt.tight_layout()
+
+# %%
+metrics = {"RMSE" : rmse_list, "NLL" : nll_list}
+
+fix, axs = plt.subplots(2)
+for i, key in enumerate(metrics.keys()):
+    axs[i].plot(metrics[key])
+    axs[i].set_ylabel(key)
+    axs[i].grid()
+    if i == 0:
+        axs[i].set_title(f"Power = {power}, Damping = {damping}")
+    elif i == 1:
+        axs[i].set_xlabel("# Iterations")
+    
+
 # %%
