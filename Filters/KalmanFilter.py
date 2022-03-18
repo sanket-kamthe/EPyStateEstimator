@@ -49,20 +49,15 @@ class KalmanFilterSmoother:
         self.dt =system_model.dt
 
     def predict(self, prior_state, t=None, u=None, *args, **kwargs):
-        xx_mean, xx_cov, _ = self.transform(self.transition,
-                                            prior_state,
-                                            t=t, u=u,
-                                            *args, **kwargs)
+        func = partial(self.transition, t=t, u=u)
+        xx_mean, xx_cov, _ = self.transform(func, prior_state)
         xx_cov += self.transition_noise
         return Gaussian(xx_mean, xx_cov)
 
     def correct(self, state, meas, t=None, u=None, *args, **kwargs):
-
+        func = partial(self.measurement, t=t, u=u)
         z_mean, z_cov, xz_cross_cov = \
-            self.meas_transform(self.measurement,
-                                state,
-                                t=t, u=u,
-                                *args, **kwargs)
+            self.meas_transform(func, state)
 
         z_cov += self.measurement_noise
 
@@ -74,12 +69,8 @@ class KalmanFilterSmoother:
         return Gaussian(mean, cov)
 
     def smooth(self, state, next_state, t=None, u=None, *args, **kwargs):
-
-        xx_mean, xx_cov, xx_cross_cov = \
-            self.transform(self.transition,
-                           state,
-                           t=t, u=u,
-                           *args, **kwargs)
+        func = partial(self.transition, t=t, u=u)
+        xx_mean, xx_cov, xx_cross_cov = self.transform(func, state)
 
         xx_cov += self.transition_noise
 
