@@ -79,8 +79,11 @@ create_experiment_table(db=con.cursor())
 power_range = [1.0, 1.0, 0.8]
 damp_range = [1.0, 0.8, 0.8]
 trans_types = ['TT', 'UT', 'MCT']
-#trans_types = ['MCT']
-Seeds = np.arange(100, 110)
+Seeds = np.arange(0, 10)
+# power_range = [0.8]
+# damp_range = [0.8]
+# trans_types = ['UT']
+# Seeds = np.arange(101, 105)
 total = len(list(itertools.product(Seeds, trans_types, power_range)))
 
 query_str= "SELECT RMSE" \
@@ -97,11 +100,11 @@ for trans_id in trans_types:
     transform, meas_transform = select_transform(id=trans_id)
     for i, SEED in enumerate(Seeds):
         np.random.seed(seed=SEED)
+        data = system.simulate(N)
+        x_true, x_noisy, y_true, y_noisy = zip(*data)
         for power, damping in zip(power_range, damp_range):
             print(f"running {step}/{total}, trans = {trans_id}, SEED = {SEED}, power = {power}, damping = {damping}")
             step += 1
-            data = system.simulate(N)
-            x_true, x_noisy, y_true, y_noisy = zip(*data)
             query = query_str.format(trans_id, SEED, power, damping)
             db.execute(query)
             exits = db.fetchall()

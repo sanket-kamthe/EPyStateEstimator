@@ -39,7 +39,7 @@ sys_dim = 1
 timesteps = 100
 
 # Set parameters
-SEED = 101
+SEED = 100
 trans_id = 'UT'
 power = 0.8
 damping = 0.8
@@ -83,7 +83,7 @@ nodes = build_nodes(N=timesteps, dim=sys_dim)
 nodes = node_estimator(nodes=nodes, estimator=estim)
 nodes = node_system(nodes=nodes, system_model=system, measurements=y_noisy)
 
-# %%
+
 # Run EP iteration
 max_iter = 50
 means = np.zeros((max_iter, timesteps))
@@ -113,7 +113,7 @@ for i, iter in enumerate(iters):
     axs[i].set_title(f'Seed: {SEED}, Iteration: {iter+1}')
 plt.tight_layout()
 
-# %%
+
 metrics = {"RMSE" : rmse_list, "NLL" : nll_list}
 
 fix, axs = plt.subplots(2)

@@ -45,7 +45,9 @@ power_range = [1.0, 1.0, 0.8]
 damp_range = [1.0, 0.8, 0.8]
 trans_types = ['TT', 'UT', 'MCT']
 colors = ['C3', 'C2', 'C0']
+#Seeds = np.arange(10)
 Seeds = np.arange(100, 110)
+
 
 query_str = "SELECT {}" \
             " FROM UNGM_EXP" \
