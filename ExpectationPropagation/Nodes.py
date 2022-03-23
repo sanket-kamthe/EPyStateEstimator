@@ -199,7 +199,7 @@ class Node:
         old_forward_factor = self.forward_factor
         try:
             prev_node = self.prev_node.copy()
-            back_cavity = prev_node.marginal / prev_node.back_factor
+            back_cavity = prev_node.marginal / (prev_node.back_factor) # ** (1 / self.power))
         except AttributeError:
             back_cavity = self.prior
 

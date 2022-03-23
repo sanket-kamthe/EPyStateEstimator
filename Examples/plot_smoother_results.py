@@ -39,8 +39,8 @@ sys_dim = 1
 timesteps = 100
 
 # Set parameters
-SEED = 100
-trans_id = 'UT'
+SEED = 400
+trans_id = 'MCT'
 power = 0.8
 damping = 0.8
 
@@ -70,7 +70,7 @@ data = system.simulate(timesteps)
 x_true, x_noisy, y_true, y_noisy = zip(*data)
 
 # Build EP nodes
-num_samples = int(1e4)
+num_samples = int(1e2)
 transform, meas_transform = select_transform(trans_id, dim=sys_dim, samples=num_samples)
 estim = Estimator(trans_map=transform,
                 meas_map=meas_transform,
