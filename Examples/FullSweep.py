@@ -132,11 +132,12 @@ def main(logdir, dynamic_system, seeds):
                     dyn_table_name=dyn_table_name,
                     exp_table_name=exp_table_name)
 
-    num_power = 20
-    num_damping = 20
+    num_power = 19
+    num_damping = 19
     power_range = np.linspace(0.1, 1.0, num=num_power)
     damp_range = np.linspace(0.1, 1.0, num=num_damping)
-    trans_types = ['TT', 'UT', 'MCT']
+    #trans_types = ['TT', 'UT', 'MCT']
+    trans_types = ['UT', 'MCT']
 
     full_sweep(config, seeds, trans_types, power_range, damp_range)
 
