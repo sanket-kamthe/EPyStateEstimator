@@ -58,8 +58,8 @@ class TaylorTransform(MappingTransform):
         # (self, nonlinear_func, distribution, fargs=None, y_observation=None):
         assert isinstance(state, Gaussian)
         # frozen_func = partial(func, t=t, u=u, *args, **kwargs)
-        J_t = self.numerical_jacobian(func, state.mean)
-        # J_t = jacobian(func)(state.mean)
+        # J_t = self.numerical_jacobian(func, state.mean)
+        J_t = jacobian(func)(state.mean)
         if np.ndim(J_t) > 2:
           J_t = np.squeeze(J_t)
         mean = func(state.mean)

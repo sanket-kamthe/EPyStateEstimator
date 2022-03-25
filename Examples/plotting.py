@@ -26,7 +26,6 @@ power_range = [1.0, 1.0, 0.8]
 damp_range = [1.0, 0.8, 0.8]
 trans_types = ['TT', 'UT', 'MCT']
 colors = ['C3', 'C2', 'C0']
-#Seeds = np.arange(10)
 Seeds = np.arange(101, 1101, 100)
 
 
@@ -89,7 +88,7 @@ axs[1, 0].set_ylim(0, 18)
 axs[1, 1].set_ylim(0, 18)
 axs[1, 2].set_ylim(0, 18)
 plt.tight_layout()
-plt.savefig("../figs/ep_comparison.png", dpi=300)
+plt.savefig("../figs/ep_comparison_finite_difference_taylor.png", dpi=300)
 
 
 # %%
