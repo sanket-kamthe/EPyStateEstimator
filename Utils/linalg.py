@@ -15,7 +15,7 @@
 from scipy.linalg import cholesky, solve, solve_triangular
 import numpy as np
 
-JIT = 1e-6
+JIT = 1e-10
 
 
 def jittered_chol(a, jitter=None, lower=True, overwrite_a=False, check_finite=True):

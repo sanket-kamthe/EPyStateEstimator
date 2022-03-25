@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import numpy as np
+import scipy as sp
+from numpy.linalg import LinAlgError
 from .MomentMatch import MappingTransform
 from Utils.linalg import  jittered_chol
 from functools import partial
@@ -34,16 +36,19 @@ class UnscentedTransform(MappingTransform):
 
     def _sigma_points(self, mean, cov, *args):
         sqrt_n_plus_lambda = np.sqrt(self.n + self.param_lambda)
-
-        # jittered_cov = cov + 1e-4 * np.eye(self.n)
-        L = jittered_chol(cov)
+        try:
+            cov = (cov + cov.T) / 2
+            L = sp.linalg.cholesky(cov,
+                                   lower=True,
+                                   overwrite_a=False,
+                                   check_finite=True)
+        except LinAlgError:
+            L = jittered_chol(cov)
 
         scaledL = sqrt_n_plus_lambda * L
         mean_plus_L = mean + scaledL
         mean_minus_L = mean - scaledL
-        # list_sigma_points = [mean.tolist()] + mean_plus_L.tolist() + mean_minus_L.tolist()
-
-        # return list_sigma_points
+        
         return np.vstack((mean, mean_plus_L, mean_minus_L))
 
     @staticmethod

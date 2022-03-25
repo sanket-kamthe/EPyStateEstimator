@@ -36,16 +36,20 @@ def natural_to_moment(precision, shift):
         cov = LARGE_NUM * np.eye(dim)
         return mean, cov
 
-    # cov = np.linalg.pinv(precision)
-
     try:
+        cov = sp.linalg.solve(precision,
+                             np.eye(N=dim),
+                             overwrite_a=False,
+                             overwrite_b=False,
+                             assume_a='pos',
+                             transposed=False)
+
+    except LinAlgError:
         cov = jittered_solve(precision,
                              np.eye(N=dim),
                              assume_a='pos')
-
-    except LinAlgError:
         # print('possible bad precision matrix {}'.format(precision))
-        raise LinAlgError
+        # raise LinAlgError
     mean = np.dot(cov, shift)
     return mean, cov
 
@@ -53,10 +57,16 @@ def natural_to_moment(precision, shift):
 def moment_to_natural(mean, cov):
     dim = cov.shape[0]
     try:
-        precision = jittered_solve(cov, np.eye(N=dim), assume_a='pos')
+        precision = sp.linalg.solve(cov,
+                             np.eye(N=dim),
+                             overwrite_a=False,
+                             overwrite_b=False,
+                             assume_a='pos',
+                             transposed=False)
     except LinAlgError:
+        precision = jittered_solve(cov, np.eye(N=dim), assume_a='pos')
         # print('possible bad covariance matrix {}'.format(cov))
-        raise LinAlgError
+        # raise LinAlgError
 
     # precision = np.linalg.pinv(cov)
     shift = precision @ mean
