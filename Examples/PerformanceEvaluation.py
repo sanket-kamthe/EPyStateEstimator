@@ -38,7 +38,7 @@ def select_transform(id='UT', dim=1, samples=int(5e4)):
     return transition_transform, measurement_transform
 
 
-def power_sweep(con, x_true, y_meas, trans_id='UT', SEED=0, power=1, damping=1, dim=1, samples=int(5e4)):
+def power_sweep(con, x_true, y_meas, trans_id='UT', SEED=0, power=1, damping=1, dim=1, samples=int(1e4)):
     transform, meas_transform = select_transform(id=trans_id, dim=dim, samples=samples)
 
     exp_data = Exp_Data(Transform=trans_id,
@@ -72,14 +72,14 @@ def power_sweep(con, x_true, y_meas, trans_id='UT', SEED=0, power=1, damping=1, 
 
 # %%
 # Set up connection to database
-con = sqlite3.connect("corrected_ungm.db", detect_types=sqlite3.PARSE_DECLTYPES)
+con = sqlite3.connect("corrected_ungm_2.db", detect_types=sqlite3.PARSE_DECLTYPES)
 db = con.cursor()
 table_name = 'UNGM_SIM'
 create_experiment_table(db=con.cursor())
 power_range = [1.0, 1.0, 0.8]
 damp_range = [1.0, 0.8, 0.8]
 trans_types = ['TT', 'UT', 'MCT']
-Seeds = np.arange(101, 5101, 100)
+Seeds = np.arange(101, 1101, 100)
 # power_range = [0.8]
 # damp_range = [0.8]
 # trans_types = ['UT']

@@ -105,15 +105,16 @@ def full_sweep(config, seed_range, trans_types, power_range, damp_range):
 
 @click.command()
 @click.option('-l', '--logdir', type=str, default="temp.db", help='Set database directory to log results')
-@click.option('-s', '--system', type=click.Choice(['UNGM', 'BOT']), default='UNGM', help='Choose state-space model')
-def main(logdir, system):
+@click.option('-d', '--dynamic-system', type=click.Choice(['UNGM', 'BOT']), default='UNGM', help='Choose state-space model')
+@click.option('-s', '--seeds', type=click.INT, default=[101], multiple=True, help='List of random seeds')
+def main(logdir, dynamic_system, seeds):
     con = sqlite3.connect(logdir, detect_types=sqlite3.PARSE_DECLTYPES)
     db = con.cursor()
-    if system == 'UNGM':
+    if dynamic_system == 'UNGM':
         system = UniformNonlinearGrowthModel()
         dyn_table_name = 'UNGM_SIM'
         exp_table_name = 'UNGM_EXP'
-    elif system == 'BOT':
+    elif dynamic_system == 'BOT':
         system = BearingsOnlyTracking()
         dyn_table_name = 'BOT_SIM'
         exp_table_name = 'BOT_EXP'
@@ -137,9 +138,8 @@ def main(logdir, system):
     power_range = np.linspace(0.1, 1.0, num=num_power)
     damp_range = np.linspace(0.1, 1.0, num=num_damping)
     trans_types = ['TT', 'UT', 'MCT']
-    seed_range = np.arange(15)
 
-    full_sweep(config, seed_range, trans_types, power_range, damp_range)
+    full_sweep(config, seeds, trans_types, power_range, damp_range)
 
 
 if __name__ == '__main__':

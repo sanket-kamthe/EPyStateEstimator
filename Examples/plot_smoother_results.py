@@ -39,13 +39,13 @@ sys_dim = 1
 timesteps = 100
 
 # Set parameters
-SEED = 400
+SEED = 1001
 trans_id = 'MCT'
 power = 0.8
 damping = 0.8
 
 # Connect to database
-con = sqlite3.connect("temp_ungm.db", detect_types=sqlite3.PARSE_DECLTYPES)
+con = sqlite3.connect("corrected_ungm.db", detect_types=sqlite3.PARSE_DECLTYPES)
 cursor = con.cursor()
 
 query_str = "SELECT {}" \
@@ -70,7 +70,7 @@ data = system.simulate(timesteps)
 x_true, x_noisy, y_true, y_noisy = zip(*data)
 
 # Build EP nodes
-num_samples = int(1e2)
+num_samples = int(1e4)
 transform, meas_transform = select_transform(trans_id, dim=sys_dim, samples=num_samples)
 estim = Estimator(trans_map=transform,
                 meas_map=meas_transform,

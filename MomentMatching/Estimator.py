@@ -22,8 +22,6 @@
 #     meas
 from StateModel import Gaussian
 import numpy as np
-# from scipy.linalg import solve_triangular
-# Kalman estimator
 
 
 class Estimator:
@@ -56,11 +54,9 @@ class Estimator:
 
         z_cov += self.measurement_noise / self.power
         np.linalg.cholesky(z_cov)
-        # kalman_gain = np.matmul(xz_cross_cov, np.linalg.pinv(z_cov))
         kalman_gain = np.linalg.solve(z_cov, xz_cross_cov.T).T
         mean = state.mean + kalman_gain @ (meas - z_mean)  # equation 15  in Marc's ACC paper
         cov = state.cov - kalman_gain @ xz_cross_cov.T
-        # np.linalg.cholesky(cov)
         corrected_state = Gaussian(mean, cov)
         return corrected_state
 
@@ -79,14 +75,6 @@ class Estimator:
             Sigma = q.cov
         mean = state.mean + np.dot(J, (mu - xx_mean))
         cov = state.cov + J @ (Sigma - xx_cov) @ J.T
-        # np.linalg.cholesky(cov)
         smoothed_state = Gaussian(mean, cov)
         return smoothed_state
 
-    # @property
-    # def power(self):
-    #     return self._power
-    #
-    # @power.setter
-    # def power(self, power):
-    #     s
