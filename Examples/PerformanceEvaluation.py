@@ -72,14 +72,14 @@ def power_sweep(con, x_true, y_meas, trans_id='UT', SEED=0, power=1, damping=1, 
 
 # %%
 # Set up connection to database
-con = sqlite3.connect("temp_ungm.db", detect_types=sqlite3.PARSE_DECLTYPES)
+con = sqlite3.connect("corrected_ungm.db", detect_types=sqlite3.PARSE_DECLTYPES)
 db = con.cursor()
 table_name = 'UNGM_SIM'
 create_experiment_table(db=con.cursor())
 power_range = [1.0, 1.0, 0.8]
 damp_range = [1.0, 0.8, 0.8]
 trans_types = ['TT', 'UT', 'MCT']
-Seeds = np.arange(100, 110)
+Seeds = np.arange(101, 5101, 100)
 # power_range = [0.8]
 # damp_range = [0.8]
 # trans_types = ['UT']

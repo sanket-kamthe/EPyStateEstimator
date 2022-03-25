@@ -42,8 +42,8 @@ class Estimator:
 
     def proj_trans(self, func, state):
         xx_mean, xx_cov, _ = self.trans_map(func, state)
-        xx_cov += self.transition_noise / self.power
-        # xx_cov /= self.power
+        xx_cov += self.transition_noise
+        xx_cov /= self.power
         np.linalg.cholesky(xx_cov)
         pred_state = Gaussian(xx_mean, xx_cov)
         return pred_state
@@ -55,7 +55,6 @@ class Estimator:
             self.meas_map(func, state)
 
         z_cov += self.measurement_noise / self.power
-        # z_cov /= self.power
         np.linalg.cholesky(z_cov)
         # kalman_gain = np.matmul(xz_cross_cov, np.linalg.pinv(z_cov))
         kalman_gain = np.linalg.solve(z_cov, xz_cross_cov.T).T
@@ -65,17 +64,21 @@ class Estimator:
         corrected_state = Gaussian(mean, cov)
         return corrected_state
 
-    def proj_back(self, func, state, next_state):
+    def proj_back(self, func, state, next_fwd_cavity, next_state=None):
         xx_mean, xx_cov, xx_cross_cov = \
             self.trans_map(func, state)
 
         xx_cov += self.transition_noise / self.power
-        # xx_cov /= self.power
-
-        # J = xx_cross_cov @ np.linalg.pinv(xx_cov)
         J = np.linalg.solve(xx_cov, xx_cross_cov.T).T
-        mean = state.mean + np.dot(J, (next_state.mean - xx_mean))
-        cov = state.cov + J @ (next_state.cov - xx_cov) @ J.T
+        if self.power == 1 and next_state is not None:
+            mu = next_state.mean
+            Sigma = next_state.cov
+        else:
+            q = Gaussian(xx_mean, xx_cov) * (next_fwd_cavity ** self.power)
+            mu = q.mean
+            Sigma = q.cov
+        mean = state.mean + np.dot(J, (mu - xx_mean))
+        cov = state.cov + J @ (Sigma - xx_cov) @ J.T
         # np.linalg.cholesky(cov)
         smoothed_state = Gaussian(mean, cov)
         return smoothed_state

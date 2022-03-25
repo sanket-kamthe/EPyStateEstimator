@@ -199,7 +199,7 @@ class Node:
         old_forward_factor = self.forward_factor
         try:
             prev_node = self.prev_node.copy()
-            back_cavity = prev_node.marginal / (prev_node.back_factor) # ** (1 / self.power))
+            back_cavity = prev_node.marginal / (prev_node.back_factor ** (1 / self.power))
         except AttributeError:
             back_cavity = self.prior
 
@@ -236,6 +236,7 @@ class Node:
 
         try:
             next_node = self.next_node.copy()
+            next_fwd_cavity = next_node.marginal / (next_node.forward_factor ** (1 / self.power))
         except AttributeError:
             return
         # forward_cavity = next_node.marginal / next_node.forward_factor
@@ -243,7 +244,8 @@ class Node:
         try:
             state = proj_back(next_node.trans_func,
                               back_cavity,
-                              next_node.marginal)
+                              next_fwd_cavity,
+                              next_state=next_node.marginal)
             validate_covariance(state)
 
             self.back_factor, self.marginal = \
