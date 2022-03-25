@@ -1,5 +1,5 @@
 import pytest
-import numpy as np
+import autograd.numpy as np
 from StateModel import Gaussian
 # from MomentMatching.newMomentMatch import UnscentedTransform, MonteCarloTransform, TaylorTransform
 from MomentMatching import UnscentedTransform, TaylorTransform, MonteCarloTransform
