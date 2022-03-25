@@ -13,8 +13,6 @@
 # limitations under the License.
 
 import numpy as np
-import sys
-sys.path.append('/home/so/Documents/Projects/pyStateEstimator')
 from Systems import UniformNonlinearGrowthModel, BearingsOnlyTracking
 from MomentMatching import UnscentedTransform, MonteCarloTransform, TaylorTransform
 from MomentMatching.Estimator import Estimator
@@ -104,18 +102,20 @@ def full_sweep(config, seed_range, trans_types, power_range, damp_range):
     
 
 @click.command()
-@click.option('-l', '--logdir', type=str, default="temp.db", help='Set database directory to log results')
+@click.option('-l', '--logdir', type=str, default="temp.db", help='Set directory to save results')
 @click.option('-d', '--dynamic-system', type=click.Choice(['UNGM', 'BOT']), default='UNGM', help='Choose state-space model')
-@click.option('-s', '--seeds', type=click.INT, default=[101], multiple=True, help='List of random seeds')
+@click.option('-s', '--seeds', type=click.INT, default=[101], multiple=True, help='Random seed for experiment (multiple allowed)')
 def main(logdir, dynamic_system, seeds):
     con = sqlite3.connect(logdir, detect_types=sqlite3.PARSE_DECLTYPES)
     db = con.cursor()
     if dynamic_system == 'UNGM':
         system = UniformNonlinearGrowthModel()
+        sys_dim = 1
         dyn_table_name = 'UNGM_SIM'
         exp_table_name = 'UNGM_EXP'
     elif dynamic_system == 'BOT':
         system = BearingsOnlyTracking()
+        sys_dim = 4
         dyn_table_name = 'BOT_SIM'
         exp_table_name = 'BOT_EXP'
 
@@ -123,7 +123,6 @@ def main(logdir, dynamic_system, seeds):
     create_experiment_table(db, table_name=exp_table_name)
 
     timesteps = 100
-    sys_dim = 1
     num_iter = 50
     config = Config(con=con,
                     system=system,

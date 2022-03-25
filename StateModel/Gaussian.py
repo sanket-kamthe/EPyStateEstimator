@@ -241,7 +241,7 @@ class Gaussian:
         return -loglikelihood
         # return -multivariate_normal(mean=self.mean, cov=self.cov).logpdf(x, cond=1e-6)
 
-    def rmse(self, x):
+    def squared_error(self, x):
         """
         Squared Error
         :param x:

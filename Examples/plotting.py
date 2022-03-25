@@ -10,26 +10,7 @@ from functools import partial
 import seaborn as sns
 
 # %%
-# def remove_anomalies(data, tolerance):
-#     mean = data.mean(axis=0)
-#     new_data = []
-#     for i, ithdata in enumerate(data):
-#         remainder_mean = np.concatenate([data[:i], data[i+1:]]).mean(axis=0)
-#         distance = np.abs(mean - remainder_mean).max()
-#         if distance < tolerance:
-#             new_data.append(ithdata)
-#         else:
-#             print(f"Anomaly detected at i = {i}")
-
-#     return np.array(new_data)
-
 def get_mean_and_std(data):
-#def get_mean_and_std(data, num_samples, tolerance=None):
-    # if tolerance is None:
-    #     data_cleaned = data
-    # else:
-    #     data_cleaned = remove_anomalies(data, tolerance)
-    # mean = data_cleaned[:num_samples].mean(axis=0)
     mean = data.mean(axis=0)
     anomaly = data - mean[None]
     variance = (anomaly**2).mean(axis=0)
@@ -38,7 +19,7 @@ def get_mean_and_std(data):
 
 # %%
 # First plot (figure 4)
-con = sqlite3.connect("corrected_ungm.db", detect_types=sqlite3.PARSE_DECLTYPES)
+con = sqlite3.connect("corrected_ungm_2.db", detect_types=sqlite3.PARSE_DECLTYPES)
 cursor = con.cursor()
 
 power_range = [1.0, 1.0, 0.8]
@@ -94,7 +75,7 @@ for i, params in enumerate(zip(power_range, damp_range)):
         axs[1, i].set_ylabel("NLL", fontsize=16)
     xticks = [0, 10, 20, 30, 40, 50]
     axs[1, i].set_xticks(xticks)
-    axs[1, i].ticklabel_format(axis='y', style='sci', scilimits=(3,4))
+    # axs[1, i].ticklabel_format(axis='y', style='sci', scilimits=(3,4))
     axs[1, i].legend(fontsize=12, loc='upper right', ncol=3)
 
     for n in range(2):
@@ -104,9 +85,9 @@ for i, params in enumerate(zip(power_range, damp_range)):
 axs[0, 0].set_ylim(2, 15)
 axs[0, 1].set_ylim(2, 15)
 axs[0, 2].set_ylim(2, 15)
-axs[1, 0].set_ylim(0, 1800)
-axs[1, 1].set_ylim(0, 1800)
-axs[1, 2].set_ylim(0, 1800)
+axs[1, 0].set_ylim(0, 18)
+axs[1, 1].set_ylim(0, 18)
+axs[1, 2].set_ylim(0, 18)
 plt.tight_layout()
 plt.savefig("../figs/ep_comparison.png", dpi=300)
 
