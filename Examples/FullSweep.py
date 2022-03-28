@@ -137,7 +137,7 @@ def main(logdir, dynamic_system, seeds):
     power_range = np.linspace(0.1, 1.0, num=num_power)
     damp_range = np.linspace(0.1, 1.0, num=num_damping)
     #trans_types = ['TT', 'UT', 'MCT']
-    trans_types = ['UT', 'MCT']
+    trans_types = ['TT']
 
     full_sweep(config, seeds, trans_types, power_range, damp_range)
 
