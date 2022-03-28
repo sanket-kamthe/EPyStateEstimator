@@ -39,9 +39,9 @@ sys_dim = 1
 timesteps = 100
 
 # Set parameters
-SEED = 501
+SEED = 101
 trans_id = 'MCT'
-power = 0.8
+power = 0.4
 damping = 0.8
 
 # Connect to database

@@ -139,7 +139,12 @@ for i, iter in enumerate(iter_list):
     axs[1, i].set_xlabel("Power", fontsize=16)
     if i==0:
         axs[1, i].set_ylabel("NLL", fontsize=16)
+    
     #axs[1, i].ticklabel_format(axis='y', style='sci', scilimits=(5,5))
+
+    for j in [0, 1]:
+        axs[j, i].set_xticks(np.linspace(0, 19, 4))
+        axs[j, i].set_xticklabels(np.linspace(0.1, 1.0, 4))
 
 axs[0, 0].set_ylim(1, 15)
 axs[0, 0].legend(fontsize=12, loc='upper left', ncol=3)
