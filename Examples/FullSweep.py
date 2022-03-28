@@ -103,7 +103,7 @@ def full_sweep(config, seed_range, trans_types, power_range, damp_range):
 
 @click.command()
 @click.option('-l', '--logdir', type=str, default="temp.db", help='Set directory to save results')
-@click.option('-d', '--dynamic-system', type=click.Choice(['UNGM', 'BOT']), default='BOT', help='Choose state-space model')
+@click.option('-d', '--dynamic-system', type=click.Choice(['UNGM', 'BOT']), default='UNGM', help='Choose state-space model')
 @click.option('-s', '--seeds', type=click.INT, default=[101], multiple=True, help='Random seed for experiment (multiple allowed)')
 def main(logdir, dynamic_system, seeds):
     con = sqlite3.connect(logdir, detect_types=sqlite3.PARSE_DECLTYPES)
@@ -137,8 +137,7 @@ def main(logdir, dynamic_system, seeds):
     num_damping = 19
     power_range = np.linspace(0.1, 1.0, num=num_power)
     damp_range = np.linspace(0.1, 1.0, num=num_damping)
-    #trans_types = ['TT', 'UT', 'MCT']
-    trans_types = ['TT']
+    trans_types = ['TT', 'UT', 'MCT']
 
     full_sweep(config, seeds, trans_types, power_range, damp_range)
 

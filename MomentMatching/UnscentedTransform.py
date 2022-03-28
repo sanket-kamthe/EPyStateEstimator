@@ -14,10 +14,13 @@
 
 import numpy as np
 import scipy as sp
-from numpy.linalg import LinAlgError
+from scipy.linalg import LinAlgWarning
 from .MomentMatch import MappingTransform
 from Utils.linalg import  jittered_chol
 from functools import partial
+import warnings
+
+warnings.filterwarnings(action='error', category=LinAlgWarning)
 
 
 class UnscentedTransform(MappingTransform):
@@ -42,7 +45,7 @@ class UnscentedTransform(MappingTransform):
                                    lower=True,
                                    overwrite_a=False,
                                    check_finite=True)
-        except LinAlgError:
+        except:
             L = jittered_chol(cov)
 
         scaledL = sqrt_n_plus_lambda * L

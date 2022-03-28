@@ -13,22 +13,25 @@
 # limitations under the License.
 
 import numpy as np
-from numpy.linalg import LinAlgError
+from scipy.linalg import LinAlgWarning
 from StateModel import State
 from Utils import cholesky
 from scipy.stats import multivariate_normal
 from Utils.linalg import jittered_solve
 import scipy as sp
+import warnings
 
 RTOL, ATOL = 1e-3, 1e-5
 INF = 1000
 JIT = 1e-12
 LARGE_NUM = 99999
 
+warnings.filterwarnings(action='error', category=LinAlgWarning)
+
 
 def natural_to_moment(precision, shift):
     dim = precision.shape[0]
-
+    
     if np.trace(precision) < 1e-6:
         # almost zero precision
         dim = dim
@@ -38,16 +41,16 @@ def natural_to_moment(precision, shift):
 
     try:
         cov = sp.linalg.solve(precision,
-                             np.eye(N=dim),
-                             overwrite_a=False,
-                             overwrite_b=False,
-                             assume_a='pos',
-                             transposed=False)
+                            np.eye(N=dim),
+                            overwrite_a=False,
+                            overwrite_b=False,
+                            assume_a='pos',
+                            transposed=False)
 
-    except LinAlgError:
+    except:
         cov = jittered_solve(precision,
-                             np.eye(N=dim),
-                             assume_a='pos')
+                            np.eye(N=dim),
+                            assume_a='pos')
         # print('possible bad precision matrix {}'.format(precision))
         # raise LinAlgError
     mean = np.dot(cov, shift)
@@ -58,12 +61,12 @@ def moment_to_natural(mean, cov):
     dim = cov.shape[0]
     try:
         precision = sp.linalg.solve(cov,
-                             np.eye(N=dim),
-                             overwrite_a=False,
-                             overwrite_b=False,
-                             assume_a='pos',
-                             transposed=False)
-    except LinAlgError:
+                            np.eye(N=dim),
+                            overwrite_a=False,
+                            overwrite_b=False,
+                            assume_a='pos',
+                            transposed=False)
+    except:
         precision = jittered_solve(cov, np.eye(N=dim), assume_a='pos')
         # print('possible bad covariance matrix {}'.format(cov))
         # raise LinAlgError
