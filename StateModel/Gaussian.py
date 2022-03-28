@@ -24,7 +24,7 @@ import warnings
 RTOL, ATOL = 1e-3, 1e-5
 INF = 1000
 JIT = 1e-12
-LARGE_NUM = 99999
+LARGE_NUM = 1e10
 
 warnings.filterwarnings(action='error', category=LinAlgWarning)
 
@@ -32,7 +32,7 @@ warnings.filterwarnings(action='error', category=LinAlgWarning)
 def natural_to_moment(precision, shift):
     dim = precision.shape[0]
     
-    if np.trace(precision) < 1e-6:
+    if np.trace(precision) < 1e-10:
         # almost zero precision
         dim = dim
         mean = np.zeros((dim,), dtype=float)
