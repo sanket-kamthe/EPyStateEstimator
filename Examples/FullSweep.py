@@ -103,7 +103,7 @@ def full_sweep(config, seed_range, trans_types, power_range, damp_range):
 
 @click.command()
 @click.option('-l', '--logdir', type=str, default="temp.db", help='Set directory to save results')
-@click.option('-d', '--dynamic-system', type=click.Choice(['UNGM', 'BOT']), default='UNGM', help='Choose state-space model')
+@click.option('-d', '--dynamic-system', type=click.Choice(['UNGM', 'BOT']), default='BOT', help='Choose state-space model')
 @click.option('-s', '--seeds', type=click.INT, default=[101], multiple=True, help='Random seed for experiment (multiple allowed)')
 def main(logdir, dynamic_system, seeds):
     con = sqlite3.connect(logdir, detect_types=sqlite3.PARSE_DECLTYPES)
@@ -111,18 +111,19 @@ def main(logdir, dynamic_system, seeds):
     if dynamic_system == 'UNGM':
         system = UniformNonlinearGrowthModel()
         sys_dim = 1
+        timesteps = 100
         dyn_table_name = 'UNGM_SIM'
         exp_table_name = 'UNGM_EXP'
     elif dynamic_system == 'BOT':
         system = BearingsOnlyTracking()
         sys_dim = 4
+        timesteps = 50
         dyn_table_name = 'BOT_SIM'
         exp_table_name = 'BOT_EXP'
 
     create_dynamics_table(db, name=dyn_table_name)
     create_experiment_table(db, table_name=exp_table_name)
 
-    timesteps = 100
     num_iter = 50
     config = Config(con=con,
                     system=system,

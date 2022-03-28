@@ -39,7 +39,7 @@ sys_dim = 1
 timesteps = 100
 
 # Set parameters
-SEED = 101
+SEED = 201
 trans_id = 'MCT'
 power = 0.4
 damping = 0.8
