@@ -48,7 +48,7 @@ class UnscentedTransform(MappingTransform):
                                    overwrite_a=False,
                                    check_finite=True)
         except:
-            L = jittered_chol(cov)
+            L = jittered_chol(cov, lower=False)
 
         scaledL = sqrt_n_plus_lambda * L
         mean_plus_L = mean + scaledL 
