@@ -44,17 +44,17 @@ class UnscentedTransform(MappingTransform):
         try:
             cov = (cov + cov.T) / 2
             L = sp.linalg.cholesky(cov,
-                                   lower=True,
+                                   lower=False, # needs to be upper triangular because we work with row vectors (arrays)
                                    overwrite_a=False,
                                    check_finite=True)
         except:
             L = jittered_chol(cov)
 
         scaledL = sqrt_n_plus_lambda * L
-        mean_plus_L = mean.reshape(-1,1) + scaledL # add L to a column vector
-        mean_minus_L = mean.reshape(-1,1) - scaledL
+        mean_plus_L = mean + scaledL 
+        mean_minus_L = mean - scaledL
         
-        return np.vstack((mean, mean_plus_L.T, mean_minus_L.T)) # return row vectors
+        return np.vstack((mean, mean_plus_L, mean_minus_L)) # return row vectors
 
     @staticmethod
     def _weights(n, alpha, beta, kappa):
