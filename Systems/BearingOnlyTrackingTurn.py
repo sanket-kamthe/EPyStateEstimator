@@ -34,8 +34,9 @@ def h(x, t=None, u=None, sensor_list=Default_Sensor_List):
     """
 
     """
-    all_ys = [x[:, 2] - sensor.y for sensor in sensor_list]
-    all_xs = [x[:, 0] - sensor.x for sensor in sensor_list]
+    x = np.atleast_2d(x)
+    all_ys = np.array([x[:, 2] - sensor.y for sensor in sensor_list])
+    all_xs = np.array([x[:, 0] - sensor.x for sensor in sensor_list])
     return np.sqrt(np.array(all_xs) ** 2 + np.array(all_ys) **2 ).T
     # theta = np.arctan2(all_ys, all_xs)
     # return theta.T
@@ -93,10 +94,10 @@ class BearingsOnlyTrackingTurn(DynamicSystemModel):
                          init_distribution=init_dist
                          )
 
-    def simulate(self, N, x_zero=None, t_zero=0.0, seed=None):
-        if seed is None:
-            np.random.seed(seed=7952)
-        return super().simulate(N=N, x_zero=x_zero, t_zero=t_zero)
+    # def simulate(self, N, x_zero=None, t_zero=0.0, seed=None):
+    #     if seed is None:
+    #         np.random.seed(seed=7952)
+    #     return super().simulate(N=N, x_zero=x_zero, t_zero=t_zero)
 
 # def numpy_array(x)
 

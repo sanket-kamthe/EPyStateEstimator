@@ -170,7 +170,7 @@ plt.tight_layout()
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from collections import namedtuple
 
-experiment = 'ungm'
+experiment = 'bot'
 exp_table, cursor = select_data(experiment)
 
 # Heat map
@@ -256,7 +256,7 @@ def plot_sweep(config, table, transform, iters=10, kind='rmse', ax=None):
 
 def plot_all_transforms(config, table, iters=10, kind='rmse'):
     transform_list = ['TT', 'UT', 'MCT']
-    fig, axs = plt.subplots(1, 3, figsize=(25, 9))
+    fig, axs = plt.subplots(1, 3, figsize=(26, 9))
     for i, trans in enumerate(transform_list):
         plot_sweep(config, table, trans, iters, kind, axs[i])
     if kind == 'rmse':
@@ -266,18 +266,29 @@ def plot_all_transforms(config, table, iters=10, kind='rmse'):
     plt.tight_layout()
 
 
-# %%  
+# %% 
+if experiment == 'ungm':
+    rmse_vmin = 2.5
+    rmse_vmax = 10.0
+    nll_vmin = -15.0
+    nll_vmax = 500.0
+else:
+    rmse_vmin = 0.1
+    rmse_vmax = 10.0
+    nll_vmin = -5.0
+    nll_vmax = 1000.0
+
 config = PlotConfig(xlabel_kwargs={'fontsize':30},
                     ylabel_kwargs={'fontsize':30},
                     title_kwargs={'fontsize':30},
-                    vmin=2.5, vmax=10.0)
+                    vmin=rmse_vmin, vmax=rmse_vmax)
 
 plt.rcParams['xtick.labelsize'] = 25
 plt.rcParams['ytick.labelsize'] = 25
 plot_all_transforms(config, exp_table, 50, 'rmse')
 
-config=config._replace(vmin=-15.0)
-config=config._replace(vmax=500.0)
+config=config._replace(vmin=nll_vmin)
+config=config._replace(vmax=nll_vmax)
 plot_all_transforms(config, exp_table, 50, 'nll')
 
 # tranform_ = 'MCT'

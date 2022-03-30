@@ -13,7 +13,8 @@
 # limitations under the License.
 
 import numpy as np
-from Systems import UniformNonlinearGrowthModel, BearingsOnlyTracking
+from numpy.linalg import LinAlgError
+from Systems import UniformNonlinearGrowthModel, BearingsOnlyTracking, BearingsOnlyTrackingTurn
 from MomentMatching import UnscentedTransform, MonteCarloTransform, TaylorTransform
 from MomentMatching.Estimator import Estimator
 from ExpectationPropagation.Nodes import build_nodes, node_estimator, node_system
@@ -85,8 +86,13 @@ def power_sweep(config, x_true, y_meas, trans_id='UT', SEED=0, power=1, damping=
                   print_result=False) # Full EP sweep + log results
 
 
+query_str= "SELECT RMSE" \
+           " from {}" \
+           " WHERE Transform='{}' AND Seed = {} AND Power ={} AND Damping = {} AND Iter = 50"
+
+
 def full_sweep(config, seed_range, trans_types, power_range, damp_range):
-    con, system, timesteps = config.con, config.system, config.timesteps
+    con, system, timesteps, table = config.con, config.system, config.timesteps, config.exp_table_name
     db = con.cursor()
     total = len(list(itertools.product(seed_range, trans_types, power_range, damp_range)))
     i = 1
@@ -97,15 +103,25 @@ def full_sweep(config, seed_range, trans_types, power_range, damp_range):
         x_true, x_noisy, y_true, y_noisy = zip(*data)
         for trans_id, power, damping in itertools.product(trans_types, power_range, damp_range):
             print(f"running {i}/{total}, SEED = {SEED}, trans = {trans_id}, power = {power}, damping = {damping}")
-            power_sweep(config, x_noisy, y_noisy, trans_id=trans_id, SEED=int(SEED), power=power, damping=damping)
+            query = query_str.format(table, trans_id, SEED, power, damping)
+            db.execute(query)
+            exits = db.fetchall()
+            try:
+                if len(exits) == 0:
+                    power_sweep(config, x_noisy, y_noisy, trans_id=trans_id, SEED=int(SEED), power=power, damping=damping)
+            except LinAlgError:
+                print('failed for seed={}, power={},'
+                    ' damping={}, transform={:s}'.format(SEED, power, damping, trans_id))
+                continue
             i += 1
     
 
 @click.command()
 @click.option('-l', '--logdir', type=str, default="temp.db", help='Set directory to save results')
-@click.option('-d', '--dynamic-system', type=click.Choice(['UNGM', 'BOT']), default='UNGM', help='Choose state-space model')
+@click.option('-d', '--dynamic-system', type=click.Choice(['UNGM', 'BOT', 'BOTT']), default='UNGM', help='Choose state-space model')
 @click.option('-s', '--seeds', type=click.INT, default=[101], multiple=True, help='Random seed for experiment (multiple allowed)')
-def main(logdir, dynamic_system, seeds):
+@click.option('-t', '--trans-types', type=click.Choice(['TT', 'UT', 'MCT']), default=['TT', 'UT', 'MCT'], multiple=True, help='Transformation types (multiple allowed)')
+def main(logdir, dynamic_system, seeds, trans_types):
     con = sqlite3.connect(logdir, detect_types=sqlite3.PARSE_DECLTYPES)
     db = con.cursor()
     if dynamic_system == 'UNGM':
@@ -120,6 +136,12 @@ def main(logdir, dynamic_system, seeds):
         timesteps = 50
         dyn_table_name = 'BOT_SIM'
         exp_table_name = 'BOT_EXP'
+    elif dynamic_system == 'BOTT':
+        system = BearingsOnlyTrackingTurn()
+        sys_dim = 4
+        timesteps = 50
+        dyn_table_name = 'BOTT_SIM'
+        exp_table_name = 'BOTT_EXP'
 
     create_dynamics_table(db, name=dyn_table_name)
     create_experiment_table(db, table_name=exp_table_name)
@@ -137,7 +159,6 @@ def main(logdir, dynamic_system, seeds):
     num_damping = 19
     power_range = np.linspace(0.1, 1.0, num=num_power)
     damp_range = np.linspace(0.1, 1.0, num=num_damping)
-    trans_types = ['TT', 'UT', 'MCT']
 
     full_sweep(config, seeds, trans_types, power_range, damp_range)
 
