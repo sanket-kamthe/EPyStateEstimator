@@ -1,11 +1,7 @@
 # %%
 import numpy as np
-import random
 import matplotlib.pyplot as plt
-import sys
-sys.path.append('/home/so/Documents/Projects/pyStateEstimator')
 import sqlite3
-import itertools
 from functools import partial
 import seaborn as sns
 
@@ -17,23 +13,33 @@ def get_mean_and_std(data):
     std = np.sqrt(variance)
     return mean, std
 
+
+def select_data(experiment):
+    if experiment == 'ungm':
+        exp_table = 'UNGM_EXP'
+        con = sqlite3.connect("ungm_final_2.db", detect_types=sqlite3.PARSE_DECLTYPES)
+    elif experiment == 'bot':
+        exp_table = 'BOT_EXP'
+        con = sqlite3.connect("bot_final.db", detect_types=sqlite3.PARSE_DECLTYPES)
+
+    cursor = con.cursor()
+    return exp_table, cursor
+
 # %%
 # First plot (figure 4)
-con = sqlite3.connect("ungm_final.db", detect_types=sqlite3.PARSE_DECLTYPES)
-cursor = con.cursor()
-
+experiment = 'ungm'
 power_range = [1.0, 1.0, 0.8]
 damp_range = [1.0, 0.8, 0.8]
 trans_types = ['TT', 'UT', 'MCT']
 colors = ['C3', 'C2', 'C0']
 Seeds = np.arange(101, 1101, 100)
 
+exp_table, cursor = select_data(experiment)
 
 query_str = "SELECT {}" \
-            " FROM UNGM_EXP" \
+            " FROM {}" \
             " WHERE Transform='{}' AND Seed={} AND Power={} AND Damping={}"
 
-# %%
 fig, axs = plt.subplots(2, 3, figsize=(12,5))
 plt.rcParams['xtick.labelsize'] = 14
 plt.rcParams['ytick.labelsize'] = 14
@@ -43,15 +49,13 @@ for i, params in enumerate(zip(power_range, damp_range)):
     for c, trans_id in zip(colors, trans_types):
         RMSE_data, NLL_data = [], []
         for SEED in Seeds:
-            row = cursor.execute(query_str.format('RMSE', trans_id, int(SEED), power, damping)).fetchall()
+            row = cursor.execute(query_str.format('RMSE', exp_table, trans_id, int(SEED), power, damping)).fetchall()
             RMSE_data.append(np.array(row).squeeze())
-            row = cursor.execute(query_str.format('NLL', trans_id, int(SEED), power, damping)).fetchall()
+            row = cursor.execute(query_str.format('NLL', exp_table, trans_id, int(SEED), power, damping)).fetchall()
             NLL_data.append(np.array(row).squeeze())
         RMSE_data = np.array(RMSE_data)
         NLL_data = np.array(NLL_data)
 
-        # RMSE_mean, RMSE_std = get_mean_and_std(RMSE_data, num_seeds, 1.0)
-        # NLL_mean, NLL_std = get_mean_and_std(NLL_data, num_seeds, 300_000)
         RMSE_mean, RMSE_std = get_mean_and_std(RMSE_data)
         NLL_mean, NLL_std = get_mean_and_std(NLL_data)
 
@@ -88,21 +92,22 @@ axs[1, 0].set_ylim(0, 18)
 axs[1, 1].set_ylim(0, 18)
 axs[1, 2].set_ylim(0, 18)
 plt.tight_layout()
-plt.savefig("../figs/ep_comparison_finite_difference_taylor.png", dpi=300)
+# plt.savefig("../figs/ep_comparison_finite_difference_taylor.png", dpi=300)
 
 
 # %%
 # Second plot (figure 5)
-con = sqlite3.connect("ungm_final.db", detect_types=sqlite3.PARSE_DECLTYPES)
-cursor = con.cursor()
+experiment = 'ungm'
+exp_table, cursor = select_data(experiment)
 
-damping = 0.8
+damping = 0.4
 iter_list = [2, 10, 50]
 trans_types = ['TT', 'UT', 'MCT']
 colors = ['C3', 'C2', 'C0']
+Seeds = np.arange(101, 1101, 100)
 
 query_str = "SELECT {}" \
-            " FROM UNGM_EXP" \
+            " FROM {}" \
             " WHERE Transform='{}' AND Seed={} AND Damping={} AND Iter={}"
 
 fig, axs = plt.subplots(2, 3, figsize=(12,5))
@@ -112,9 +117,9 @@ for i, iter in enumerate(iter_list):
     for c, trans_id in zip(colors, trans_types):
         RMSE_data, NLL_data = [], []
         for SEED in Seeds:
-            row = cursor.execute(query_str.format('RMSE', trans_id, SEED, damping, iter)).fetchall()
+            row = cursor.execute(query_str.format('RMSE', exp_table, trans_id, SEED, damping, iter)).fetchall()
             RMSE_data.append(np.array(row).squeeze())
-            row = cursor.execute(query_str.format('NLL', trans_id, SEED, damping, iter)).fetchall()
+            row = cursor.execute(query_str.format('NLL', exp_table, trans_id, SEED, damping, iter)).fetchall()
             NLL_data.append(np.array(row).squeeze())
         RMSE_data = np.array(RMSE_data)
         NLL_data = np.array(NLL_data)
@@ -159,34 +164,58 @@ axs[1, 1].legend(fontsize=12, loc='upper right', ncol=3)
 axs[1, 2].set_ylim(-30, 1000)
 axs[1, 2].legend(fontsize=12, loc='upper right', ncol=3)
 plt.tight_layout()
-plt.savefig("../figs/power_sweep.png", dpi=300)
+# plt.savefig("../figs/power_sweep.png", dpi=300)
 
 # %%
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from collections import namedtuple
+
+experiment = 'bot'
+exp_table, cursor = select_data(experiment)
+
 # Heat map
 methods = [None, 'none','nearest', 'bilinear', 'bicubic', 'spline16',
            'spline36', 'hanning', 'hamming', 'hermite', 'kaiser', 'quadric',
            'catrom', 'gaussian', 'bessel', 'mitchell', 'sinc', 'lanczos']
 
-def plot_power_sweep(img, methods, title):
-    plt.imshow(img, interpolation=methods[6],
-               extent=[0.1,1,0.1,1], cmap='jet',
-               vmax=min(np.max(img), 10.0), vmin=np.min(img),origin='lower')
+PlotConfig = namedtuple('PlotConfig', ['xlabel_kwargs','ylabel_kwargs',
+                                        'title_kwargs', 'vmin', 'vmax'])
 
-    ax = plt.gca()
-    ax.set_xlabel('Power', fontweight='bold')
-    ax.set_ylabel('Damping', fontweight='bold')
-    ax.set_title(title, fontweight='bold')
+def plot_power_sweep(config, img, methods, title, ax=None):
+    # plt.imshow(img, interpolation=methods[6],
+    #            extent=[0.1,1,0.1,1], cmap='jet',
+    #            vmax=1000.0, vmin=np.min(img), origin='lower')
+
+    if ax is None:
+        ax = plt.gca()
+
+    im = ax.imshow(img, interpolation=methods[4],
+                   extent=[0.1,1,0.1,1], cmap='jet',
+                   vmax=config.vmax, vmin=config.vmin, origin='lower')
+
+    ax.set_xlabel('Power', **config.xlabel_kwargs)
+    ax.set_ylabel('Damping', **config.ylabel_kwargs)
+    ax.set_title(title, **config.title_kwargs)
     ax.grid(False)
-    plt.colorbar()
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.3)
+    if config.vmax is not None and config.vmin is not None:
+        ticks = np.linspace(0, config.vmax, 6)
+        tickslabel = [int(tick) for tick in ticks]
+        tickslabel[-1] = f'>{tickslabel[-1]}'
+        cbar = plt.colorbar(im, cax=cax, ticks=ticks)
+        cbar.ax.set_yticklabels(tickslabel)
+    else:
+        plt.colorbar(im, cax=cax)
+    
 
-
-def make_image_data(transform, seed, iters=10):
+def make_image_data(table, transform, seed, iters=10):
     all_iters = """
                     SELECT RMSE, NLL, Power, Damping from 
-                    UNGM_EXP
+                    {}
                     WHERE Transform = '{}' AND Seed = {} AND Iter = {}
                 """
-    cursor.execute(all_iters.format(transform, seed, iters))
+    cursor.execute(all_iters.format(table, transform, seed, iters))
     data = cursor.fetchall()
     rms, nl, p, d = zip(*data)
     nl = np.array(nl)
@@ -201,13 +230,13 @@ def make_image_data(transform, seed, iters=10):
     return p_rmse, p_nll, p, d
 
 
-def all_seeds_image(transform, iters=50):
+def all_seeds_image(table, transform, iters=50):
   all_prmse = []
   all_pnll = []
-  cursor.execute("SELECT DISTINCT Seed from UNGM_EXP")
+  cursor.execute(f"SELECT DISTINCT Seed from {table}")
   seeds = cursor.fetchall()
   for seed in seeds:
-    rmse, nll, p, d = make_image_data(transform, *seed, iters=iters)
+    rmse, nll, p, d = make_image_data(table, transform, *seed, iters=iters)
     all_prmse.append(rmse)
     all_pnll.append(nll)
   prmse = np.array(all_prmse)
@@ -216,24 +245,61 @@ def all_seeds_image(transform, iters=50):
   return np.mean(prmse, axis=0), np.mean(pnll, axis=0), p, d
 
 
-def plot_sweep(transform, iters=10, kind='rmse'):
-    p_rmse, p_nll, p, d = all_seeds_image(transform, iters=iters)
-    title = f'Loss = {kind}, Transform = {transform}'
+def plot_sweep(config, table, transform, iters=10, kind='rmse', ax=None):
+    p_rmse, p_nll, p, d = all_seeds_image(table, transform, iters=iters)
+    title = f'Transform = {transform}'
     if kind == 'rmse':
-        plot_power_sweep((p_rmse.T), methods, title)
+        plot_power_sweep(config, (p_rmse.T), methods, title, ax)
     else:
-        plot_power_sweep((p_nll.T), methods, title)
+        plot_power_sweep(config, (p_nll.T), methods, title, ax)
 
 
-# %%  
-tranform_ = 'MCT'
-iteration = 50
+def plot_all_transforms(config, table, iters=10, kind='rmse'):
+    transform_list = ['TT', 'UT', 'MCT']
+    fig, axs = plt.subplots(1, 3, figsize=(26, 9))
+    for i, trans in enumerate(transform_list):
+        plot_sweep(config, table, trans, iters, kind, axs[i])
+    if kind == 'rmse':
+        plt.suptitle('RMSE', fontweight='bold', fontsize=30)
+    else:
+        plt.suptitle('NLL', fontweight='bold', fontsize=30)
+    plt.tight_layout()
 
-plt.figure(figsize=(8,5))
-plot_sweep(tranform_, iters=iteration, kind='rmse')
+
+# %% 
+if experiment == 'ungm':
+    rmse_vmin = 2.5
+    rmse_vmax = 10.0
+    nll_vmin = -15.0
+    nll_vmax = 500.0
+else:
+    rmse_vmin = 0.1
+    rmse_vmax = 10.0
+    nll_vmin = -5.0
+    nll_vmax = 1000.0
+
+config = PlotConfig(xlabel_kwargs={'fontsize':30},
+                    ylabel_kwargs={'fontsize':30},
+                    title_kwargs={'fontsize':30},
+                    vmin=rmse_vmin, vmax=rmse_vmax)
+
+plt.rcParams['xtick.labelsize'] = 25
+plt.rcParams['ytick.labelsize'] = 25
+plot_all_transforms(config, exp_table, 50, 'rmse')
+
+config=config._replace(vmin=nll_vmin)
+config=config._replace(vmax=nll_vmax)
+plot_all_transforms(config, exp_table, 50, 'nll')
+
+# tranform_ = 'MCT'
+# iteration = 50
+
+# plt.figure(figsize=(8,5))
+# plot_sweep(exp_table, tranform_, iters=iteration, kind='rmse')
 
 # %%
-plt.figure(figsize=(8,5))
-plot_sweep(tranform_, iters=iteration, kind='nll')
+# tranform_ = 'MCT'
+# plt.figure(figsize=(8,5))
+# plot_sweep(exp_table, tranform_, iters=iteration, kind='nll')
 
 # %%

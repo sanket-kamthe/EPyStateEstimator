@@ -1,4 +1,4 @@
-
+# %%
 from Systems import DynamicSystemModel, GaussianNoise
 from StateModel import Gaussian
 from collections import namedtuple
@@ -94,13 +94,13 @@ class BearingsOnlyTracking(DynamicSystemModel):
     #     return super().simulate(N=N, x_zero=x_zero, t_zero=t_zero)
 
 # def numpy_array(x)
-
+# %%
 if __name__ == '__main__':
-
     import matplotlib.pyplot as plt
     import os
     import sys
 
+# %%
     module_path = os.path.abspath(os.path.join('..'))
     if module_path not in sys.path:
         sys.path.append(module_path)
@@ -115,10 +115,12 @@ if __name__ == '__main__':
     x_true = np.asanyarray(x_true)
     x_noisy = np.asanyarray(x_noisy)
 
-
+# %%
     # plt.plot(x_true[:, 0])
     # plt.scatter(list(range(N)), x_noisy[:, 0])
-    plt.scatter(x_noisy[:, 0], x_noisy[:, 1])
+    plt.scatter(x_noisy[:, 0, 0], x_noisy[:, 0, 1])
     plt.plot(x_true[:, 0], x_true[:, 1])
     plt.show()
 
+
+# %%

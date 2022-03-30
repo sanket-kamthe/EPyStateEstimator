@@ -28,7 +28,6 @@ LARGE_NUM = 1e10
 
 warnings.filterwarnings(action='error', category=LinAlgWarning)
 
-
 def natural_to_moment(precision, shift):
     dim = precision.shape[0]
     
@@ -267,10 +266,10 @@ class Gaussian:
         # from scipy.stats import multivariate_normal
 
         # return multivariate_normal(mean=self.mean, cov=self.cov).rvs(number_of_samples)
-
         samples = np.random.multivariate_normal(mean=self.mean,
                                                 cov=self.cov,
                                                 size=number_of_samples)
+
         return samples
 
     def __repr__(self):
