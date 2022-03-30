@@ -1,8 +1,6 @@
 # %%
 import numpy as np
 import matplotlib.pyplot as plt
-import sys
-sys.path.append('/home/so/Documents/Projects/pyStateEstimator')
 from Systems import UniformNonlinearGrowthModel, BearingsOnlyTracking
 import sqlite3
 from MomentMatching.Estimator import Estimator
@@ -34,18 +32,28 @@ def select_transform(id='UT', dim=1, samples=int(1e4)):
 
 # %%
 # Model configuration
-system = UniformNonlinearGrowthModel()
-sys_dim = 1
-timesteps = 100
+experiment = 'ungm'
+
+if experiment == 'ungm':
+    system = UniformNonlinearGrowthModel()
+    sys_dim = 1
+    timesteps = 100
+    exp_table = 'UNGM_EXP'
+    con = sqlite3.connect("ungm_final_2.db", detect_types=sqlite3.PARSE_DECLTYPES)
+elif experiment == 'bot':
+    system = BearingsOnlyTracking()
+    sys_dim = 4
+    timesteps = 50
+    exp_table = 'BOT_EXP'
+    con = sqlite3.connect("bot_final.db", detect_types=sqlite3.PARSE_DECLTYPES)
 
 # Set parameters
-SEED = 201
-trans_id = 'MCT'
-power = 0.4
+SEED = 101
+trans_id = 'UT'
+power = 0.8
 damping = 0.8
 
 # Connect to database
-con = sqlite3.connect("corrected_ungm.db", detect_types=sqlite3.PARSE_DECLTYPES)
 cursor = con.cursor()
 
 query_str = "SELECT {}" \
@@ -56,7 +64,7 @@ query_str = "SELECT {}" \
 metrics = ['RMSE', 'NLL']
 fig, axs = plt.subplots(1, 2, figsize=(10,4))
 for i, metric in enumerate(metrics):
-    row = cursor.execute(query_str.format(metric, 'UNGM_EXP', trans_id, SEED, power, damping)).fetchall()
+    row = cursor.execute(query_str.format(metric, exp_table, trans_id, SEED, power, damping)).fetchall()
     axs[i].plot(row)
     axs[i].set_ylabel(metric)
     axs[i].set_xlabel('# Iterations')
@@ -86,8 +94,8 @@ nodes = node_system(nodes=nodes, system_model=system, measurements=y_noisy)
 
 # Run EP iteration
 max_iter = 50
-means = np.zeros((max_iter, timesteps))
-stds = np.zeros((max_iter, timesteps))
+means = np.zeros((max_iter, timesteps, sys_dim))
+stds = np.zeros((max_iter, timesteps, sys_dim))
 rmse_list, nll_list = [], []
 for i in range(max_iter):
     for node in nodes:
@@ -97,19 +105,26 @@ for i in range(max_iter):
         node.back_update()
     for j, node in enumerate(nodes):
         means[i, j] = node.marginal.mean
-        stds[i, j] = np.sqrt(node.marginal.cov)
+        stds[i, j] = np.sqrt(np.diag(node.marginal.cov))
     rmse_, nll_ = node_metrics(nodes, x_noisy)
     rmse_list.append(rmse_)
     nll_list.append(nll_)
 
+# %%
 # Plot EP smoother results
 iters = [0, 29, 49]
+idx = 3
+if experiment == 'ungm':
+    idx = 0
+    x_true_ = x_true
+else:
+    x_true_ = np.array(x_true).squeeze()[:,idx]
 fig, axs = plt.subplots(3)
 for i, iter in enumerate(iters):
-    m, s = means[iter], stds[iter]
+    m, s = means[iter, :, idx], stds[iter, :, idx]
     axs[i].plot(m, 'C0', label='prediction')
     axs[i].fill_between(np.arange(timesteps), m-1.96*s, m+1.96*s, color='C0', alpha=0.3)
-    axs[i].plot(x_true, 'C3', label='truth')
+    axs[i].plot(x_true_, 'C3', label='truth')
     axs[i].set_title(f'Seed: {SEED}, Iteration: {iter+1}')
 plt.tight_layout()
 
@@ -126,5 +141,15 @@ for i, key in enumerate(metrics.keys()):
     elif i == 1:
         axs[i].set_xlabel("# Iterations")
     
+
+# %%
+m, s = means[iters[-1], :, idx], stds[iters[-1], :, idx]
+plt.figure(figsize=(10,3))
+plt.plot(m, 'C0', label='prediction')
+plt.fill_between(np.arange(timesteps), m-1.96*s, m+1.96*s, color='C0', alpha=0.3)
+plt.plot(x_true_, 'C3', label='truth')
+ax = plt.gca()
+ax.set_title(f"UT Corner Case. Iteration: {iters[-1]+1}")
+#ax.set_ylim(-10000, 10000)
 
 # %%
