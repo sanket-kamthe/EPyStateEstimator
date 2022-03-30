@@ -19,6 +19,7 @@ from .MomentMatch import MappingTransform
 from Utils.linalg import  jittered_chol
 from functools import partial
 import warnings
+import pdb
 
 warnings.filterwarnings(action='error', category=LinAlgWarning)
 
@@ -35,9 +36,10 @@ class UnscentedTransform(MappingTransform):
                          n=dim,
                          alpha=alpha,
                          beta=beta,
-                         kappa=kappa)
+                         kappa= kappa)
 
     def _sigma_points(self, mean, cov, *args):
+        #pdb.set_trace()
         sqrt_n_plus_lambda = np.sqrt(self.n + self.param_lambda)
         try:
             cov = (cov + cov.T) / 2
@@ -49,10 +51,10 @@ class UnscentedTransform(MappingTransform):
             L = jittered_chol(cov)
 
         scaledL = sqrt_n_plus_lambda * L
-        mean_plus_L = mean + scaledL
-        mean_minus_L = mean - scaledL
+        mean_plus_L = mean.reshape(-1,1) + scaledL # add L to a column vector
+        mean_minus_L = mean.reshape(-1,1) - scaledL
         
-        return np.vstack((mean, mean_plus_L, mean_minus_L))
+        return np.vstack((mean, mean_plus_L.T, mean_minus_L.T)) # return row vectors
 
     @staticmethod
     def _weights(n, alpha, beta, kappa):
