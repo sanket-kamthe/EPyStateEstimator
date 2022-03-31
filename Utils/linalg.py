@@ -42,6 +42,8 @@ def jittered_solve(a, b, jitter=None, overwrite_a=False, overwrite_b=False, assu
         x = solve(a, b, overwrite_a=overwrite_a, overwrite_b=overwrite_b, assume_a='gen', transposed=transposed)
     return x
 
+def symmetrize(cov):
+    return (cov + cov.T) / 2
 
 def validate_covariance(state):
 

@@ -29,6 +29,7 @@
 
 import numpy as np
 import warnings
+from Utils.linalg import symmetrize
 
 np.set_printoptions(precision=4)
 RTOL, ATOL = 1e-3, 1e-5
@@ -36,14 +37,14 @@ RTOL, ATOL = 1e-3, 1e-5
 
 def natural_to_moment(precision, shift):
     dim = precision.shape[0]
-    cov = np.linalg.solve(precision, np.eye(N=dim))
+    cov = symmetrize(np.linalg.solve(precision, np.eye(N=dim)))
     # cov = np.linalg.pinv(precision)
     mean = np.dot(cov, shift)
     return mean, cov
 
 
 def moment_to_natural(mean, cov):
-    precision = np.linalg.pinv(cov)
+    precision = symmetrize(np.linalg.pinv(cov))
     shift = np.dot(precision, mean)
     return precision, shift
 
@@ -99,7 +100,7 @@ class GaussianState:
 
     @cov.setter
     def cov(self, cov):
-        self._cov = cov
+        self._cov = symmetrize(cov)
         # we have changed the covariance so shift and precision are no longer valid,
         #  so we set them to None for lazy computation, if needed.
         self._shift = None
@@ -108,7 +109,7 @@ class GaussianState:
     @property
     def precision(self):
         if self._precision is None:
-            self._precision = np.linalg.solve(self.cov, np.eye(self.dim))
+            self._precision = symmetrize(np.linalg.solve(self.cov, np.eye(self.dim)))
         return self._precision
 
     @property
@@ -121,17 +122,17 @@ class GaussianState:
     def __mul__(self, other):
         # Make sure that other is also a GaussianState class
         # assert isinstance(other, GaussianState)
-        precision = self.precision + other.precision
+        precision = symmetrize(self.precision + other.precision)
         shift = self.shift + other.shift
         mean, cov = natural_to_moment(precision, shift)
-        cov = (cov.T + cov) / 2
+        cov = symmetrize(cov)
         return GaussianState(mean, cov)
 
     def __truediv__(self, other):
         # Make sure that 'other' is also a GaussianState class
         # TODO: Replace assert with a custom Error
         # assert isinstance(other, GaussianState)
-        precision = self.precision - other.precision
+        precision = symmetrize(self.precision - other.precision)
         # if precision < 0:
         #     warnings.warn('Negative Precision!!!')
             # print(precision)
@@ -139,7 +140,7 @@ class GaussianState:
 
         shift = self.shift - other.shift
         mean, cov = natural_to_moment(precision, shift)
-        cov = (cov.T + cov) / 2
+        cov = symmetrize(cov)
 
         return GaussianState(mean, cov)
 
@@ -148,8 +149,8 @@ class GaussianState:
         # precision = power * self.precision
         # shift = power * self.shift
         # mean, cov = natural_to_moment(precision, shift)
-        cov = self.cov / power
-        cov = (cov.T + cov) / 2
+        cov = symmetrize(self.cov / power)
+
         return GaussianState(self.mean, cov)
 
     def __eq__(self, other):

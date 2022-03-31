@@ -14,6 +14,7 @@
 
 from Utils.Metrics import node_metrics
 from Utils.Database import insert_experiment_data
+import pdb
 
 
 def kalman_filter(nodes):
@@ -48,6 +49,8 @@ def ep_iterations(nodes, max_iter=100, x_true=None, conn=None, exp_data=None, ta
     del exp_data['Nodes']
     for i in range(max_iter):
         # ep_update(nodes)
+        # if i==34:
+        #     pdb.set_trace()
         ep_fwd_back_updates(nodes)
         if x_true is not None:
             exp_data['Iter'] += 1
