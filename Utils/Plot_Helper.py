@@ -23,8 +23,8 @@ def plot_gaussian(data, label=None):
     x_mean = np.array([x.mean for x in data])
     x_sigma = np.array([np.sqrt(x.cov[0, :]) for x in data])
 
-    upr = x_mean + 2 * x_sigma
-    lwr = x_mean - 2 * x_sigma
+    upr = x_mean + 1.96 * x_sigma
+    lwr = x_mean - 1.96 * x_sigma
     time = np.arange(len(data))
     plt.fill_between(time, lwr[:, 0], upr[:, 0], alpha=0.5, label=label)
 
@@ -35,7 +35,7 @@ def plot_gaussian_node(data):
     x_mean = np.array([x.marginal.mean for x in data])
     x_sigma = np.array([np.sqrt(x.marginal.cov[0, :]) for x in data])
 
-    upr = x_mean + 2 * x_sigma
-    lwr = x_mean - 2 * x_sigma
+    upr = x_mean + 1.96 * x_sigma
+    lwr = x_mean - 1.96 * x_sigma
     time = np.arange(len(data))
     plt.fill_between(time, lwr[:, 0], upr[:, 0], alpha=0.5)

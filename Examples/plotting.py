@@ -2,10 +2,17 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import sqlite3
-from functools import partial
-import seaborn as sns
+from dataclasses import dataclass, field
+from typing import Dict, Tuple, Iterable
 
 # %%
+query_str = "SELECT {}" \
+            " FROM {}" \
+            " WHERE Transform='{}' AND Seed={} AND Power={} AND Damping={} AND Iter={}"
+
+parent_str = "SELECT {} FROM {} WHERE Transform='{}' AND Seed={}"
+
+
 def get_mean_and_std(data):
     mean = data.mean(axis=0)
     anomaly = data - mean[None]
@@ -20,151 +27,164 @@ def select_data(experiment):
         con = sqlite3.connect("ungm_final_2.db", detect_types=sqlite3.PARSE_DECLTYPES)
     elif experiment == 'bot':
         exp_table = 'BOT_EXP'
-        con = sqlite3.connect("bot_final.db", detect_types=sqlite3.PARSE_DECLTYPES)
+        #con = sqlite3.connect("bot_final.db", detect_types=sqlite3.PARSE_DECLTYPES)
+        con = sqlite3.connect("../temp.db", detect_types=sqlite3.PARSE_DECLTYPES)
 
     cursor = con.cursor()
     return exp_table, cursor
 
+
+@dataclass
+class PlotConfig:
+    figsize: Tuple = (12, 5)
+    xlabel_fontsize: int = 16
+    ylabel_fontsize: int = 16
+    title_fontsize: int = 16
+    legend_fontsize: int = 12
+    xticks: Iterable = None
+    xtick_labels: Iterable = None
+    xtick_labelsize: int = 14
+    ytick_labelsize: int = 14
+    vmin_rmse: float = None
+    vmax_rmse: float = None
+    vmin_nll: float = None
+    vmax_nll: float = None
+
+
+@dataclass
+class ExpConfig:
+    exp_name: str
+    Seeds: Iterable
+    exp_tablename : str = field(init=False)
+    cursor: sqlite3.Cursor = field(init=False)
+    def __post_init__(self):
+        assert self.exp_name in ['ungm', 'bot'], 'Experiment must be one of (ungm, bot)'
+        tablename, cursor = select_data(self.exp_name)
+        self.exp_tablename = tablename
+        self.cursor = cursor
+
+
+def plot_multiple_1d(plot_config: PlotConfig, exp_config: ExpConfig, control_vars: Dict,
+                     trans_types=['TT', 'UT', 'MCT'], colors=['C3', 'C2', 'C0']):
+    # Prepare data
+    keys = list(control_vars.keys())
+    key1, key2 = keys
+    var1, var2 = control_vars[key1], control_vars[key2]
+    ncol = len(var1)
+    vars = ['Power', 'Damping', 'Iter']
+    labels = {'Power': 'Power', 'Damping': 'Damping', 'Iter': 'Iteration'}
+    assert len(keys) == 2, 'Must specify two control variables'
+    assert len(trans_types) == len(colors), 'Number of transformation types and colors must match'
+    for key in keys:
+        assert key in vars, 'Variable must be one of (Power, Damping, Iter)'
+    query_str = parent_str
+    for var in keys:
+        query_str = query_str + f" AND {var}" + "={}"
+        vars.remove(var)
+    key3 = vars[0]
+    # Plot results
+    Seeds, exp_table, cursor = exp_config.Seeds, exp_config.exp_tablename, exp_config.cursor
+    fig, axs = plt.subplots(2, ncol, figsize=plot_config.figsize)
+    # Set background grid
+    for n in range(2):
+        for i in range(ncol):
+            axs[n, i].set_facecolor('#EBEBEB')
+            axs[n, i].grid(True, color='w', linestyle='-', linewidth=1)
+    # Plot
+    plt.rcParams['xtick.labelsize'] = plot_config.xtick_labelsize
+    plt.rcParams['ytick.labelsize'] = plot_config.ytick_labelsize
+    for i, params in enumerate(zip(var1, var2)):
+        param1, param2 = params # Control variables. e.g. Power and Damping
+        for c, trans_id in zip(colors, trans_types):
+            RMSE_data, NLL_data = [], []
+            for SEED in Seeds:
+                row = cursor.execute(query_str.format('RMSE', exp_table, trans_id, int(SEED), param1, param2)).fetchall()
+                RMSE_data.append(np.array(row).squeeze())
+                row = cursor.execute(query_str.format('NLL', exp_table, trans_id, int(SEED), param1, param2)).fetchall()
+                NLL_data.append(np.array(row).squeeze())
+            RMSE_data = np.array(RMSE_data)
+            NLL_data = np.array(NLL_data)
+
+            RMSE_mean, RMSE_std = get_mean_and_std(RMSE_data)
+            NLL_mean, NLL_std = get_mean_and_std(NLL_data)
+
+            N = RMSE_mean.shape[0]
+
+            axs[0, i].plot(np.arange(0, N), RMSE_mean, c=c, label=trans_id, zorder=1)
+            axs[0, i].fill_between(np.arange(0, N), RMSE_mean-RMSE_std, RMSE_mean+RMSE_std, alpha=0.2, color=c, zorder=2)
+
+            axs[1, i].plot(np.arange(0, N), NLL_mean, c=c, label=trans_id, zorder=1)
+            axs[1, i].fill_between(np.arange(0, N), NLL_mean-NLL_std, NLL_mean+NLL_std, alpha=0.2, color=c, zorder=2)
+
+        if i ==0:
+            axs[0, i].set_ylabel("RMSE", fontsize=plot_config.ylabel_fontsize)
+        axs[0, i].set_title(f"{labels[key1]}: {param1}, {labels[key2]}: {param2}", fontsize=plot_config.title_fontsize)
+        axs[0, i].legend(fontsize=plot_config.legend_fontsize, loc='upper right', ncol=ncol)
+        axs[0, i].set_ylim(plot_config.vmin_rmse, plot_config.vmax_rmse)
+
+        axs[1, i].set_xlabel(f"{labels[key3]}", fontsize=plot_config.xlabel_fontsize)
+        if i==0:
+            axs[1, i].set_ylabel("NLL", fontsize=plot_config.ylabel_fontsize)
+        axs[1, i].legend(fontsize=plot_config.legend_fontsize, loc='upper right', ncol=ncol)
+        axs[1, i].set_ylim(plot_config.vmin_nll, plot_config.vmax_nll)
+
+        for j in [0,1]:
+            xticks = plot_config.xticks
+            xticklabels = plot_config.xtick_labels
+            if xticks is not None: axs[j, i].set_xticks(xticks)
+            if xticklabels is not None: axs[j, i].set_xticklabels(xticklabels) 
+
+    plt.tight_layout()
+
+    return fig, axs
+
 # %%
 # First plot (figure 4)
 experiment = 'ungm'
-power_range = [1.0, 1.0, 0.8]
-damp_range = [1.0, 0.8, 0.8]
-trans_types = ['TT', 'UT', 'MCT']
-colors = ['C3', 'C2', 'C0']
 Seeds = np.arange(101, 1101, 100)
+plot_config = PlotConfig(xticks=[0, 10, 20, 30, 40, 50],
+                         vmin_rmse=2, vmax_rmse=12,
+                         vmin_nll=0, vmax_nll=14)
+exp_config = ExpConfig(exp_name=experiment, Seeds=Seeds)
+control_vars = {'Power': [1.0, 1.0, 0.8], 'Damping': [1.0, 0.8, 0.8]}
+fig, axs = plot_multiple_1d(plot_config, exp_config, control_vars)
 
-exp_table, cursor = select_data(experiment)
+# %%
+# Plot for Taylor transform only
+experiment = 'ungm'
+Seeds = np.arange(101, 1101, 100)
+plot_config = PlotConfig(xticks=[0, 10, 20, 30, 40, 50],
+                         vmin_rmse=4, vmax_rmse=12,
+                         vmin_nll=-100, vmax_nll=500)
+exp_config = ExpConfig(exp_name=experiment, Seeds=Seeds)
+control_vars = {'Power': [1.0, 1.0, 0.8], 'Damping': [1.0, 0.8, 0.8]}
+_, _ = plot_multiple_1d(plot_config, exp_config, control_vars, trans_types=['TT'], colors=['C3'])
 
-query_str = "SELECT {}" \
-            " FROM {}" \
-            " WHERE Transform='{}' AND Seed={} AND Power={} AND Damping={}"
-
-fig, axs = plt.subplots(2, 3, figsize=(12,5))
-plt.rcParams['xtick.labelsize'] = 14
-plt.rcParams['ytick.labelsize'] = 14
-for i, params in enumerate(zip(power_range, damp_range)):
-    power, damping = params
-    print(f"Power: {power}, Damping: {damping}")
-    for c, trans_id in zip(colors, trans_types):
-        RMSE_data, NLL_data = [], []
-        for SEED in Seeds:
-            row = cursor.execute(query_str.format('RMSE', exp_table, trans_id, int(SEED), power, damping)).fetchall()
-            RMSE_data.append(np.array(row).squeeze())
-            row = cursor.execute(query_str.format('NLL', exp_table, trans_id, int(SEED), power, damping)).fetchall()
-            NLL_data.append(np.array(row).squeeze())
-        RMSE_data = np.array(RMSE_data)
-        NLL_data = np.array(NLL_data)
-
-        RMSE_mean, RMSE_std = get_mean_and_std(RMSE_data)
-        NLL_mean, NLL_std = get_mean_and_std(NLL_data)
-
-        axs[0, i].plot(np.arange(0, 50), RMSE_mean, c=c, label=trans_id, zorder=1)
-        axs[0, i].fill_between(np.arange(0, 50), RMSE_mean-RMSE_std, RMSE_mean+RMSE_std, alpha=0.2, color=c, zorder=2)
-
-        axs[1, i].plot(np.arange(0, 50), NLL_mean, c=c, label=trans_id, zorder=1)
-        axs[1, i].fill_between(np.arange(0, 50), NLL_mean-NLL_std, NLL_mean+NLL_std, alpha=0.2, color=c, zorder=2)
-
-    if i ==0:
-        axs[0, i].set_ylabel("RMSE", fontsize=16)
-    xticks = [0, 10, 20, 30, 40, 50]
-
-    axs[0, i].set_xticks(xticks)
-    axs[0, i].set_title(f"Power: {power}, Damping: {damping}", fontsize=16)
-    axs[0, i].legend(fontsize=12, loc='upper right', ncol=3)
-
-    axs[1, i].set_xlabel("Iterations", fontsize=16)
-    if i==0:
-        axs[1, i].set_ylabel("NLL", fontsize=16)
-    xticks = [0, 10, 20, 30, 40, 50]
-    axs[1, i].set_xticks(xticks)
-    # axs[1, i].ticklabel_format(axis='y', style='sci', scilimits=(3,4))
-    axs[1, i].legend(fontsize=12, loc='upper right', ncol=3)
-
-    for n in range(2):
-       axs[n, i].set_facecolor('#EBEBEB')
-       axs[n, i].grid(True, color='w', linestyle='-', zorder=3, linewidth=1)
-
-axs[0, 0].set_ylim(2, 15)
-axs[0, 1].set_ylim(2, 15)
-axs[0, 2].set_ylim(2, 15)
-axs[1, 0].set_ylim(0, 18)
-axs[1, 1].set_ylim(0, 18)
-axs[1, 2].set_ylim(0, 18)
-plt.tight_layout()
-# plt.savefig("../figs/ep_comparison_finite_difference_taylor.png", dpi=300)
-
+# %%
+# Plot for Unscented transform only
+experiment = 'bot'
+Seeds = [101]
+plot_config = PlotConfig(xticks=[0, 10, 20, 30, 40, 50],
+                         vmin_rmse=None, vmax_rmse=None,
+                         vmin_nll=None, vmax_nll=None)
+exp_config = ExpConfig(exp_name=experiment, Seeds=Seeds)
+control_vars = {'Power': [1.0, 1.0, 0.8], 'Damping': [1.0, 0.8, 0.8]}
+_, _ = plot_multiple_1d(plot_config, exp_config, control_vars, trans_types=['UT'], colors=['C2'])
 
 # %%
 # Second plot (figure 5)
 experiment = 'ungm'
-exp_table, cursor = select_data(experiment)
-
-damping = 0.4
-iter_list = [2, 10, 50]
-trans_types = ['TT', 'UT', 'MCT']
-colors = ['C3', 'C2', 'C0']
-Seeds = np.arange(101, 1101, 100)
-
-query_str = "SELECT {}" \
-            " FROM {}" \
-            " WHERE Transform='{}' AND Seed={} AND Damping={} AND Iter={}"
-
-fig, axs = plt.subplots(2, 3, figsize=(12,5))
-plt.rcParams['xtick.labelsize'] = 14
-plt.rcParams['ytick.labelsize'] = 14
-for i, iter in enumerate(iter_list):
-    for c, trans_id in zip(colors, trans_types):
-        RMSE_data, NLL_data = [], []
-        for SEED in Seeds:
-            row = cursor.execute(query_str.format('RMSE', exp_table, trans_id, SEED, damping, iter)).fetchall()
-            RMSE_data.append(np.array(row).squeeze())
-            row = cursor.execute(query_str.format('NLL', exp_table, trans_id, SEED, damping, iter)).fetchall()
-            NLL_data.append(np.array(row).squeeze())
-        RMSE_data = np.array(RMSE_data)
-        NLL_data = np.array(NLL_data)
-
-        RMSE_mean, RMSE_std = get_mean_and_std(RMSE_data)
-        NLL_mean, NLL_std = get_mean_and_std(NLL_data)
-
-        for n in range(2):
-            axs[n, i].set_facecolor('#EBEBEB')
-            axs[n, i].grid(True, color='w', linestyle='-', zorder=3, linewidth=1)
-
-        axs[0, i].plot(np.arange(0, 19), RMSE_mean, c=c, label=trans_id, zorder=1)
-        axs[0, i].fill_between(np.arange(0, 19), RMSE_mean-RMSE_std, RMSE_mean+RMSE_std, alpha=0.2, color=c, zorder=2)
-
-        axs[1, i].plot(np.arange(0, 19), NLL_mean, c=c, label=trans_id, zorder=1)
-        axs[1, i].fill_between(np.arange(0, 19), NLL_mean-NLL_std, NLL_mean+NLL_std, alpha=0.2, color=c, zorder=2)
-
-    if i ==0:
-        axs[0, i].set_ylabel("RMSE", fontsize=16)
-    axs[0, i].set_title(f"Iteration: {iter}, Damping: {damping}", fontsize=16)
-
-    axs[1, i].set_xlabel("Power", fontsize=16)
-    if i==0:
-        axs[1, i].set_ylabel("NLL", fontsize=16)
-    
-    #axs[1, i].ticklabel_format(axis='y', style='sci', scilimits=(5,5))
-
-    for j in [0, 1]:
-        axs[j, i].set_xticks(np.linspace(0, 19, 4))
-        axs[j, i].set_xticklabels(np.linspace(0.1, 1.0, 4))
-
-axs[0, 0].set_ylim(1, 15)
-axs[0, 0].legend(fontsize=12, loc='upper left', ncol=3)
-axs[0, 1].set_ylim(1, 15)
-axs[0, 1].legend(fontsize=12, loc='upper left', ncol=3)
-axs[0, 2].set_ylim(1, 15)
-axs[0, 2].legend(fontsize=12, loc='upper left', ncol=3)
-axs[1, 0].set_ylim(0, 30)
-axs[1, 0].legend(fontsize=12, loc='upper right', ncol=3)
-axs[1, 1].set_ylim(-20, 500)
-axs[1, 1].legend(fontsize=12, loc='upper right', ncol=3)
+plot_config = PlotConfig(xticks=np.linspace(0, 19, 4),
+                         xtick_labels=np.linspace(0.1, 1.0, 4),
+                         vmin_rmse=2, vmax_rmse=16,
+                         vmin_nll=None, vmax_nll=None)
+exp_config = ExpConfig(exp_name=experiment, Seeds=Seeds)
+control_vars = {'Iter': [2, 10, 50], 'Damping': [0.4, 0.4, 0.4]}
+fig, axs = plot_multiple_1d(plot_config, exp_config, control_vars)
+axs[1, 0].set_ylim(2, 5)
+axs[1, 1].set_ylim(0, 50)
 axs[1, 2].set_ylim(-30, 1000)
-axs[1, 2].legend(fontsize=12, loc='upper right', ncol=3)
-plt.tight_layout()
-# plt.savefig("../figs/power_sweep.png", dpi=300)
+
 
 # %%
 from mpl_toolkits.axes_grid1 import make_axes_locatable
