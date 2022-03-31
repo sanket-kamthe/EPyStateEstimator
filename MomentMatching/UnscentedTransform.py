@@ -17,6 +17,7 @@ import scipy as sp
 from scipy.linalg import LinAlgWarning
 from .MomentMatch import MappingTransform
 from Utils.linalg import  jittered_chol
+from Utils.linalg import symmetrize
 from functools import partial
 import warnings
 import pdb
@@ -41,8 +42,9 @@ class UnscentedTransform(MappingTransform):
     def _sigma_points(self, mean, cov, *args):
         #pdb.set_trace()
         sqrt_n_plus_lambda = np.sqrt(self.n + self.param_lambda)
-        try:
-            cov = (cov + cov.T) / 2
+
+        cov = symmetrize(cov)
+        try:    
             L = sp.linalg.cholesky(cov,
                                    lower=False, # needs to be upper triangular because we work with row vectors (arrays)
                                    overwrite_a=False,
@@ -75,6 +77,8 @@ class UnscentedTransform(MappingTransform):
         w_left = np.eye(2 * n + 1) - np.array(w_m)
         W = w_left.T @ np.diag(w_c) @ w_left
 
+        W = symmetrize(W)
+
         return w_m, W
 
     def _transform(self, func, state):
@@ -89,7 +93,7 @@ class UnscentedTransform(MappingTransform):
         # Y = np.asarray(Xi)
         Y = func(sigma_pts)
         mean = self.w_m @ Y
-        cov = Y.T @ self.W @ Y
+        cov = symmetrize(Y.T @ self.W @ Y)
         cross_cov = np.asarray(sigma_pts).T @ self.W @ Y
 
         return mean, cov, cross_cov

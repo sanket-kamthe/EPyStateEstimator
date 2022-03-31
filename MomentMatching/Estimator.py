@@ -22,6 +22,7 @@
 #     meas
 from StateModel import Gaussian
 import numpy as np
+from Utils.linalg import symmetrize
 
 
 class Estimator:
@@ -42,6 +43,7 @@ class Estimator:
         xx_mean, xx_cov, _ = self.trans_map(func, state)
         xx_cov += self.transition_noise
         xx_cov /= self.power
+        xx_cov = symmetrize(xx_cov)
         np.linalg.cholesky(xx_cov)
         pred_state = Gaussian(xx_mean, xx_cov)
         return pred_state
@@ -53,10 +55,12 @@ class Estimator:
             self.meas_map(func, state)
 
         z_cov += self.measurement_noise / self.power
+        z_cov = symmetrize(z_cov)
         np.linalg.cholesky(z_cov)
         kalman_gain = np.linalg.solve(z_cov, xz_cross_cov.T).T
         mean = state.mean + kalman_gain @ (meas - z_mean)  # equation 15  in Marc's ACC paper
         cov = state.cov - kalman_gain @ xz_cross_cov.T
+        cov = symmetrize(cov)
         corrected_state = Gaussian(mean, cov)
         return corrected_state
 
@@ -65,6 +69,7 @@ class Estimator:
             self.trans_map(func, state)
 
         xx_cov += self.transition_noise / self.power
+        xx_cov = symmetrize(xx_cov)
         J = np.linalg.solve(xx_cov, xx_cross_cov.T).T
         if self.power == 1 and next_state is not None:
             mu = next_state.mean
@@ -75,6 +80,7 @@ class Estimator:
             Sigma = q.cov
         mean = state.mean + np.dot(J, (mu - xx_mean))
         cov = state.cov + J @ (Sigma - xx_cov) @ J.T
+        cov = symmetrize(cov)
         smoothed_state = Gaussian(mean, cov)
         return smoothed_state
 

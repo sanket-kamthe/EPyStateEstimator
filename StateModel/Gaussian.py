@@ -18,8 +18,10 @@ from StateModel import State
 from Utils import cholesky
 from scipy.stats import multivariate_normal
 from Utils.linalg import jittered_solve
+from Utils.linalg import symmetrize
 import scipy as sp
 import warnings
+
 
 RTOL, ATOL = 1e-3, 1e-5
 INF = 1000
@@ -35,7 +37,7 @@ def natural_to_moment(precision, shift):
         # almost zero precision
         dim = dim
         mean = np.zeros((dim,), dtype=float)
-        cov = LARGE_NUM * np.eye(dim)
+        cov = symmetrize(LARGE_NUM * np.eye(dim))
         return mean, cov
 
     try:
@@ -52,6 +54,7 @@ def natural_to_moment(precision, shift):
                             assume_a='pos')
         # print('possible bad precision matrix {}'.format(precision))
         # raise LinAlgError
+    cov = symmetrize(cov)
     mean = np.dot(cov, shift)
     return mean, cov
 
@@ -69,7 +72,7 @@ def moment_to_natural(mean, cov):
         precision = jittered_solve(cov, np.eye(N=dim), assume_a='pos')
         # print('possible bad covariance matrix {}'.format(cov))
         # raise LinAlgError
-
+    precision = symmetrize(precision)
     # precision = np.linalg.pinv(cov)
     shift = precision @ mean
     return precision, shift
@@ -192,7 +195,7 @@ class Gaussian:
     def __mul__(self, other):
         # Make sure that other is also a GaussianState class
         assert isinstance(other, Gaussian)
-        precision = self.precision + other.precision
+        precision = symmetrize(self.precision + other.precision)
         shift = self.shift + other.shift
         # mean, cov = natural_to_moment(precision, shift)
         # cov = (cov.T + cov) / 2

@@ -16,6 +16,7 @@ from abc import ABCMeta, abstractmethod
 import numpy as np
 # import functools
 from StateModel import Gaussian
+from Utils.linalg import symmetrize
 
 
 class MomentMatching():
@@ -155,6 +156,7 @@ class KalmanFilterMapping(MomentMatching):
         smoother_gain = np.linalg.solve(xx_cov, xx_cross_cov.T).T
         mean = state.mean + np.dot(smoother_gain, (next_state.mean - xx_mean))
         cov = state.cov + smoother_gain @ (next_state.cov - xx_cov) @ smoother_gain.T
+        cov = symmetrize(cov)
 
         return Gaussian(mean, cov)
 
@@ -168,6 +170,7 @@ class KalmanFilterMapping(MomentMatching):
         kalman_gain = np.linalg.solve(z_cov, xz_cross_cov.T).T  ###
         mean = state.mean + np.dot(kalman_gain, (meas - z_mean))  # equation 15  in Marc's ACC paper ###
         cov = state.cov - np.dot(kalman_gain, np.transpose(xz_cross_cov)) ###
+        cov = symmetrize(cov)
 
         return Gaussian(mean, cov)
 
@@ -205,7 +208,7 @@ class PowerKalmanFilterMapping(MomentMatching):
         xx_cov += noise_cov
         xx_cov /= self.power
 
-        xx_cov = (xx_cov.T + xx_cov)/2
+        xx_cov = symmetrize(xx_cov)
         return Gaussian(xx_mean, xx_cov)
 
     def _smooth(self, func, state, next_state, noise_cov, t=None, u=None, *args, **kwargs):
@@ -218,13 +221,13 @@ class PowerKalmanFilterMapping(MomentMatching):
 
         xx_cov += noise_cov
         xx_cov /= self.power
-        xx_cov = (xx_cov.T + xx_cov) / 2
+        xx_cov = symmetrize(xx_cov)
 
         smoother_gain = np.linalg.solve(xx_cov, xx_cross_cov.T).T
         mean = state.mean + np.dot(smoother_gain, (next_state.mean - xx_mean))
         cov = state.cov + smoother_gain @ (next_state.cov - xx_cov) @ smoother_gain.T
 
-        cov = (cov + cov.T) /2
+        cov = symmetrize(cov)
         return Gaussian(mean, cov)
 
     def _correct(self, func, state, meas, noise_cov, t=None, u=None, *args, **kwargs):
@@ -235,53 +238,17 @@ class PowerKalmanFilterMapping(MomentMatching):
         z_cov += noise_cov
         z_cov /= self.power
 
-        xx_cov = (z_cov.T + z_cov) / 2
+        z_cov = symmetrize(z_cov)
 
         kalman_gain = np.linalg.solve(z_cov, xz_cross_cov.T).T
         mean = state.mean + np.dot(kalman_gain, (meas - z_mean))  # equation 15  in Marc's ACC paper ###
         cov = state.cov - np.dot(kalman_gain, np.transpose(xz_cross_cov)) ###
 
-        cov = (cov + cov.T) / 2
+        cov = symmetrize(cov)
 
         return Gaussian(mean, cov)
 
 
-    # def sys_noise(self):
-    #     return self._noise.cov
-    #
-    # def meas_noise(self):
-    #     return self.
-
-
-# class KalmanFilterMeasurementMapping(ProjectMeasurement, MappingTransform):
-#     def __init__(self, h, noise, approximation_method=None, **kwargs):
-#         self._f = h
-#         self._noise = noise
-#         self.transform = super().__init__(approximation_method=approximation_method,
-#                                           **kwargs)
-#
-#     def project(self, distribution, meas, t=None, u=None, *args, **kwargs):
-#         return self._correct(state=distribution, meas=meas,
-#                              t=None, u=None, *args, **kwargs)
-#
-#     def g(self, x, t=None, u=None, *args, **kwargs):
-#         return self._f(x, t=t, u=u, *args, **kwargs)
-#
-#     def _correct(self, state, meas, t=None, u=None, *args, **kwargs):
-#
-#         z_mean, z_cov, xz_cross_cov = \
-#             self.transform(self.g, state, t=t, u=u, *args, **kwargs)
-#
-#         z_cov += self.noise()
-#
-#         kalman_gain = np.linalg.solve(z_cov, xz_cross_cov)
-#         mean = state.mean + np.dot(kalman_gain, (meas - z_mean))  # equation 15  in Marc's ACC paper
-#         cov = state.cov - np.dot(kalman_gain, np.transpose(xz_cross_cov))
-#
-#         return GaussianState(mean, cov)
-#
-#     def noise(self):
-#         return self._noise.cov
 
 from functools import singledispatch
 
