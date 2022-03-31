@@ -19,6 +19,7 @@ from .MomentMatch import MappingTransform
 from Utils.linalg import  jittered_chol
 from functools import partial
 import warnings
+import pdb
 
 warnings.filterwarnings(action='error', category=LinAlgWarning)
 
@@ -35,24 +36,25 @@ class UnscentedTransform(MappingTransform):
                          n=dim,
                          alpha=alpha,
                          beta=beta,
-                         kappa=kappa)
+                         kappa= kappa)
 
     def _sigma_points(self, mean, cov, *args):
+        #pdb.set_trace()
         sqrt_n_plus_lambda = np.sqrt(self.n + self.param_lambda)
         try:
             cov = (cov + cov.T) / 2
             L = sp.linalg.cholesky(cov,
-                                   lower=True,
+                                   lower=False, # needs to be upper triangular because we work with row vectors (arrays)
                                    overwrite_a=False,
                                    check_finite=True)
         except:
-            L = jittered_chol(cov)
+            L = jittered_chol(cov, lower=False)
 
         scaledL = sqrt_n_plus_lambda * L
-        mean_plus_L = mean + scaledL
+        mean_plus_L = mean + scaledL 
         mean_minus_L = mean - scaledL
         
-        return np.vstack((mean, mean_plus_L, mean_minus_L))
+        return np.vstack((mean, mean_plus_L, mean_minus_L)) # return row vectors
 
     @staticmethod
     def _weights(n, alpha, beta, kappa):
