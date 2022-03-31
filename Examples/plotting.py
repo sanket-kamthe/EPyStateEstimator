@@ -29,6 +29,9 @@ def select_data(experiment):
         exp_table = 'BOT_EXP'
         #con = sqlite3.connect("bot_final.db", detect_types=sqlite3.PARSE_DECLTYPES)
         con = sqlite3.connect("../temp.db", detect_types=sqlite3.PARSE_DECLTYPES)
+    elif experiment == 'bott':
+        exp_table = 'BOTT_EXP'
+        con = sqlite3.connect("bott_final.db", detect_types=sqlite3.PARSE_DECLTYPES)
 
     cursor = con.cursor()
     return exp_table, cursor
@@ -58,7 +61,7 @@ class ExpConfig:
     exp_tablename : str = field(init=False)
     cursor: sqlite3.Cursor = field(init=False)
     def __post_init__(self):
-        assert self.exp_name in ['ungm', 'bot'], 'Experiment must be one of (ungm, bot)'
+        assert self.exp_name in ['ungm', 'bot', 'bott'], 'Experiment must be one of (ungm, bot, bott)'
         tablename, cursor = select_data(self.exp_name)
         self.exp_tablename = tablename
         self.cursor = cursor
@@ -162,14 +165,14 @@ _, _ = plot_multiple_1d(plot_config, exp_config, control_vars, trans_types=['TT'
 
 # %%
 # Plot for Unscented transform only
-experiment = 'bot'
-Seeds = [101]
+experiment = 'bott'
+Seeds = [501]
 plot_config = PlotConfig(xticks=[0, 10, 20, 30, 40, 50],
                          vmin_rmse=None, vmax_rmse=None,
                          vmin_nll=None, vmax_nll=None)
 exp_config = ExpConfig(exp_name=experiment, Seeds=Seeds)
 control_vars = {'Power': [1.0, 1.0, 0.8], 'Damping': [1.0, 0.8, 0.8]}
-_, _ = plot_multiple_1d(plot_config, exp_config, control_vars, trans_types=['UT'], colors=['C2'])
+_, _ = plot_multiple_1d(plot_config, exp_config, control_vars, trans_types=['MCT'], colors=['C3'])
 
 # %%
 # Second plot (figure 5)
@@ -190,7 +193,7 @@ axs[1, 2].set_ylim(-30, 1000)
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from collections import namedtuple
 
-experiment = 'bot'
+experiment = 'bott'
 exp_table, cursor = select_data(experiment)
 
 # Heat map
@@ -202,9 +205,6 @@ PlotConfig = namedtuple('PlotConfig', ['xlabel_kwargs','ylabel_kwargs',
                                         'title_kwargs', 'vmin', 'vmax'])
 
 def plot_power_sweep(config, img, methods, title, ax=None):
-    # plt.imshow(img, interpolation=methods[6],
-    #            extent=[0.1,1,0.1,1], cmap='jet',
-    #            vmax=1000.0, vmin=np.min(img), origin='lower')
 
     if ax is None:
         ax = plt.gca()
@@ -250,13 +250,15 @@ def make_image_data(table, transform, seed, iters=10):
     return p_rmse, p_nll, p, d
 
 
-def all_seeds_image(table, transform, iters=50):
+def all_seeds_image(table, transform, iters=50, seeds=None):
   all_prmse = []
   all_pnll = []
   cursor.execute(f"SELECT DISTINCT Seed from {table}")
-  seeds = cursor.fetchall()
+  if seeds is None:
+    seeds = cursor.fetchall()
+    seeds = [seed[0] for seed in seeds]
   for seed in seeds:
-    rmse, nll, p, d = make_image_data(table, transform, *seed, iters=iters)
+    rmse, nll, p, d = make_image_data(table, transform, seed, iters=iters)
     all_prmse.append(rmse)
     all_pnll.append(nll)
   prmse = np.array(all_prmse)
@@ -265,8 +267,8 @@ def all_seeds_image(table, transform, iters=50):
   return np.mean(prmse, axis=0), np.mean(pnll, axis=0), p, d
 
 
-def plot_sweep(config, table, transform, iters=10, kind='rmse', ax=None):
-    p_rmse, p_nll, p, d = all_seeds_image(table, transform, iters=iters)
+def plot_sweep(config, table, transform, iters=10, kind='rmse', ax=None, seeds=None):
+    p_rmse, p_nll, p, d = all_seeds_image(table, transform, iters=iters, seeds=seeds)
     title = f'Transform = {transform}'
     if kind == 'rmse':
         plot_power_sweep(config, (p_rmse.T), methods, title, ax)
@@ -292,11 +294,16 @@ if experiment == 'ungm':
     rmse_vmax = 10.0
     nll_vmin = -15.0
     nll_vmax = 500.0
-else:
+elif experiment == 'bot':
     rmse_vmin = 0.1
     rmse_vmax = 10.0
     nll_vmin = -5.0
     nll_vmax = 1000.0
+elif experiment == 'bott':
+    rmse_vmin = None
+    rmse_vmax = None
+    nll_vmin = None
+    nll_vmax = None
 
 config = PlotConfig(xlabel_kwargs={'fontsize':30},
                     ylabel_kwargs={'fontsize':30},
@@ -311,11 +318,18 @@ config=config._replace(vmin=nll_vmin)
 config=config._replace(vmax=nll_vmax)
 plot_all_transforms(config, exp_table, 50, 'nll')
 
-# tranform_ = 'MCT'
-# iteration = 50
+# %%
+# Test for bott experiment
+tranform_ = 'MCT'
+iteration = 50
+seeds = [101, 201, 501, 601, 901]
+config = PlotConfig(xlabel_kwargs={'fontsize':16},
+                    ylabel_kwargs={'fontsize':16},
+                    title_kwargs={'fontsize':16},
+                    vmin=-2, vmax=1)
 
-# plt.figure(figsize=(8,5))
-# plot_sweep(exp_table, tranform_, iters=iteration, kind='rmse')
+plt.figure(figsize=(8,5))
+plot_sweep(config, exp_table, tranform_, iters=iteration, kind='nll', seeds=seeds)
 
 # %%
 # tranform_ = 'MCT'
