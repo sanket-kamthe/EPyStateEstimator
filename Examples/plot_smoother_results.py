@@ -32,7 +32,7 @@ def select_transform(id='UT', dim=1, samples=int(1e4)):
 
 # %%
 # Model configuration
-experiment = 'ungm'
+experiment = 'bot'
 
 if experiment == 'ungm':
     system = UniformNonlinearGrowthModel()
@@ -48,10 +48,10 @@ elif experiment == 'bot':
     con = sqlite3.connect("bot_final.db", detect_types=sqlite3.PARSE_DECLTYPES)
 
 # Set parameters
-SEED = 101
+SEED = 201
 trans_id = 'UT'
-power = 0.8
-damping = 0.8
+power = 1.0
+damping = 1.0
 
 # Connect to database
 cursor = con.cursor()

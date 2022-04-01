@@ -39,3 +39,34 @@ def plot_gaussian_node(data):
     lwr = x_mean - 1.96 * x_sigma
     time = np.arange(len(data))
     plt.fill_between(time, lwr[:, 0], upr[:, 0], alpha=0.5)
+
+
+def _get_mean_and_std(data):
+    mean = data.mean(axis=0)
+    anomaly = data - mean[None]
+    variance = (anomaly**2).mean(axis=0)
+    std = np.sqrt(variance)
+    return mean, std
+
+    
+def plot_1d_data(data, label, c=None, figsize=None, ax=None):
+    """ Plots mean and std bars for given data
+    :data: Array of size (samples, xlength)
+    :label: Label for legend. Type: str
+    :c: Color of line
+    :figsize: Figure size
+    :ax: Plot axis
+    """
+    if ax is None:
+        fig = plt.figure(figsize=figsize)
+        ax = plt.gca()
+        ax.set_facecolor('#EBEBEB')
+        ax.grid(True, color='w', linestyle='-', linewidth=1)
+        ax.set_axisbelow(True)
+    mean, std = _get_mean_and_std(data)
+    # Plot mean and std
+    N = mean.shape[0]
+    ax.plot(np.arange(0, N), mean, c=c, label=label, zorder=1)
+    if data.shape[0] > 1:
+        ax.fill_between(np.arange(0, N), mean-std, mean+std, alpha=0.2, color=c, zorder=2)
+    return ax

@@ -107,7 +107,7 @@ def full_sweep(config, seed_range, trans_types, power_range, damp_range):
             db.execute(query)
             exits = db.fetchall()
             try:
-                if len(exits) == 0:
+                if len(exits) == 0: # Skips sweep if result is already computed for the given settings
                     power_sweep(config, x_noisy, y_noisy, trans_id=trans_id, SEED=int(SEED), power=power, damping=damping)
             except LinAlgError:
                 print('failed for seed={}, power={},'
