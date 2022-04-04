@@ -91,7 +91,7 @@ query_str= "SELECT RMSE" \
            " WHERE Transform='{}' AND Seed = {} AND Power ={} AND Damping = {} AND Iter = 50"
 
 
-def full_sweep(config, seed_range, trans_types, power_range, damp_range):
+def full_sweep(config, seed_range, trans_types, power_range, damp_range, override=False):
     con, system, timesteps, table = config.con, config.system, config.timesteps, config.exp_table_name
     db = con.cursor()
     total = len(list(itertools.product(seed_range, trans_types, power_range, damp_range)))
@@ -107,8 +107,11 @@ def full_sweep(config, seed_range, trans_types, power_range, damp_range):
             db.execute(query)
             exits = db.fetchall()
             try:
-                if len(exits) == 0: # Skips sweep if result is already computed for the given settings
+                if override:
                     power_sweep(config, x_noisy, y_noisy, trans_id=trans_id, SEED=int(SEED), power=power, damping=damping)
+                else:
+                    if len(exits) == 0: # Skips sweep if result is already computed for the given settings
+                        power_sweep(config, x_noisy, y_noisy, trans_id=trans_id, SEED=int(SEED), power=power, damping=damping)
             except LinAlgError:
                 print('failed for seed={}, power={},'
                     ' damping={}, transform={:s}'.format(SEED, power, damping, trans_id))
@@ -121,7 +124,8 @@ def full_sweep(config, seed_range, trans_types, power_range, damp_range):
 @click.option('-d', '--dynamic-system', type=click.Choice(['UNGM', 'BOT', 'BOTT']), default='UNGM', help='Choose state-space model')
 @click.option('-s', '--seeds', type=click.INT, default=[101], multiple=True, help='Random seed for experiment (multiple allowed)')
 @click.option('-t', '--trans-types', type=click.Choice(['TT', 'UT', 'MCT']), default=['TT', 'UT', 'MCT'], multiple=True, help='Transformation types (multiple allowed)')
-def main(logdir, dynamic_system, seeds, trans_types):
+@click.option('-o', '--override/--no-override', default=False, help='Override saved results')
+def main(logdir, dynamic_system, seeds, trans_types, override):
     con = sqlite3.connect(logdir, detect_types=sqlite3.PARSE_DECLTYPES)
     db = con.cursor()
     if dynamic_system == 'UNGM':
@@ -159,8 +163,10 @@ def main(logdir, dynamic_system, seeds, trans_types):
     num_damping = 19
     power_range = np.linspace(0.1, 1.0, num=num_power)
     damp_range = np.linspace(0.1, 1.0, num=num_damping)
+    # power_range = [1.0]
+    # damp_range = [0.1]
 
-    full_sweep(config, seeds, trans_types, power_range, damp_range)
+    full_sweep(config, seeds, trans_types, power_range, damp_range, override)
 
 
 if __name__ == '__main__':

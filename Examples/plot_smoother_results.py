@@ -45,13 +45,13 @@ elif experiment == 'bot':
     sys_dim = 4
     timesteps = 50
     exp_table = 'BOT_EXP'
-    con = sqlite3.connect("bot_final.db", detect_types=sqlite3.PARSE_DECLTYPES)
+    con = sqlite3.connect("bot_final_2.db", detect_types=sqlite3.PARSE_DECLTYPES)
 
 # Set parameters
-SEED = 201
+SEED = 101
 trans_id = 'UT'
 power = 1.0
-damping = 1.0
+damping = 0.1
 
 # Connect to database
 cursor = con.cursor()

@@ -18,8 +18,6 @@ import numpy as np
 
 
 def plot_gaussian(data, label=None):
-    # if in_data
-    # data = in_data[:, 0:1]
     x_mean = np.array([x.mean for x in data])
     x_sigma = np.array([np.sqrt(x.cov[0, :]) for x in data])
 
@@ -29,16 +27,23 @@ def plot_gaussian(data, label=None):
     plt.fill_between(time, lwr[:, 0], upr[:, 0], alpha=0.5, label=label)
 
 
-def plot_gaussian_node(data):
-    # if in_data
-    # data = in_data[:, 0:1]
+def plot_gaussian_node(data, ground_truth, figsize=None, ax=None):
+    if ax is None:
+        plt.figure(figsize=figsize)
+        ax = plt.gca()
+    ax.set_facecolor('#EBEBEB')
+    ax.grid(True, color='w', linestyle='-', linewidth=1)
+    ax.set_axisbelow(True)
     x_mean = np.array([x.marginal.mean for x in data])
     x_sigma = np.array([np.sqrt(x.marginal.cov[0, :]) for x in data])
 
     upr = x_mean + 1.96 * x_sigma
     lwr = x_mean - 1.96 * x_sigma
-    time = np.arange(len(data))
-    plt.fill_between(time, lwr[:, 0], upr[:, 0], alpha=0.5)
+    time = np.arange(1, len(data)+1)
+    ax.plot(time, x_mean, 'C0',  linewidth=2.5, label='Prediction')
+    ax.fill_between(time, lwr[:, 0], upr[:, 0], alpha=0.3)
+    ax.plot(time, ground_truth, 'C3', linewidth=2.5, label='Ground truth')
+    return ax
 
 
 def _get_mean_and_std(data):
@@ -49,10 +54,10 @@ def _get_mean_and_std(data):
     return mean, std
 
     
-def plot_1d_data(data, label, c=None, figsize=None, ax=None):
-    """ Plots mean and std bars for given data
-    :data: Array of size (samples, xlength)
-    :label: Label for legend. Type: str
+def plot_1d_data(data, label=None, c=None, figsize=None, linewidth=None, ax=None):
+    """ Plot mean and std of N samples of 1D data with size T
+    :data: Array of size (N, T)
+    :label: Plot label
     :c: Color of line
     :figsize: Figure size
     :ax: Plot axis
@@ -66,7 +71,7 @@ def plot_1d_data(data, label, c=None, figsize=None, ax=None):
     mean, std = _get_mean_and_std(data)
     # Plot mean and std
     N = mean.shape[0]
-    ax.plot(np.arange(0, N), mean, c=c, label=label, zorder=1)
+    ax.plot(np.arange(1, N+1), mean, c=c, label=label, zorder=1, linewidth=linewidth)
     if data.shape[0] > 1:
-        ax.fill_between(np.arange(0, N), mean-std, mean+std, alpha=0.2, color=c, zorder=2)
+        ax.fill_between(np.arange(1, N+1), mean-std, mean+std, alpha=0.2, color=c, zorder=2)
     return ax
