@@ -32,8 +32,6 @@ def pairwise(x):
 
 class KalmanFilterSmoother:
     def __init__(self, moment_matching, system_model, meas_moment_matching=None):
-        # assert isinstance(system_model, DynamicSystemModel)  # make sure we are working with the time series model.
-        # assert isinstance(moment_matching, MomentMatching)
 
         self.transform = moment_matching
 
@@ -61,7 +59,6 @@ class KalmanFilterSmoother:
 
         z_cov += self.measurement_noise
 
-        # kalman_gain = np.matmul(xz_cross_cov, np.linalg.pinv(z_cov))
         kalman_gain = np.linalg.solve(z_cov, xz_cross_cov.T).T
         mean = state.mean + np.dot(kalman_gain, (meas - z_mean)) # equation 15  in Marc's ACC paper
         cov = state.cov - np.dot(kalman_gain, np.transpose(xz_cross_cov))
@@ -74,7 +71,6 @@ class KalmanFilterSmoother:
 
         xx_cov += self.transition_noise
 
-        # J = xx_cross_cov @ np.linalg.pinv(xx_cov)
         J = np.linalg.solve(xx_cov, xx_cross_cov.T).T
         mean = state.mean + np.dot(J, (next_state.mean - xx_mean))
         cov = state.cov + J @ (next_state.cov - xx_cov) @ J.T
@@ -106,7 +102,6 @@ class KalmanFilterSmoother:
         N = len(filtered_list)
         t = (N-1) * self.dt
 
-        # data = pairwise(reversed_filtered_list)
         result = []
 
         next_state = next(reversed_filtered).copy()
@@ -119,65 +114,4 @@ class KalmanFilterSmoother:
 
         return list(reversed(result))
 
-
-class PowerKalmanFilterSmoother(KalmanFilterSmoother):
-
-    def __init__(self, moment_matching, system_model, power=1, meas_moment_matching=None):
-        self.power = power
-        # if meas_moment_matching is None:
-        #     self.meas_transform = moment_matching
-        # else:
-        #     self.meas_transform = meas_moment_matching
-        super().__init__(moment_matching=moment_matching,
-                         system_model=system_model,
-                         meas_moment_matching=meas_moment_matching)
-
-    def predict(self, prior_state, t=None, u=None, *args, **kwargs):
-        func = partial(self.transition, t=t, u=u, *args, **kwargs)
-        xx_mean, xx_cov, _ = self.transform(func, prior_state)
-        # xx_mean, xx_cov, _ = self.transform(self.transition,
-        #                                     prior_state,
-        #                                     t=t, u=u,
-        #                                     *args, **kwargs)
-        xx_cov += self.transition_noise #/self.power
-        xx_cov /= self.power
-        return Gaussian(xx_mean, xx_cov)
-
-    def correct(self, state, meas, t=None, u=None, *args, **kwargs):
-        func = partial(self.measurement, t=t, u=u, *args, **kwargs)
-        z_mean, z_cov, xz_cross_cov = self.meas_transform(func, state)
-        # z_mean, z_cov, xz_cross_cov = \
-        #     self.meas_transform(self.measurement,
-        #                         state,
-        #                         t=t, u=u,
-        #                         *args, **kwargs)
-
-        z_cov += self.measurement_noise
-        z_cov /= self.power
-        np.linalg.cholesky(z_cov)
-        # kalman_gain = np.matmul(xz_cross_cov, np.linalg.pinv(z_cov))
-        kalman_gain = np.linalg.solve(z_cov, xz_cross_cov.T).T
-        mean = state.mean + np.squeeze(kalman_gain @ (meas - z_mean).T)  # equation 15  in Marc's ACC paper
-        cov = state.cov - kalman_gain @ xz_cross_cov.T
-        np.linalg.cholesky(cov)
-        return Gaussian(mean.T, cov)
-
-    def smooth(self, state, next_state, t=None, u=None, *args, **kwargs):
-        func = partial(self.transition, t=t, u=u, *args, **kwargs)
-        xx_mean, xx_cov, xx_cross_cov = self.transform(func, state)
-        # xx_mean, xx_cov, xx_cross_cov = \
-        #     self.transform(self.transition,
-        #                    state,
-        #                    t=t, u=u,
-        #                    *args, **kwargs)
-
-        xx_cov += self.transition_noise #/self.power
-        xx_cov /= self.power
-
-        # J = xx_cross_cov @ np.linalg.pinv(xx_cov)
-        J = np.linalg.solve(xx_cov, xx_cross_cov.T).T
-        mean = state.mean + np.dot(J, (next_state.mean - xx_mean))
-        cov = state.cov + J @ (next_state.cov - xx_cov) @ J.T
-
-        return Gaussian(mean, cov)
 

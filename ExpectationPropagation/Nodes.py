@@ -14,112 +14,23 @@
 
 
 import numpy as np
-from StateModel import Gaussian, GaussianFactor
+from StateModel import Gaussian
 from numpy.linalg import LinAlgError
 from Utils import validate_covariance
-from functools import partial, partialmethod
+from functools import partial
 
 
 class OverLoadError(Exception):
     pass
 
 
-class TimeSeriesNodeForEP:
-    def __init__(self, t, state_dim=1, marginal_init=None, factor_init=None):
+# class Nodes():
+#     def __init__(self, measurements, base_node, init_state):
+#         self.base_node = base_node
+#         self._nodes = []
+#         for i, measurement in enumerate(measurements):
 
-        self.t = t
-        self.state_dimension=state_dim
-        if marginal_init is None:
-            self.marginal = Gaussian.as_marginal(dim=state_dim)
-        else:
-            self.marginal = marginal_init
-
-        if factor_init is None:
-            self.measurement_factor = Gaussian.as_factor(dim=state_dim)
-            self.back_factor = Gaussian.as_factor(dim=state_dim)
-            self.forward_factor = Gaussian.as_factor(dim=state_dim)
-        else:
-            self.measurement_factor, self.back_factor, self.forward_factor = factor_init
-
-        self.factors = ['forward_update', 'measurement_update', 'backward_update']
-
-        self.converged = False
-
-    def copy(self):
-        marginal_init = self.marginal.copy()
-        factor_init = self.measurement_factor.copy(), self.back_factor.copy(), self.forward_factor.copy()
-        return TimeSeriesNodeForEP(t=self.t,
-                                   state_dim=self.state_dimension,
-                                   marginal_init=marginal_init,
-                                   factor_init=factor_init)
-
-    def __repr__(self):
-        str_rep = '''{}.t={}, state_dim={}, marginal_init={},
-         factor_init={})'''.format(self.__class__,
-                                   self.t,
-                                   self.marginal,
-                                   (self.measurement_factor, self.back_factor, self.forward_factor))
-        return str_rep
-
-
-class TimeSeriesNodeForEP:
-    def __init__(self, t, state_dim=1,
-                 marginal_init=None,
-                 factor_init=None, transition=None, measurement=None):
-
-        self.t = t
-        self.state_dimension=state_dim
-        if marginal_init is None:
-            self.marginal = Gaussian.as_marginal(dim=state_dim)
-        else:
-            self.marginal = marginal_init
-
-        if factor_init is None:
-            self.measurement_factor = Gaussian.as_factor(dim=state_dim)
-            self.back_factor = Gaussian.as_factor(dim=state_dim)
-            self.forward_factor = Gaussian.as_factor(dim=state_dim)
-        else:
-            self.measurement_factor, self.back_factor, self.forward_factor = factor_init
-
-        self.factors = ['forward_update', 'measurement_update', 'backward_update']
-
-        self.converged = False
-
-    def copy(self):
-        marginal_init = self.marginal.copy()
-        factor_init = self.measurement_factor.copy(), self.back_factor.copy(), self.forward_factor.copy()
-        return TimeSeriesNodeForEP(t=self.t,
-                                   state_dim=self.state_dimension,
-                                   marginal_init=marginal_init,
-                                   factor_init=factor_init)
-
-    def __repr__(self):
-        str_rep = '''{}.t={}, state_dim={},
-         marginal_init={},
-         factor_init={})'''.format(self.__class__,
-                                   self.t,
-                                   self.marginal,
-                                   (self.measurement_factor, self.back_factor, self.forward_factor))
-        return str_rep
-
-
-class Nodes():
-    def __init__(self, measurements, base_node, init_state):
-        self.base_node = base_node
-        self._nodes = []
-        for i, measurement in enumerate(measurements):
-
-            self._nodes.append()
-
-######################################################
-# estimator
-#     pred
-#     correct
-#     smooth
-#     fwd
-#     back
-#     meas
-# Top nodes
+#             self._nodes.append()
 
 
 def node_estimator(nodes, estimator):
