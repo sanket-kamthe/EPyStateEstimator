@@ -94,7 +94,7 @@ class KalmanFilterSmoother:
         for i, measurement in enumerate(measurements):
             pred_state = self.predict(prior_state, t=t, u=u, *args, **kwargs)
             logger.debug('{},{},{}'.format(prior_state, t, pred_state))
-            corrected_state = self.correct(pred_state, measurement, t=t, u=u, *args, **kwargs)
+            corrected_state = self.correct(pred_state, measurement.squeeze(), t=t, u=u, *args, **kwargs)
             result_filter.append(corrected_state)
             t += self.dt
             prior_state = corrected_state

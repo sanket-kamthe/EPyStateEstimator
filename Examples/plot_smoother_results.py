@@ -48,10 +48,10 @@ elif experiment == 'bot':
     con = sqlite3.connect("bot_final_2.db", detect_types=sqlite3.PARSE_DECLTYPES)
 
 # Set parameters
-SEED = 101
+SEED = 1001
 trans_id = 'UT'
 power = 1.0
-damping = 0.1
+damping = 0.8
 
 # Connect to database
 cursor = con.cursor()
@@ -93,7 +93,7 @@ nodes = node_system(nodes=nodes, system_model=system, measurements=y_noisy)
 
 
 # Run EP iteration
-max_iter = 50
+max_iter = 500
 means = np.zeros((max_iter, timesteps, sys_dim))
 stds = np.zeros((max_iter, timesteps, sys_dim))
 rmse_list, nll_list = [], []
@@ -113,7 +113,7 @@ for i in range(max_iter):
 # %%
 # Plot EP smoother results
 iters = [0, 29, 49]
-idx = 3
+idx = 2
 if experiment == 'ungm':
     idx = 0
     x_true_ = x_true
