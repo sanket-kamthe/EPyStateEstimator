@@ -14,16 +14,9 @@
 
 import numpy as np
 from .MomentMatch import MappingTransform
-from functools import partial
 from autograd import jacobian
 from StateModel import Gaussian
-# from MomentMatching.auto_grad import logpdf
 from autograd.scipy.stats import multivariate_normal
-# from autograd.scipy.stats import multivariate_normal.logpdf as logpdf
-
-# logpdf = multivariate_normal.logpdf
-# from scipy.stats. import log
-# from scipy.stats.
 
 EPS = 1e-4
 
@@ -37,7 +30,6 @@ class TaylorTransform(MappingTransform):
     @staticmethod
     def numerical_jacobian(f, x, eps=EPS):
         z = f(x)
-        #     jacobian  = np.zeros((m,n), dtype=float)
         jacobian = []
         x_list = x.tolist()
         for i, data in enumerate(x_list):
@@ -55,9 +47,7 @@ class TaylorTransform(MappingTransform):
         return np.array(jacobian).T
 
     def _transform(self, func, state):
-        # (self, nonlinear_func, distribution, fargs=None, y_observation=None):
         assert isinstance(state, Gaussian)
-        # frozen_func = partial(func, t=t, u=u, *args, **kwargs)
         # J_t = self.numerical_jacobian(func, state.mean)
         J_t = jacobian(func)(state.mean)
         if np.ndim(J_t) > 2:

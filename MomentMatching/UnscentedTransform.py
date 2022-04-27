@@ -18,9 +18,7 @@ from scipy.linalg import LinAlgWarning
 from .MomentMatch import MappingTransform
 from Utils.linalg import  jittered_chol
 from Utils.linalg import symmetrize
-from functools import partial
 import warnings
-import pdb
 
 warnings.filterwarnings(action='error', category=LinAlgWarning)
 
@@ -40,7 +38,6 @@ class UnscentedTransform(MappingTransform):
                          kappa= kappa)
 
     def _sigma_points(self, mean, cov, *args):
-        #pdb.set_trace()
         sqrt_n_plus_lambda = np.sqrt(self.n + self.param_lambda)
 
         cov = symmetrize(cov)
@@ -82,15 +79,8 @@ class UnscentedTransform(MappingTransform):
         return w_m, W
 
     def _transform(self, func, state):
-        # frozen_func = partial(func, t=t, u=u, *args, **kwargs)
 
         sigma_pts = self._sigma_points(state.mean, state.cov)
-        # Xi = []
-        # for x in sigma_pts:
-        #     x = np.asanyarray(x)
-        #     Xi.append(func(x))
-
-        # Y = np.asarray(Xi)
         Y = func(sigma_pts)
         mean = self.w_m @ Y
         cov = symmetrize(Y.T @ self.W @ Y)
