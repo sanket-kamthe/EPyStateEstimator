@@ -23,7 +23,7 @@ def f(x, t=None, u=None, delta_t=0.05, F=8):
     return x + (1/6) * delta_t * (k1 + 2*k2 + 2*k3 + k4)
 
 
-def h(x, t=None, u=None):
+def h(x, t=None, u=None, meas_dim=20):
     return x
 
 
@@ -33,14 +33,17 @@ class L96(DynamicSystemModel):
         assert x0.shape[0] == dim, f'Dimension of initial condition does not match the specified dimension dim={dim}'
         init_dist = Gaussian(mean_vec=x0,
                              cov_mat=np.eye(dim))
+
+        meas_dim = 40
         transition = partial(f, delta_t=delta_t, F=F)
-        measurement = h
+        measurement = partial(h, meas_dim=meas_dim)
+
 
         system_noise = GaussianNoise(dimension=dim, cov=Q_sigma*np.eye(dim))
-        meas_noise = GaussianNoise(dimension=dim, cov=R_sigma*np.eye(dim))
+        meas_noise = GaussianNoise(dimension=meas_dim, cov=R_sigma*np.eye(meas_dim))
 
         super().__init__(system_dim=dim,
-                         measurement_dim=dim,
+                         measurement_dim=meas_dim,
                          transition=transition,
                          measurement=measurement,
                          system_noise=system_noise,

@@ -167,10 +167,10 @@ def main(logdir, dynamic_system, seeds, trans_types, num_iter, override):
 
     num_power = 19
     num_damping = 19
-    # power_range = np.linspace(0.1, 1.0, num=num_power)
-    # damp_range = np.linspace(0.1, 1.0, num=num_damping)
-    power_range = [1.0, 0.8]
-    damp_range = [1.0, 0.6]
+    power_range = np.linspace(0.1, 1.0, num=num_power)
+    damp_range = np.linspace(0.1, 1.0, num=num_damping)
+    # power_range = [1.0, 0.8,]
+    # damp_range = [1.0, 0.6]
 
     full_sweep(config, seeds, trans_types, power_range, damp_range, override)
 
