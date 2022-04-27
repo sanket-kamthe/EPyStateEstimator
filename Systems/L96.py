@@ -1,10 +1,9 @@
 # %%
 from Systems import DynamicSystemModel, GaussianNoise
 from StateModel import Gaussian
-from collections import namedtuple
 from functools import partial
 import autograd.numpy as np
-import numpy
+
 
 def model(X, F):
         dXdt = -np.roll(X, -1) * (np.roll(X, -2) - np.roll(X, 1)) - X + F

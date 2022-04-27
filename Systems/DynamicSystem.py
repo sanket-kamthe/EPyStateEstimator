@@ -1,5 +1,4 @@
 import numpy as np
-import itertools
 from collections import namedtuple
 from abc import abstractmethod, ABCMeta
 
@@ -29,9 +28,6 @@ class GaussianNoise(NoiseModel):
 
 
 class DynamicSystem(metaclass=ABCMeta):
-
-    # def transition_noise(self, x,  t=None, u=None, *args, **kwargs):
-    #     return self.transition(x=x, u=u, t=t, *args, **kwargs) + self.system_noise.sample()
 
     @abstractmethod
     def transition(self, x, u=None, t=None, *args, **kwargs):
@@ -65,11 +61,6 @@ class DynamicSystem(metaclass=ABCMeta):
                                                    cov=self.init_state.cov)
 
         return list(self._simulate(N=N, x_zero=x_zero, t_zero=t_zero))
-
-
-#TODO: make dynamic model a single stepping solution rather than fixed start
-
-#TODO: default dynamic system is linear model with
 
 
 class DynamicSystemModel(DynamicSystem):

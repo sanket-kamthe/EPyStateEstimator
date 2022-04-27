@@ -104,7 +104,6 @@ class Gaussian:
         :param precision_mat:
         :param shift_vec:
         """
-        #         dim = mean_vec.shape[0]
         self._mean = None
         self._cov = None
         self._dim = None
@@ -112,7 +111,6 @@ class Gaussian:
         self._shift = None
         self._mode = None  # 'natural', 'moment'
         self._chol = None
-        #         self.dim = dim
 
         if mean_vec is not None:
             self.mean = np.atleast_1d(mean_vec)
@@ -123,9 +121,6 @@ class Gaussian:
             self.precision = precision_mat
             self.shift = np.atleast_1d(shift_vec)
             self._mode = 'natural'
-
-        # super(multivariate_normal, self).__init__(mean=mean_vec,
-        #                                           cov_mat=cov)
 
             # TODO: Add type checks and asserts for mean and covariance
 
@@ -197,8 +192,6 @@ class Gaussian:
         assert isinstance(other, Gaussian)
         precision = symmetrize(self.precision + other.precision)
         shift = self.shift + other.shift
-        # mean, cov = natural_to_moment(precision, shift)
-        # cov = (cov.T + cov) / 2
         return Gaussian(precision_mat=precision,
                         shift_vec=shift)
 
@@ -225,10 +218,6 @@ class Gaussian:
         shift = power * self.shift
         return Gaussian(precision_mat=precision,
                             shift_vec=shift)
-        # else:
-        #     cov = self.cov / power
-        #     cov = (cov.T + cov) / 2
-        # return Gaussian(self.mean, cov)
 
     def __eq__(self, other):
         # Make sure that 'other' is also a GaussianState class
@@ -245,16 +234,8 @@ class Gaussian:
         :param x:
         :return: -ve of logpdf (x, mean=self.mean, cov=self.cov)
         """
-        # from scipy.stats import multivariate_normal
-        # if np.isinf(self.cov[0, 0]):
-        #     return np.nan
-        #
-        # diff = x - self.mean
-        # logdet = np.log(2 * np.pi) + np.log(np.linalg.det(self.cov))
-        # NLL = 0.5 * (logdet + diff.T @ self.precision @ diff)
         loglikelihood = multivariate_normal.logpdf(x, mean=self.mean, cov=self.cov, allow_singular=True)
         return -loglikelihood
-        # return -multivariate_normal(mean=self.mean, cov=self.cov).logpdf(x, cond=1e-6)
 
     def squared_error(self, x):
         """
@@ -265,10 +246,6 @@ class Gaussian:
         return np.square(np.linalg.norm(self.mean - x))
 
     def sample(self, number_of_samples):
-
-        # from scipy.stats import multivariate_normal
-
-        # return multivariate_normal(mean=self.mean, cov=self.cov).rvs(number_of_samples)
         samples = np.random.multivariate_normal(mean=self.mean,
                                                 cov=self.cov,
                                                 size=number_of_samples)
@@ -317,8 +294,3 @@ class GaussianFactor(Gaussian):
         shift = np.zeros((dim,), dtype=float)
         precision = np.zeros((dim, dim), dtype=float)
         super().__init__(shift_vec=shift, precision_mat=precision, cov_mat=None)
-        # mean = np.zeros((dim,), dtype=float)
-        # diag_cov = np.inf * np.ones((dim,), dtype=float)
-        # cov = np.diag(diag_cov)
-        # super().__init__(mean_vec=mean,
-        #                  cov_mat=cov)
