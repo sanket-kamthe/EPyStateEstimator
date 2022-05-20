@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# %%
 import numpy as np
 import scipy as sp
 from scipy.linalg import LinAlgWarning
-from .MomentMatch import MappingTransform
+from MomentMatching.MomentMatch import MappingTransform
 from Utils.linalg import  jittered_chol
 from Utils.linalg import symmetrize
 import warnings
@@ -87,3 +88,54 @@ class UnscentedTransform(MappingTransform):
         cross_cov = np.asarray(sigma_pts).T @ self.W @ Y
 
         return mean, cov, cross_cov
+
+# %%
+if __name__ == "__main__":
+    from Systems import BearingsOnlyTrackingTurn
+    from filterpy.kalman import UnscentedKalmanFilter, MerweScaledSigmaPoints
+    from Filters.KalmanFilter import KalmanFilterSmoother
+    from StateModel import Gaussian
+
+    system = BearingsOnlyTrackingTurn()
+    sys_dim = 5
+
+    points_baseline = MerweScaledSigmaPoints(sys_dim, alpha=1, beta=0., kappa=-2)
+    points = UnscentedTransform(sys_dim, alpha=1, beta=0., kappa=-2)
+
+    x0 = np.array([1000, 300, 1000, 0, -np.deg2rad(3.0)])
+    P0 = np.eye(sys_dim) * [100, 10, 100, 10, 1e-4]
+    init_state = Gaussian(x0, P0)
+
+    sigma_base = points_baseline.sigma_points(x0, P0)
+    sigma = points._sigma_points(x0, P0)
+
+    # Implement Unscented Kalman filter
+    SEED = 101
+    timesteps = 50
+    np.random.seed(seed=SEED)
+    data = system.simulate(timesteps)
+    x_true, x_noisy, y_true, y_noisy = zip(*data)
+    f = KalmanFilterSmoother(points, system)
+    filter_result = f.kalman_filter(y_noisy)
+    smoother_result = f.kalman_smoother(filter_result)
+    mean_kf, std_kf = [], []
+    mean_ks, std_ks = [], []
+    for state in smoother_result:
+        mean_ks.append(state.mean)
+        std_ks.append(np.sqrt(state.cov))
+    mean_ks = np.array(mean_ks).squeeze()
+    std_ks = np.array(std_ks).squeeze()
+
+    se_list = []
+    x_noisy = np.asanyarray(x_noisy)
+    for i, x in enumerate(mean_ks):
+        se = np.square(np.linalg.norm(x_noisy[i,0,:] - x))
+        se_list.append(se)
+    mse = np.array(se_list).mean()
+    rmse = np.sqrt(mse)
+    print(f"RMSE: {rmse}")
+
+
+    
+
+# %%

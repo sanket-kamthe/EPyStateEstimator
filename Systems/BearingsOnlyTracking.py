@@ -100,7 +100,6 @@ if __name__ == '__main__':
     import os
     import sys
 
-# %%
     module_path = os.path.abspath(os.path.join('..'))
     if module_path not in sys.path:
         sys.path.append(module_path)
@@ -108,18 +107,18 @@ if __name__ == '__main__':
     N = 50
 
     system = BearingsOnlyTracking()
-    np.random.seed(seed=7952)
+    seed = 901
+    np.random.seed(seed)
     data = system.simulate(N)
     x_true, x_noisy, y_true, y_noisy = zip(*data)
 
     x_true = np.asanyarray(x_true)
     x_noisy = np.asanyarray(x_noisy)
 
-# %%
     # plt.plot(x_true[:, 0])
     # plt.scatter(list(range(N)), x_noisy[:, 0])
     plt.scatter(x_noisy[:, 0, 0], x_noisy[:, 0, 1])
-    plt.plot(x_true[:, 0], x_true[:, 1])
+    #åplt.plot(x_true[:, 0], x_true[:, 1])
     plt.show()
 
 

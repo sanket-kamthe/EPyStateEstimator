@@ -27,7 +27,7 @@ def plot_gaussian(data, label=None):
     plt.fill_between(time, lwr[:, 0], upr[:, 0], alpha=0.5, label=label)
 
 
-def plot_gaussian_node(data, ground_truth, figsize=None, ax=None, colors=['C0', 'C2']):
+def plot_gaussian_node(data, ground_truth=None, figsize=None, ax=None, linewidth=2.5, colors=['C0', 'C2']):
     if ax is None:
         plt.figure(figsize=figsize)
         ax = plt.gca()
@@ -40,9 +40,10 @@ def plot_gaussian_node(data, ground_truth, figsize=None, ax=None, colors=['C0', 
     upr = x_mean + 1.96 * x_sigma
     lwr = x_mean - 1.96 * x_sigma
     time = np.arange(1, len(data)+1)
-    ax.plot(time, x_mean, colors[0],  linewidth=2.5, label='Prediction')
+    ax.plot(time, x_mean, colors[0],  linewidth=linewidth, label='Prediction')
     ax.fill_between(time, lwr[:, 0], upr[:, 0], alpha=0.3, color=colors[0])
-    ax.plot(time, ground_truth, colors[1], linewidth=2.5, label='Ground truth')
+    if ground_truth is not None:
+        ax.plot(time, ground_truth, colors[1], linewidth=linewidth, label='Ground truth')
     return ax
 
 

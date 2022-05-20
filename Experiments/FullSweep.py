@@ -30,11 +30,11 @@ from collections import namedtuple
 Config = namedtuple('Config', ['con', 'system', 'timesteps', 'sys_dim', 'num_iter', 'dyn_table_name', 'exp_table_name'])
 
 
-def select_transform(id='UT', dim=1, samples=int(5e4)):
+def select_transform(id='UT', dim=1, samples=int(5e4), alpha1=1, alpha2=1, beta1=2, beta2=2, kappa1=3, kappa2=2):
 
     if id.upper() == 'UT':
-        transition_transform = UnscentedTransform(dim=dim, beta=2, alpha=1, kappa=3)
-        measurement_transform = UnscentedTransform(dim=dim, beta=2, alpha=1, kappa=2)
+        transition_transform = UnscentedTransform(dim=dim, beta=beta1, alpha=alpha1, kappa=kappa1)
+        measurement_transform = UnscentedTransform(dim=dim, beta=beta2, alpha=alpha2, kappa=kappa2)
 
     elif id.upper() == 'TT':
         transition_transform = TaylorTransform(dim=dim)
@@ -83,7 +83,7 @@ def power_sweep(config, x_true, y_meas, trans_id='UT', SEED=0, power=1, damping=
                   x_true=x_true,
                   exp_data=exp_data,
                   table_name=config.exp_table_name,
-                  print_result=True) # Full EP sweep + log results
+                  print_result=False) # Full EP sweep + log results
 
 
 query_str= "SELECT RMSE" \
@@ -120,7 +120,7 @@ def full_sweep(config, seed_range, trans_types, power_range, damp_range, overrid
     
 
 @click.command()
-@click.option('-l', '--logdir', type=str, default="temp.db", help='Set directory to save results')
+@click.option('-l', '--logdir', type=str, default="../log/temp.db", help='Set directory to save results')
 @click.option('-d', '--dynamic-system', type=click.Choice(['UNGM', 'BOT', 'BOTT', 'L96']), default='UNGM', help='Choose state-space model')
 @click.option('-s', '--seeds', type=click.INT, default=[101], multiple=True, help='Random seed for experiment (multiple allowed)')
 @click.option('-t', '--trans-types', type=click.Choice(['TT', 'UT', 'MCT']), default=['TT', 'UT', 'MCT'], multiple=True, help='Transformation types (multiple allowed)')
@@ -143,7 +143,7 @@ def main(logdir, dynamic_system, seeds, trans_types, num_iter, override):
         exp_table_name = 'BOT_EXP'
     elif dynamic_system == 'BOTT':
         system = BearingsOnlyTrackingTurn()
-        sys_dim = 4
+        sys_dim = 5
         timesteps = 50
         dyn_table_name = 'BOTT_SIM'
         exp_table_name = 'BOTT_EXP'
@@ -167,10 +167,10 @@ def main(logdir, dynamic_system, seeds, trans_types, num_iter, override):
 
     num_power = 19
     num_damping = 19
-    power_range = np.linspace(0.1, 1.0, num=num_power)
-    damp_range = np.linspace(0.1, 1.0, num=num_damping)
-    # power_range = [1.0, 0.8,]
-    # damp_range = [1.0, 0.6]
+    # power_range = np.linspace(0.1, 1.0, num=num_power)
+    # damp_range = np.linspace(0.1, 1.0, num=num_damping)
+    power_range = np.linspace(0.1, 1.0, num=10)
+    damp_range = [1.0, 0.8]
 
     full_sweep(config, seeds, trans_types, power_range, damp_range, override)
 
