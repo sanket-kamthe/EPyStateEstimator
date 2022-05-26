@@ -129,14 +129,13 @@ if __name__ == '__main__':
     seed = 101
     np.random.seed(seed)
     data = system.simulate(N)
-    x_true, x_noisy, y_true, y_noisy = zip(*data)
+    x_true, y_meas = zip(*data)
 
     x_true = np.asanyarray(x_true)
-    x_noisy = np.asanyarray(x_noisy)
 
     Sensor_x = [sensor.x for sensor in Default_Sensor_List]
     Sensor_y = [sensor.y for sensor in Default_Sensor_List]
-    plt.scatter(x_noisy[:, 0, 0], x_noisy[:, 0, 2], c='C0', label='ground truth')
+    plt.scatter(x_true[:, 0, 0], x_true[:, 0, 2], c='C0', label='ground truth')
 
     
     from filterpy.kalman import UnscentedKalmanFilter, MerweScaledSigmaPoints
@@ -186,7 +185,7 @@ if __name__ == '__main__':
     kf.Q = system_noise_cov
 
 
-    zs = [y[0] for y in y_noisy]
+    zs = [y[0] for y in y_meas]
     x_predict, P_predict = kf.batch_filter(zs)
 
     plt.scatter(x_predict[:, 0], x_predict[:, 2], c='C1', label='filterpy UKF')
@@ -194,7 +193,7 @@ if __name__ == '__main__':
     # Implement our version of UKF
     points = UnscentedTransform(5, alpha=1, beta=0., kappa=-2)
     f = KalmanFilterSmoother(points, system)
-    filter_result = f.kalman_filter(y_noisy)
+    filter_result = f.kalman_filter(y_meas)
     smoother_result = f.kalman_smoother(filter_result)
 
     mean_kf, std_kf = [], []

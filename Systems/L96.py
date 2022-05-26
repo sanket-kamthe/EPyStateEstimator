@@ -98,9 +98,9 @@ if __name__ == '__main__':
     seed = 201
     np.random.seed(seed)
     data = system.simulate(N)
-    x_true, x_noisy, y_true, y_noisy = zip(*data)
+    x_true, y_meas = zip(*data)
 
-    x_true = np.asanyarray(x_noisy)
+    x_true = np.asanyarray(x_true)
 
     plt.imshow(x_true[:,0,:].T)
     plt.rcParams['xtick.labelsize'] = 10
@@ -128,7 +128,7 @@ if __name__ == '__main__':
     kf1.Q = 0.1*np.eye(dim)
     kf1.R = np.eye(dim)
 
-    zs = [y[0] for y in y_noisy]
+    zs = [y[0] for y in y_meas]
     x_predict, P_predict = kf1.batch_filter(zs)
 
     plt.imshow(x_predict.T)
@@ -138,7 +138,7 @@ if __name__ == '__main__':
     # Implement UKF (ours)
     points_2 = UnscentedTransform(dim, alpha=2, beta=1, kappa=3)
     kf2 = KalmanFilterSmoother(points_2, system)
-    filter_result = kf2.kalman_filter(y_noisy)
+    filter_result = kf2.kalman_filter(y_meas)
     smoother_result = kf2.kalman_smoother(filter_result)
 
     mean_kf, std_kf = [], []

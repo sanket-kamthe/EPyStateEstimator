@@ -110,14 +110,13 @@ if __name__ == '__main__':
     seed = 901
     np.random.seed(seed)
     data = system.simulate(N)
-    x_true, x_noisy, y_true, y_noisy = zip(*data)
+    x_true, y_meas = zip(*data)
 
     x_true = np.asanyarray(x_true)
-    x_noisy = np.asanyarray(x_noisy)
 
     # plt.plot(x_true[:, 0])
     # plt.scatter(list(range(N)), x_noisy[:, 0])
-    plt.scatter(x_noisy[:, 0, 0], x_noisy[:, 0, 1])
+    plt.scatter(x_true[:, 0, 0], x_true[:, 0, 1])
     #åplt.plot(x_true[:, 0], x_true[:, 1])
     plt.show()
 
