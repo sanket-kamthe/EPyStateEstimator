@@ -17,7 +17,6 @@ from StateModel import Gaussian
 from itertools import tee
 from functools import partial
 from autograd import jacobian
-from copy import deepcopy
 from MomentMatching import TaylorTransform
 import logging
 
