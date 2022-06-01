@@ -1,4 +1,5 @@
-pyStateEstimator
+# Nonlinear State Estimation using Approximate Expectation Propagation
+
 
 TODO:
 - Fix the thing with `x_true`, `x_noisy`, etc
