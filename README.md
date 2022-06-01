@@ -1,4 +1,4 @@
-# Nonlinear State Estimation with Approximate Expectation Propagation
+# Nonlinear State Estimation with Expectation Propagation
 
 TODO:
 - Fix the thing with `x_true`, `x_noisy`, etc
