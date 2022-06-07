@@ -17,7 +17,7 @@ pip install -r requirements.txt
 <img src="https://github.com/mpd37/pyStateEstimator/blob/finalise_code/Notebooks/figs/ungm_animation.gif" width="80%" height="80%"/>
 
 ### Bearings Only Tracking of a Turning Target
-<img src="https://github.com/mpd37/pyStateEstimator/blob/finalise_code/Notebooks/figs/bott_animation.gif" width="60%" height="60%"/>
+<img src="https://github.com/mpd37/pyStateEstimator/blob/finalise_code/Notebooks/figs/bott_animation.gif" width="40%" height="40%"/>
 
 ### Lorenz 96 Model
 <img src="https://github.com/mpd37/pyStateEstimator/blob/finalise_code/Notebooks/figs/L96_animation.gif" width="50%" height="50%"/>
