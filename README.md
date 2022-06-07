@@ -20,6 +20,7 @@ pip install -r requirements.txt
 ![bearings only animation](https://github.com/mpd37/pyStateEstimator/blob/finalise_code/Notebooks/figs/bott_animation.gif)
 
 ### Lorenz 96 Model
+![L96 animation](https://github.com/mpd37/pyStateEstimator/blob/finalise_code/Notebooks/figs/L96_animation.gif)
 
 ## Usage
 - Set up dynamical system + measurement function
