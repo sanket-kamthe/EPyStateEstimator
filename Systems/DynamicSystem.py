@@ -109,16 +109,11 @@ class DynamicSystemModel(DynamicSystem):
         t = t_zero
 
         for _ in range(N):
-            # x_true = self.transition(x=x, t=t)
-            # x_noisy = x_true + self.system_noise.sample()
-            # y_true = self.measurement(x=x_noisy)
-            # y_noisy = y_true + self._measurement_noise.sample()
             x = self.transition(x=x, t=t)
             x += self.system_noise.sample()
             y = self.measurement(x=x)
             y += self._measurement_noise.sample()
-            yield x, y # x_true, x_noisy, y_true, y_noisy
-            # x = x_noisy
+            yield x, y
             t = t + self.dt
 
     def simulate(self, N, x_zero=None, t_zero=0.0):

@@ -18,9 +18,7 @@ Default_Sensor_List = [Sensor(x=-20_000, y=20_000),
 
 def f(x, t=None, u=None, delta_t=1):
     """
-    We define constant velocity model
-    x_t+1 = F_t * x_t + G_t*w_t
-    x_t = [x_t, y_t, \dot x_t, \dot y_t]
+    Dynamical model for a turning target.
     """
     dt = delta_t
     xs = np.atleast_2d(x)
@@ -51,7 +49,7 @@ def f(x, t=None, u=None, delta_t=1):
 
 def h(x, t=None, u=None, sensor_list=Default_Sensor_List):
     """
-
+    Measures the angle between the target and all the sensors.
     """
     x = np.atleast_2d(x)
     all_ys = np.array([x[:, 2] - sensor.y for sensor in sensor_list])

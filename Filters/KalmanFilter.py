@@ -33,6 +33,9 @@ def pairwise(x):
 
 
 class KalmanFilterSmoother:
+    """
+    Implementation of nonlinear Gaussian filter/smoother.
+    """
     def __init__(self, moment_matching, system_model, meas_moment_matching=None):
 
         self.transform = moment_matching
@@ -119,6 +122,10 @@ class KalmanFilterSmoother:
 
 
 class IEKF(KalmanFilterSmoother):
+    """
+    Implementation of the iterated Extended Kalman Filter in
+    Bell and Cathey (1993) "The Iterated Kalman Filter Update as a Gauss-Newton Method."
+    """
     def __init__(self, system_model, sys_dim):
         transform = TaylorTransform(dim=sys_dim)
         super().__init__(transform, system_model)
@@ -164,6 +171,10 @@ class IEKF(KalmanFilterSmoother):
 
 
 class IEKS(KalmanFilterSmoother):
+    """
+    Implementation of the iterated Extended Kalman Smoother in
+    Bell (1994) "The iterated Kalman smoother as a Gauss-Newton method."
+    """
     def __init__(self, system_model, sys_dim):
         transform = TaylorTransform(dim=sys_dim)
         super().__init__(transform, system_model)

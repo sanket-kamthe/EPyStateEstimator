@@ -56,12 +56,14 @@ def _get_mean_and_std(data):
 
     
 def plot_1d_data(data, label=None, c=None, figsize=None, linewidth=None, ax=None):
-    """ Plot mean and std of N samples of 1D data with size T
+    """ 
+    Plot mean and std of N samples of 1D data with size T
     :data: Array of size (N, T)
     :label: Plot label
     :c: Color of line
     :figsize: Figure size
     :ax: Plot axis
+    :return: Plot axis
     """
     if ax is None:
         fig = plt.figure(figsize=figsize)

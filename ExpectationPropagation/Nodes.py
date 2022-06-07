@@ -18,65 +18,19 @@ from StateModel import Gaussian
 from numpy.linalg import LinAlgError
 from Utils import validate_covariance
 from functools import partial
+from MomentMatching import Estimator
+from Systems import DynamicSystemModel
+from typing import List, Union
 
 
 class OverLoadError(Exception):
     pass
 
 
-# class Nodes():
-#     def __init__(self, measurements, base_node, init_state):
-#         self.base_node = base_node
-#         self._nodes = []
-#         for i, measurement in enumerate(measurements):
-
-#             self._nodes.append()
-
-
-def node_estimator(nodes, estimator):
-
-    out_nodes = []
-
-    power = getattr(estimator, 'power', 1)
-    damping = getattr(estimator, 'damping', 1)
-
-    for node in nodes:
-        setattr(node, 'fwd_update', partial(node.fwd_update, proj_trans=estimator.proj_trans))
-        setattr(node, 'meas_update', partial(node.meas_update, proj_meas=estimator.proj_meas))
-        setattr(node, 'back_update', partial(node.back_update, proj_back=estimator.proj_back))
-
-        setattr(node, 'power', power)
-        setattr(node, 'damping', damping)
-
-        out_nodes.append(node)
-
-    return out_nodes
-
-
-def node_system(nodes, system_model, measurements, farg_list=None):
-    out_nodes = []
-    N = len(measurements)
-
-    if farg_list is None:
-        farg_list = []
-        t = 0.0
-        for i in range(N):
-            f_kwargs = {'t': t, 'u': 0.0}
-            t += system_model.dt
-            farg_list.append(f_kwargs)
-
-    for node, measurement, f_kwarg in zip(nodes, measurements, farg_list):
-        setattr(node, 'trans_func', partial(system_model.transition, **f_kwarg))
-        setattr(node, 'meas_func', system_model.measurement)
-        setattr(node, 'meas', np.squeeze(measurement))
-
-        out_nodes.append(node)
-
-    setattr(out_nodes[0], 'prior', system_model.init_state)
-    return out_nodes
-
-
 class Node:
+    """
+    A single node of the factor graph. Consists of the marginal distribution and methods to update the marginal.
+    """
     def __init__(self, dim, index=0, prev_node=None, next_node=None, factor_init=None, marginal_init=None):
         self.next_node = next_node
         self.prev_node = prev_node
@@ -196,7 +150,82 @@ class Node:
         raise OverLoadError
 
 
-def build_nodes(N , dim, estimator=None, system=None):
+def node_estimator(nodes: List[Node], estimator: Estimator) -> List[Node]:
+    """
+    This function adds the moment matching method as attributes of the factor graph.
+    :nodes: Factor graph (built using build_nodes)
+    :estimator: Moment matching method (e.g. Taylor transformation)
+    :return: Updated factor graph
+    """
+    out_nodes = []
+
+    power = getattr(estimator, 'power', 1)
+    damping = getattr(estimator, 'damping', 1)
+
+    for node in nodes:
+        setattr(node, 'fwd_update', partial(node.fwd_update, proj_trans=estimator.proj_trans))
+        setattr(node, 'meas_update', partial(node.meas_update, proj_meas=estimator.proj_meas))
+        setattr(node, 'back_update', partial(node.back_update, proj_back=estimator.proj_back))
+
+        setattr(node, 'power', power)
+        setattr(node, 'damping', damping)
+
+        out_nodes.append(node)
+
+    return out_nodes
+
+
+def node_system(
+    nodes: List[Node],
+    system_model: DynamicSystemModel,
+    measurements: Union[np.ndarray, list],
+    farg_list: List[dict] = None
+    ) -> List[Node]:
+    """
+    This function adds the transition function, measurement function and observations 
+    as attributes of the factor graph.
+    :nodes: Factor graph (built using build_nodes)
+    :system_model: Dynamical system
+    :measurements: Observations y
+    :farg_list: kwargs for transition function
+    :return: Updated factor graph
+    """
+    out_nodes = []
+    N = len(measurements)
+
+    if farg_list is None:
+        farg_list = []
+        t = 0.0
+        for i in range(N):
+            f_kwargs = {'t': t, 'u': 0.0}
+            t += system_model.dt
+            farg_list.append(f_kwargs)
+
+    for node, measurement, f_kwarg in zip(nodes, measurements, farg_list):
+        setattr(node, 'trans_func', partial(system_model.transition, **f_kwarg))
+        setattr(node, 'meas_func', system_model.measurement)
+        setattr(node, 'meas', np.squeeze(measurement))
+
+        out_nodes.append(node)
+
+    setattr(out_nodes[0], 'prior', system_model.init_state)
+    return out_nodes
+
+
+def build_nodes(
+    N: int,
+    dim: int,
+    estimator: Estimator = None,
+    system: DynamicSystemModel = None
+    ) -> List[Node]:
+    """
+    This function builds the factor graph representation of a dynamical system (Figure 2).
+    :N: Number of timesteps
+    :dim: State dimension
+    :estimator: Method of moment matching (e.g. Taylor transformation)
+    :system: Dynamical system
+    :return: Factor graph representation of a dynamical system
+    """
     nodes = [Node(dim, index=i) for i in range(N)]
 
     for i, node in enumerate(nodes):
