@@ -75,8 +75,8 @@ def remove_outliers(x, outlier_idxs=None, dont_remove=False):
 # Sensitivity analysis with dimension (nonlinear observation)
 con = sqlite3.connect("../log/L96_dim_experiment_3.db", detect_types=sqlite3.PARSE_DECLTYPES)
 db = con.cursor()
-power = 0.1 # Results saved for 0.1, 0.8 or 1.0
-trans = 'TT'
+power = 1.0 # Results saved for 0.1, 0.8 or 1.0
+trans = 'UT'
 
 for dim in [5, 10, 20, 40, 100, 200]:
     print(f"Dimension: {dim:3}" + " "*8 + "RMSE" + " "*15 + "NLL")
