@@ -14,10 +14,10 @@ pip install -r requirements.txt
 
 ## Examples
 ### Uniform Nonlinear Growth Model
-<img src="https://github.com/mpd37/pyStateEstimator/blob/finalise_code/Notebooks/figs/ungm_animation.gif" width="80%" height="80%"/>
+<img src="https://github.com/mpd37/pyStateEstimator/blob/finalise_code/Notebooks/figs/ungm_animation.gif" width="70%" height="70%"/>
 
 ### Bearings Only Tracking of a Turning Target
-<img src="https://github.com/mpd37/pyStateEstimator/blob/finalise_code/Notebooks/figs/bott_animation.gif" width="40%" height="40%"/>
+<img src="https://github.com/mpd37/pyStateEstimator/blob/finalise_code/Notebooks/figs/bott_animation.gif" width="50%" height="50%"/>
 
 ### Lorenz 96 Model
 <img src="https://github.com/mpd37/pyStateEstimator/blob/finalise_code/Notebooks/figs/L96_animation.gif" width="50%" height="50%"/>
