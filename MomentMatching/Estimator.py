@@ -23,15 +23,21 @@
 from StateModel import Gaussian
 import numpy as np
 from Utils.linalg import symmetrize
+from MomentMatching import MappingTransform
 
 
 class Estimator:
     '''
-
+    This class contains methods to compute the approximate time/measurement/backward update
+    for a given linearisation method (such as Taylor transform, unscented transform, etc).
     '''
-    def __init__(self, trans_map, meas_map,
-                 trans_noise=None, meas_noise=None,
-                 power=1, damping=1):
+    def __init__(self,
+                 trans_map: MappingTransform,
+                 meas_map: MappingTransform,
+                 trans_noise: np.ndarray=None,
+                 meas_noise: np.ndarray=None,
+                 power: int=1,
+                 damping: int=1):
         self.trans_map = trans_map
         self.meas_map = meas_map
         self.transition_noise = trans_noise
@@ -40,6 +46,11 @@ class Estimator:
         self.damping = damping
 
     def proj_trans(self, func, state):
+        """
+        Time update.
+        Eqs (52)-(53) for standard EP.
+        Eqs (140)-(141) for power EP.
+        """
         xx_mean, xx_cov, _ = self.trans_map(func, state)
         xx_cov += self.transition_noise
         xx_cov /= self.power
@@ -49,6 +60,11 @@ class Estimator:
         return pred_state
 
     def proj_meas(self, func, state, meas):
+        """
+        Measurement update.
+        Eqs (56)-(57) for standard EP.
+        Eqs (148)-(151) for power EP.
+        """
         meas = np.atleast_1d(meas)
         np.linalg.cholesky(state.cov)
         z_mean, z_cov, xz_cross_cov = \
@@ -65,6 +81,11 @@ class Estimator:
         return corrected_state
 
     def proj_back(self, func, state, next_fwd_cavity, next_state=None):
+        """
+        Backward update.
+        Eqs (78)-(79) for standard EP.
+        Eqs (165)-(167) for power EP.
+        """
         xx_mean, xx_cov, xx_cross_cov = \
             self.trans_map(func, state)
 

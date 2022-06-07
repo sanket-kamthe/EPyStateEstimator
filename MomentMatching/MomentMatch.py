@@ -45,7 +45,9 @@ class MomentMatching():
 
 
 class MappingTransform:
-
+    """
+    Parent class for moment matching methods (e.g. Taylor transform, Unscented transform)
+    """
     def __init__(self, approximation_method=None, **kwargs):
         self.params = {}  # Dictionary containing parameters for the moment matching approximation
 

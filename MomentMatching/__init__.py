@@ -1,4 +1,4 @@
-from .MomentMatch import MomentMatching
+from .MomentMatch import MomentMatching, MappingTransform
 from .UnscentedTransform import UnscentedTransform
 from .TaylorLinearisation import TaylorTransform
 from .MonteCarloTransform import MonteCarloTransform
