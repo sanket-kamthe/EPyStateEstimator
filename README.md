@@ -14,7 +14,12 @@ pip install -r requirements.txt
 
 ## Examples
 ### Uniform Nonlinear Growth Model
-![ungm animation](https://github.com/mpd37/pyStateEstimator/blob/finalise_code/Notebooks/ungm_animation.gif)
+![ungm animation](https://github.com/mpd37/pyStateEstimator/blob/finalise_code/Notebooks/figs/ungm_animation.gif)
+
+### Bearings Only Tracking of a Turning Target
+![bearings only animation](https://github.com/mpd37/pyStateEstimator/blob/finalise_code/Notebooks/figs/bott_animation.gif)
+
+### Lorenz 96 Model
 
 ## Usage
 - Set up dynamical system + measurement function
