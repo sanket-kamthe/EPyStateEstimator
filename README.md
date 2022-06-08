@@ -64,7 +64,7 @@ The video below shows the result of EP iterations with the following setup.
 - Number of iterations: 50
 
 <p align="center">
-  <img src="https://github.com/mpd37/pyStateEstimator/blob/finalise_code/Notebooks/figs/ungm_animation.gif" width="70%" height="70%"/>
+  <img src="https://github.com/mpd37/pyStateEstimator/blob/finalise_code/Notebooks/figs/ungm_animation.gif" width="80%" height="80%"/>
 </p>
 
 
@@ -77,7 +77,7 @@ We use the following setup for EP iterations:
 - Number of iterations: 10
 
 <p align="center">
-  <img src="https://github.com/mpd37/pyStateEstimator/blob/finalise_code/Notebooks/figs/bott_animation.gif" width="50%" height="50%"/>
+  <img src="https://github.com/mpd37/pyStateEstimator/blob/finalise_code/Notebooks/figs/bott_animation.gif" width="60%" height="60%"/>
 </p>
 
 The video above only displays the spatial components $(x_1, x_2)$. The green dots represent the predictive mean and the ellipses represent the spatial covariance.
@@ -101,7 +101,7 @@ The following configurations are used for EP iteration:
 The video below displays the Hovmöller representation of a single simulation of the L96 model, the absolute error of the prediction, and componentwise negative log likelihood loss.
 
 <p align="center">
-  <img src="https://github.com/mpd37/pyStateEstimator/blob/finalise_code/Notebooks/figs/L96_animation.gif" width="50%" height="50%"/>
+  <img src="https://github.com/mpd37/pyStateEstimator/blob/finalise_code/Notebooks/figs/L96_animation.gif" width="60%" height="60%"/>
 </p>
 
 ## References
