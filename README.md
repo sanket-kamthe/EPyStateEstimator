@@ -29,7 +29,7 @@ We distinguish between two types of solutions. In _filtering_, a solution to the
 
 ## Expectation propagation
 
-Expectation propagation provides a way to estimate the marginal distribution of the nodes in a Bayesian network.
+Expectation propagation [1] provides a way to estimate the marginal distribution of the nodes in a Bayesian network.
 
 ## Requirements
 Our implementation of approximate EP primarily uses `numpy` and `scipy`. To perform the Taylor linearisation, we also use automatic differentiation with the `autograd` package. We have kept the number of required packages minimal. You can install the necessary packages by running:
@@ -101,8 +101,9 @@ The following configurations are used for EP iteration:
 The video below displays the Hovmöller representation of a single simulation of the L96 model, the absolute error of the prediction, and componentwise negative log likelihood loss.
 
 <p align="center">
-  <img src="https://github.com/mpd37/pyStateEstimator/blob/finalise_code/Notebooks/figs/L96_animation.gif" width="60%" height="60%"/>
+  <img src="https://github.com/mpd37/pyStateEstimator/blob/finalise_code/Notebooks/figs/L96_animation.gif" width="50%" height="50%"/>
 </p>
 
 ## References
-
+[1] Thomas P Minka. Expectation Propagation for Approximate Bayesian Inference. In Proceedings of the
+Conference on Uncertainty in Artificial Intelligence, 2001.
