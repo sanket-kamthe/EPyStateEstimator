@@ -11,7 +11,7 @@ TODO:
 
 ## The state estimation problem
 
-The aim of state estimation is to provide an estimate of a time-evolving latent state (given by a probability distribution) based on observations (typically noisy) of the dynamical system. This can be formulated mathematically using the state-space model:
+The aim of state estimation is to provide an estimate of a time-evolving latent state (given by a probability distribution) based on noisy observations of the dynamical system. This can be formulated mathematically using the state-space model:
 
 $$
 x_t = f(x_{t-1}) + w_t, \quad t = 1, \ldots, T, 
@@ -23,11 +23,11 @@ $$
 
 Here, $x_t$ is the latent state that we wish to estimate, with initial state distribution $x_0 \sim p(x_0)$ and transition function $f$ (the dynamical system that describe the evolution of the latent state), $y_t$ is the observation of $x_t$, obtained via an observation operator $h$, and $w_t, v_t$ are the model error and measurement error respectively, typically chosen to be Gaussians.
 
-We distinguish between two types of solutions: In _filtering_, a solution to the state estimation problem is given by the probability distribution $p(x_t | y_1, \ldots, y_t)$ of the state $x_t$ conditioned on observations up to the current time $t$. On the other hand, _smoothing_ yields the solution $p(x_t | y_1, \ldots, y_T)$ of the distribution of state $x_t$ conditioned on _all available observations_ up to time $T$.
+We distinguish between two types of solutions. In _filtering_, a solution to the state estimation problem is given by the probability distribution $p(x_t | y_1, \ldots, y_t)$ of the state $x_t$ conditioned on observations up to the current time $t$. On the other hand, _smoothing_ yields the solution $p(x_t | y_1, \ldots, y_T)$, i.e. the distribution of state $x_t$ conditioned on _all available observations_ up to time $T$.
 
 ## Expectation propagation
 
-Expectation propagation is an approximate inference method developed to estimate states in a Bayesian network.
+Expectation propagation is an approximate inference method suited to estimate the marginal distribution of the nodes in a Bayesian network.
 
 ## Requirements
 Our implementation of approximate EP primarily uses `numpy` and `scipy`. To perform the Taylor linearisation, we also use automatic differentiation with the `autograd` package. We have kept the number of required packages minimal. You can install the necessary packages by running
