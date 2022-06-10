@@ -17,25 +17,29 @@ $$
 y_t = h_t(x_t) + v_t, \quad t = 1, \ldots, T.
 $$
 
-Here, $x_t$ is the latent state that we wish to estimate, with initial state distribution $x_0 \sim p(x_0)$ and transition function $f$ (the dynamical system that describe the evolution of the latent state), $y_t$ is the observation of $x_t$, obtained via an observation operator $h$, and $w_t, v_t$ are the model error and measurement error respectively, typically chosen to be Gaussians.
+Here, $x_t$ is the latent state that we wish to estimate, with initial state distribution $x_0 \sim p(x_0)$ and transition function $f$ (the dynamical system that describe the evolution of the latent state). $y_t$ is the observation of $x_t$, obtained via an observation operator $h$. $w_t$ and $v_t$ are the model error and measurement error respectively, typically chosen to be Gaussians.
+
+<p align="center">
+  <img src="https://github.com/mpd37/pyStateEstimator/blob/finalise_code/Notebooks/figs/hmm.png" width="50%" height="50%"/>
+</p>
+
+<p align="center">
+    <em>Graphical representation of a state-space model.</em>
+</p>
 
 We distinguish between two types of solutions. In _filtering_, a solution to the state estimation problem is given by the probability distribution $p(x_t | y_1, \ldots, y_t)$ of the state $x_t$ conditioned on observations up to the current time $t$. On the other hand, _smoothing_ yields the solution $p(x_t | y_1, \ldots, y_T)$, i.e. the distribution of state $x_t$ conditioned on _all available observations_ up to time $T$.
 
 ## Expectation propagation
 
-Expectation propagation (EP) [1] gives us a way to approximate the non-Gaussian marginal distribution of the nodes in a Bayesian network. Assuming that the marginal factorises as
+Expectation propagation (EP) [1] gives us a way to approximate the intractable marginal distribution of the nodes in a Bayesian network, such as the one in the figure above. Assuming that the marginal factorises as
 
 $$
 p(x_t | y_{1:T}) = \prod_{i=1}^N f_i(x_t),
 $$
 
-EP approximates this using a simpler distribution of the form $q(x_t) = \prod_i q_i(x_t)$, where the factors $q_i$ come from the exponential family $\mathcal{F}$, usually Gaussians. This is achieved by the following three steps:
+EP approximates this using a simpler distribution of the form $q(x_t) = \prod_i q_i(x_t)$, where the factors $q_i$ come from the exponential family $\mathcal{F}$, usually Gaussians. This is achieved by iterating the following three steps:
 
-1. Form the _cavity distribution_
-
-$$
-q_{\backslash i}(x_t) \propto q(x_t)/q_i(x_t).
-$$
+1. Form the _cavity distribution_: $q_{\backslash i}(x_t) \propto q(x_t)/q_i(x_t)$.
 
 4. Projection
 
@@ -57,11 +61,7 @@ $$
 
 in Step 3 with damping factor $\gamma \in (0, 1]$, which can give better convergence behaviour (although convergence is not guaranteed).
 
-In practice, the projection in Step 2 cannot be solved exactly when the true factor $f_i(x_t)$ is a nonlinear function. To this end, we approximate the projection by linearising $f_i$ either explicitly by considering Taylor expansion, or _implicitly_, e.g. using an unscented transform. Thus, there are three variables to consider:
-
-- Linearisation method.
-- Power factor $\alpha$.
-- Damping factor $\gamma$.
+In practice, the projection in Step 2 cannot be solved exactly when the true factor $f_i(x_t)$ is a nonlinear function. To this end, we approximate the projection by linearising $f_i$ either explicitly by considering Taylor expansion, or _implicitly_, e.g. using an unscented transform. Thus, there are three variables that needs to be user specified: (1) linearisation method, (2) power factor $\alpha$, and (3) damping factor $\gamma$.
 
 ## Requirements
 Our implementation of approximate EP primarily uses `numpy` and `scipy`. To perform the Taylor linearisation, we also use automatic differentiation with the `autograd` package. We have kept the number of required packages minimal. You can install the necessary packages by running:
