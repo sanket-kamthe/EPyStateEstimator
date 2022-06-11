@@ -29,7 +29,7 @@ class UniformNonlinearGrowthModel(DynamicSystemModel):
     """
 
     def __init__(self):
-        init_dist = Gaussian(mean_vec=np.array([0.1]), cov_mat=np.eye(1) * 1)
+        init_dist = Gaussian(mean_vec=np.array([0.0]), cov_mat=np.eye(1) * 5)
         super().__init__(system_dim=1,
                          measurement_dim=1,
                          transition=f,
@@ -37,6 +37,6 @@ class UniformNonlinearGrowthModel(DynamicSystemModel):
                          system_noise=GaussianNoise(dimension=1,
                                                     cov=np.eye(1) * 1),
                          measurement_noise=GaussianNoise(dimension=1,
-                                                         cov=np.eye(1) * 1),
+                                                         cov=np.eye(1) * 10),
                          init_distribution=init_dist
                          )

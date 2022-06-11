@@ -15,7 +15,8 @@
 from scipy.linalg import cholesky, solve, solve_triangular
 import numpy as np
 
-JIT = 1e-6
+JIT = 1e-10
+
 
 def jittered_chol(a, jitter=None, lower=True, overwrite_a=False, check_finite=True):
     if jitter is None:
@@ -35,14 +36,18 @@ def jittered_solve(a, b, jitter=None, overwrite_a=False, overwrite_b=False, assu
         jitter = JIT
     a = (a + a.T) / 2
     a = a + jitter * np.eye(a.shape[-1])
-    x = solve(a, b, overwrite_a=overwrite_a, overwrite_b=overwrite_b, assume_a=assume_a, transposed=transposed)
+    try:
+        x = solve(a, b, overwrite_a=overwrite_a, overwrite_b=overwrite_b, assume_a=assume_a, transposed=transposed)
+    except:
+        x = solve(a, b, overwrite_a=overwrite_a, overwrite_b=overwrite_b, assume_a='gen', transposed=transposed)
     return x
+
+def symmetrize(cov):
+    return (cov + cov.T) / 2
 
 def validate_covariance(state):
 
     np.linalg.cholesky(state.cov)
-
-
 
 
 if __name__=="__main__":

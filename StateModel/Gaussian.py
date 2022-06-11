@@ -13,39 +13,48 @@
 # limitations under the License.
 
 import numpy as np
-from numpy.linalg import LinAlgError
+from scipy.linalg import LinAlgWarning
 from StateModel import State
 from Utils import cholesky
 from scipy.stats import multivariate_normal
 from Utils.linalg import jittered_solve
+from Utils.linalg import symmetrize
 import scipy as sp
+import warnings
+
 
 RTOL, ATOL = 1e-3, 1e-5
 INF = 1000
 JIT = 1e-12
-LARGE_NUM = 99999
+LARGE_NUM = 1e10
 
+warnings.filterwarnings(action='error', category=LinAlgWarning)
 
 def natural_to_moment(precision, shift):
     dim = precision.shape[0]
-
-    if np.trace(precision) < 1e-6:
+    
+    if np.trace(precision) < 1e-10:
         # almost zero precision
         dim = dim
         mean = np.zeros((dim,), dtype=float)
-        cov = LARGE_NUM * np.eye(dim)
+        cov = symmetrize(LARGE_NUM * np.eye(dim))
         return mean, cov
 
-    # cov = np.linalg.pinv(precision)
-
     try:
-        cov = jittered_solve(precision,
-                             np.eye(N=dim),
-                             assume_a='pos')
+        cov = sp.linalg.solve(precision,
+                            np.eye(N=dim),
+                            overwrite_a=False,
+                            overwrite_b=False,
+                            assume_a='pos',
+                            transposed=False)
 
-    except LinAlgError:
+    except:
+        cov = jittered_solve(precision,
+                            np.eye(N=dim),
+                            assume_a='pos')
         # print('possible bad precision matrix {}'.format(precision))
-        raise LinAlgError
+        # raise LinAlgError
+    cov = symmetrize(cov)
     mean = np.dot(cov, shift)
     return mean, cov
 
@@ -53,13 +62,19 @@ def natural_to_moment(precision, shift):
 def moment_to_natural(mean, cov):
     dim = cov.shape[0]
     try:
+        precision = sp.linalg.solve(cov,
+                            np.eye(N=dim),
+                            overwrite_a=False,
+                            overwrite_b=False,
+                            assume_a='pos',
+                            transposed=False)
+    except:
         precision = jittered_solve(cov, np.eye(N=dim), assume_a='pos')
-    except LinAlgError:
         # print('possible bad covariance matrix {}'.format(cov))
-        raise LinAlgError
-
+        # raise LinAlgError
+    precision = symmetrize(precision)
     # precision = np.linalg.pinv(cov)
-    shift = precision @ mean.reshape([-1,1])
+    shift = precision @ mean
     return precision, shift
 
 
@@ -89,7 +104,6 @@ class Gaussian:
         :param precision_mat:
         :param shift_vec:
         """
-        #         dim = mean_vec.shape[0]
         self._mean = None
         self._cov = None
         self._dim = None
@@ -97,20 +111,16 @@ class Gaussian:
         self._shift = None
         self._mode = None  # 'natural', 'moment'
         self._chol = None
-        #         self.dim = dim
 
         if mean_vec is not None:
-            self.mean = mean_vec
+            self.mean = np.atleast_1d(mean_vec)
             self.cov = cov_mat
             self._mode = 'moment'
 
         if shift_vec is not None:
             self.precision = precision_mat
-            self.shift = shift_vec
+            self.shift = np.atleast_1d(shift_vec)
             self._mode = 'natural'
-
-        # super(multivariate_normal, self).__init__(mean=mean_vec,
-        #                                           cov_mat=cov)
 
             # TODO: Add type checks and asserts for mean and covariance
 
@@ -180,10 +190,8 @@ class Gaussian:
     def __mul__(self, other):
         # Make sure that other is also a GaussianState class
         assert isinstance(other, Gaussian)
-        precision = self.precision + other.precision
+        precision = symmetrize(self.precision + other.precision)
         shift = self.shift + other.shift
-        # mean, cov = natural_to_moment(precision, shift)
-        # cov = (cov.T + cov) / 2
         return Gaussian(precision_mat=precision,
                         shift_vec=shift)
 
@@ -210,10 +218,6 @@ class Gaussian:
         shift = power * self.shift
         return Gaussian(precision_mat=precision,
                             shift_vec=shift)
-        # else:
-        #     cov = self.cov / power
-        #     cov = (cov.T + cov) / 2
-        # return Gaussian(self.mean, cov)
 
     def __eq__(self, other):
         # Make sure that 'other' is also a GaussianState class
@@ -230,18 +234,10 @@ class Gaussian:
         :param x:
         :return: -ve of logpdf (x, mean=self.mean, cov=self.cov)
         """
-        # from scipy.stats import multivariate_normal
-        # if np.isinf(self.cov[0, 0]):
-        #     return np.nan
-        #
-        # diff = x - self.mean
-        # logdet = np.log(2 * np.pi) + np.log(np.linalg.det(self.cov))
-        # NLL = 0.5 * (logdet + diff.T @ self.precision @ diff)
         loglikelihood = multivariate_normal.logpdf(x, mean=self.mean, cov=self.cov, allow_singular=True)
         return -loglikelihood
-        # return -multivariate_normal(mean=self.mean, cov=self.cov).logpdf(x, cond=1e-6)
 
-    def rmse(self, x):
+    def squared_error(self, x):
         """
         Squared Error
         :param x:
@@ -250,14 +246,10 @@ class Gaussian:
         return np.square(np.linalg.norm(self.mean - x))
 
     def sample(self, number_of_samples):
-
-        # from scipy.stats import multivariate_normal
-
-        # return multivariate_normal(mean=self.mean, cov=self.cov).rvs(number_of_samples)
-
-        samples = np.random.multivariate_normal(mean=self.mean.ravel(),
+        samples = np.random.multivariate_normal(mean=self.mean,
                                                 cov=self.cov,
                                                 size=number_of_samples)
+
         return samples
 
     def __repr__(self):
@@ -302,8 +294,3 @@ class GaussianFactor(Gaussian):
         shift = np.zeros((dim,), dtype=float)
         precision = np.zeros((dim, dim), dtype=float)
         super().__init__(shift_vec=shift, precision_mat=precision, cov_mat=None)
-        # mean = np.zeros((dim,), dtype=float)
-        # diag_cov = np.inf * np.ones((dim,), dtype=float)
-        # cov = np.diag(diag_cov)
-        # super().__init__(mean_vec=mean,
-        #                  cov_mat=cov)

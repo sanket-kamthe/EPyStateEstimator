@@ -13,17 +13,15 @@
 # limitations under the License.
 
 import numpy as np
+<<<<<<< HEAD
+from .MomentMatch import MappingTransform
+=======
 from MomentMatching.MomentMatch import MappingTransform
 from functools import partial
+>>>>>>> master
 from autograd import jacobian
 from StateModel import Gaussian
-# from MomentMatching.auto_grad import logpdf
 from autograd.scipy.stats import multivariate_normal
-# from autograd.scipy.stats import multivariate_normal.logpdf as logpdf
-
-# logpdf = multivariate_normal.logpdf
-# from scipy.stats. import log
-# from scipy.stats.
 
 EPS = 1e-4
 
@@ -37,24 +35,35 @@ class TaylorTransform(MappingTransform):
     @staticmethod
     def numerical_jacobian(f, x, eps=EPS):
         z = f(x)
-        #     jacobian  = np.zeros((m,n), dtype=float)
         jacobian = []
         x_list = x.tolist()
         for i, data in enumerate(x_list):
             x1 = x.tolist()
             x1[i] = np.array(data) + eps
             x1 = np.array(x1)
-            jacobian.append((f(x1) - z) / eps)
+            
+            x2 = x.tolist()
+            x2[i] = np.array(data) - eps
+            x2 = np.array(x2)
+
+            #jacobian.append((f(x1) - z) / eps) # forward difference
+            jacobian.append( (f(x1) - f(x2)) / (2*eps)) # central difference
 
         return np.array(jacobian).T
 
     def _transform(self, func, state):
-        # (self, nonlinear_func, distribution, fargs=None, y_observation=None):
         assert isinstance(state, Gaussian)
+<<<<<<< HEAD
+        # J_t = self.numerical_jacobian(func, state.mean)
+        J_t = jacobian(func)(state.mean)
+        if np.ndim(J_t) > 2:
+          J_t = np.squeeze(J_t)
+=======
         # frozen_func = partial(func, t=t, u=u, *args, **kwargs)
         J_t = self.numerical_jacobian(func, state.mean)
         # J_t = jacobian(func)(state.mean)
         # J_t = np.reshape(J_t, [-1, state.cov.shape[1]])
+>>>>>>> master
         mean = func(state.mean)
         mean = np.squeeze(mean)
         cov = J_t @ state.cov @ J_t.T

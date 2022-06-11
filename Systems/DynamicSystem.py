@@ -1,5 +1,4 @@
 import numpy as np
-import itertools
 from collections import namedtuple
 from abc import abstractmethod, ABCMeta
 
@@ -30,9 +29,6 @@ class GaussianNoise(NoiseModel):
 
 class DynamicSystem(metaclass=ABCMeta):
 
-    # def transition_noise(self, x,  t=None, u=None, *args, **kwargs):
-    #     return self.transition(x=x, u=u, t=t, *args, **kwargs) + self.system_noise.sample()
-
     @abstractmethod
     def transition(self, x, u=None, t=None, *args, **kwargs):
         pass
@@ -50,12 +46,16 @@ class DynamicSystem(metaclass=ABCMeta):
         t = t_zero
 
         for _ in range(N):
-            x_true = self.transition(x=x, t=t)
-            x_noisy = x_true + self.system_noise.sample()
-            y_true = self.measure(x=x_noisy)
-            y_noisy = y_true + self.measurement_noise.sample()
-            yield x_true, x_noisy, y_true, y_noisy
-            x = x_noisy
+            # x_true = self.transition(x=x, t=t)
+            # x_noisy = x_true + self.system_noise.sample()
+            # y_true = self.measure(x=x_noisy)
+            # y_noisy = y_true + self.measurement_noise.sample()
+            x = self.transition(x=x, t=t)
+            x += self.system_noise.sample()
+            y = self.measure(x=x)
+            y += self.measurement_noise.sample()
+            yield x, y # x_true, x_noisy, y_true, y_noisy
+            #x = x_noisy
             t = t + self.dt
 
     def simulate(self, N, x_zero=None, t_zero=0.0):
@@ -65,11 +65,6 @@ class DynamicSystem(metaclass=ABCMeta):
                                                    cov=self.init_state.cov)
 
         return list(self._simulate(N=N, x_zero=x_zero, t_zero=t_zero))
-
-
-#TODO: make dynamic model a single stepping solution rather than fixed start
-
-#TODO: default dynamic system is linear model with
 
 
 class DynamicSystemModel(DynamicSystem):
@@ -114,12 +109,11 @@ class DynamicSystemModel(DynamicSystem):
         t = t_zero
 
         for _ in range(N):
-            x_true = self.transition(x=x, t=t)
-            x_noisy = x_true + self.system_noise.sample()
-            y_true = self.measurement(x=x_noisy)
-            y_noisy = y_true + self._measurement_noise.sample()
-            yield x_true, x_noisy, y_true, y_noisy
-            x = x_noisy
+            x = self.transition(x=x, t=t)
+            x += self.system_noise.sample()
+            y = self.measurement(x=x)
+            y += self._measurement_noise.sample()
+            yield x, y
             t = t + self.dt
 
     def simulate(self, N, x_zero=None, t_zero=0.0):

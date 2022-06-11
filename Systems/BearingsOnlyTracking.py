@@ -1,4 +1,4 @@
-
+# %%
 from Systems import DynamicSystemModel, GaussianNoise
 from StateModel import Gaussian
 from collections import namedtuple
@@ -36,8 +36,8 @@ def h(x, t=None, u=None, sensor_list=Default_Sensor_List):
 
     """
     x = np.atleast_2d(x)
-    all_ys = [x[:, 1] - sensor.y for sensor in sensor_list]
-    all_xs = [x[:, 0] - sensor.x for sensor in sensor_list]
+    all_ys = np.array([x[:, 1] - sensor.y for sensor in sensor_list])
+    all_xs = np.array([x[:, 0] - sensor.x for sensor in sensor_list])
     theta = np.arctan2(all_ys, all_xs)
     return theta.T
     # for sensor in sensor_list:
@@ -88,15 +88,14 @@ class BearingsOnlyTracking(DynamicSystemModel):
                          init_distribution=init_dist
                          )
 
-    def simulate(self, N, x_zero=None, t_zero=0.0, seed=None):
-        if seed is None:
-            np.random.seed(seed=7952)
-        return super().simulate(N=N, x_zero=x_zero, t_zero=t_zero)
+    # def simulate(self, N, x_zero=None, t_zero=0.0, seed=None):
+    #     if seed is None:
+    #         np.random.seed(seed=7952)
+    #     return super().simulate(N=N, x_zero=x_zero, t_zero=t_zero)
 
 # def numpy_array(x)
-
+# %%
 if __name__ == '__main__':
-
     import matplotlib.pyplot as plt
     import os
     import sys
@@ -108,17 +107,18 @@ if __name__ == '__main__':
     N = 50
 
     system = BearingsOnlyTracking()
-    np.random.seed(seed=7952)
+    seed = 901
+    np.random.seed(seed)
     data = system.simulate(N)
-    x_true, x_noisy, y_true, y_noisy = zip(*data)
+    x_true, y_meas = zip(*data)
 
     x_true = np.asanyarray(x_true)
-    x_noisy = np.asanyarray(x_noisy)
-
 
     # plt.plot(x_true[:, 0])
     # plt.scatter(list(range(N)), x_noisy[:, 0])
-    plt.scatter(x_noisy[:, 0], x_noisy[:, 1])
-    plt.plot(x_true[:, 0], x_true[:, 1])
+    plt.scatter(x_true[:, 0, 0], x_true[:, 0, 1])
+    #åplt.plot(x_true[:, 0], x_true[:, 1])
     plt.show()
 
+
+# %%
