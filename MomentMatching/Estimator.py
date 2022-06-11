@@ -74,7 +74,7 @@ class Estimator:
         z_cov = symmetrize(z_cov)
         np.linalg.cholesky(z_cov)
         kalman_gain = np.linalg.solve(z_cov, xz_cross_cov.T).T
-        mean = state.mean + kalman_gain @ (meas - z_mean)  # equation 15  in Marc's ACC paper
+        mean = state.mean + kalman_gain @ (meas - z_mean).reshape(-1,1)  # equation 15  in Marc's ACC paper
         cov = state.cov - kalman_gain @ xz_cross_cov.T
         cov = symmetrize(cov)
         corrected_state = Gaussian(mean, cov)

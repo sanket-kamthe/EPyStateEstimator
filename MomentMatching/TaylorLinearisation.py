@@ -13,7 +13,12 @@
 # limitations under the License.
 
 import numpy as np
+<<<<<<< HEAD
 from .MomentMatch import MappingTransform
+=======
+from MomentMatching.MomentMatch import MappingTransform
+from functools import partial
+>>>>>>> master
 from autograd import jacobian
 from StateModel import Gaussian
 from autograd.scipy.stats import multivariate_normal
@@ -48,10 +53,17 @@ class TaylorTransform(MappingTransform):
 
     def _transform(self, func, state):
         assert isinstance(state, Gaussian)
+<<<<<<< HEAD
         # J_t = self.numerical_jacobian(func, state.mean)
         J_t = jacobian(func)(state.mean)
         if np.ndim(J_t) > 2:
           J_t = np.squeeze(J_t)
+=======
+        # frozen_func = partial(func, t=t, u=u, *args, **kwargs)
+        J_t = self.numerical_jacobian(func, state.mean)
+        # J_t = jacobian(func)(state.mean)
+        # J_t = np.reshape(J_t, [-1, state.cov.shape[1]])
+>>>>>>> master
         mean = func(state.mean)
         mean = np.squeeze(mean)
         cov = J_t @ state.cov @ J_t.T
