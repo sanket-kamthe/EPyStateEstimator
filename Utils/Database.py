@@ -50,9 +50,6 @@ sqlite3.register_converter("pickle", pickle.loads)
 sqlite3.register_adapter(list, adapt_list)
 
 
-# def adapt_gaussian()
-
-
 def open_database(db=None):
     if db is None:
         path = os.getcwd()
@@ -67,32 +64,28 @@ def create_dynamics_table(db, name='UNGM'):
                 (
                 Seed INT,
                 t REAL,
-                X_true NParray, 
-                X_noisy NParray,
-                Y_true NParray,
-                Y_noisy NParray, 
+                X NParray,
+                Y NParray,
                 UNIQUE (Seed, t)
                 )""".format(name)
     db.execute(schema)
 
 
 dynamic_data_string = "INSERT OR IGNORE INTO {}" \
-                      "(Seed, t, X_true, X_noisy, Y_true, Y_noisy)" \
-                      " VALUES (?, ?, ?, ?, ?, ?)"
+                      "(Seed, t, X, Y)" \
+                      " VALUES (?, ?, ?, ?)"
 
 
 def insert_dynamics_data(db, table_name, data, seed):
     query = dynamic_data_string.format(table_name)
     t = 0
     for datum in data:
-        x_true, x_noisy, y_true, y_noisy = datum
-        values = (seed, t, x_true, x_noisy, y_true, y_noisy)
+        x, y = datum
+        values = (seed, t, x, y)
         t += 1
 
         db.execute(query, values)
 
-    # db.commit()
-# def create_experiment_table(db, name=)
 
 def create_experiment_table(db, table_name='UNGM_EXP'):
     schema = """ CREATE TABLE IF NOT EXISTS {:s}  
@@ -117,7 +110,6 @@ experiment_data_string = "INSERT OR IGNORE INTO {}" \
 
 
 def insert_experiment_data(db, table_name, data):
-    # Transform, Seed, Iter, Power, Damping, RMSE, NLL, Mean, Variance, Nodes = data
 
     query = experiment_data_string.format(table_name)
 

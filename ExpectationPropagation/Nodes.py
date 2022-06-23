@@ -14,158 +14,23 @@
 
 
 import numpy as np
-from StateModel import Gaussian, GaussianFactor
+from StateModel import Gaussian
 from numpy.linalg import LinAlgError
 from Utils import validate_covariance
-from functools import partial, partialmethod
+from functools import partial
+from MomentMatching import Estimator
+from Systems import DynamicSystemModel
+from typing import List, Union
 
 
 class OverLoadError(Exception):
     pass
 
 
-class TimeSeriesNodeForEP:
-    def __init__(self, t, state_dim=1, marginal_init=None, factor_init=None):
-
-        self.t = t
-        self.state_dimension=state_dim
-        if marginal_init is None:
-            self.marginal = Gaussian.as_marginal(dim=state_dim)
-        else:
-            self.marginal = marginal_init
-
-        if factor_init is None:
-            self.measurement_factor = Gaussian.as_factor(dim=state_dim)
-            self.back_factor = Gaussian.as_factor(dim=state_dim)
-            self.forward_factor = Gaussian.as_factor(dim=state_dim)
-        else:
-            self.measurement_factor, self.back_factor, self.forward_factor = factor_init
-
-        self.factors = ['forward_update', 'measurement_update', 'backward_update']
-
-        self.converged = False
-
-    def copy(self):
-        marginal_init = self.marginal.copy()
-        factor_init = self.measurement_factor.copy(), self.back_factor.copy(), self.forward_factor.copy()
-        return TimeSeriesNodeForEP(t=self.t,
-                                   state_dim=self.state_dimension,
-                                   marginal_init=marginal_init,
-                                   factor_init=factor_init)
-
-    def __repr__(self):
-        str_rep = '''{}.t={}, state_dim={}, marginal_init={},
-         factor_init={})'''.format(self.__class__,
-                                   self.t,
-                                   self.marginal,
-                                   (self.measurement_factor, self.back_factor, self.forward_factor))
-        return str_rep
-
-
-class TimeSeriesNodeForEP:
-    def __init__(self, t, state_dim=1,
-                 marginal_init=None,
-                 factor_init=None, transition=None, measurement=None):
-
-        self.t = t
-        self.state_dimension=state_dim
-        if marginal_init is None:
-            self.marginal = Gaussian.as_marginal(dim=state_dim)
-        else:
-            self.marginal = marginal_init
-
-        if factor_init is None:
-            self.measurement_factor = Gaussian.as_factor(dim=state_dim)
-            self.back_factor = Gaussian.as_factor(dim=state_dim)
-            self.forward_factor = Gaussian.as_factor(dim=state_dim)
-        else:
-            self.measurement_factor, self.back_factor, self.forward_factor = factor_init
-
-        self.factors = ['forward_update', 'measurement_update', 'backward_update']
-
-        self.converged = False
-
-    def copy(self):
-        marginal_init = self.marginal.copy()
-        factor_init = self.measurement_factor.copy(), self.back_factor.copy(), self.forward_factor.copy()
-        return TimeSeriesNodeForEP(t=self.t,
-                                   state_dim=self.state_dimension,
-                                   marginal_init=marginal_init,
-                                   factor_init=factor_init)
-
-    def __repr__(self):
-        str_rep = '''{}.t={}, state_dim={},
-         marginal_init={},
-         factor_init={})'''.format(self.__class__,
-                                   self.t,
-                                   self.marginal,
-                                   (self.measurement_factor, self.back_factor, self.forward_factor))
-        return str_rep
-
-
-class Nodes():
-    def __init__(self, measurements, base_node, init_state):
-        self.base_node = base_node
-        self._nodes = []
-        for i, measurement in enumerate(measurements):
-
-            self._nodes.append()
-
-######################################################
-# estimator
-#     pred
-#     correct
-#     smooth
-#     fwd
-#     back
-#     meas
-# Top nodes
-
-
-def node_estimator(nodes, estimator):
-
-    out_nodes = []
-
-    power = getattr(estimator, 'power', 1)
-    damping = getattr(estimator, 'damping', 1)
-
-    for node in nodes:
-        setattr(node, 'fwd_update', partial(node.fwd_update, proj_trans=estimator.proj_trans))
-        setattr(node, 'meas_update', partial(node.meas_update, proj_meas=estimator.proj_meas))
-        setattr(node, 'back_update', partial(node.back_update, proj_back=estimator.proj_back))
-
-        setattr(node, 'power', power)
-        setattr(node, 'damping', damping)
-
-        out_nodes.append(node)
-
-    return out_nodes
-
-
-def node_system(nodes, system_model, measurements, farg_list=None):
-    out_nodes = []
-    N = len(measurements)
-
-    if farg_list is None:
-        farg_list = []
-        t = 0.0
-        for i in range(N):
-            f_kwargs = {'t': t, 'u': 0.0}
-            t += system_model.dt
-            farg_list.append(f_kwargs)
-
-    for node, measurement, f_kwarg in zip(nodes, measurements, farg_list):
-        setattr(node, 'trans_func', partial(system_model.transition, **f_kwarg))
-        setattr(node, 'meas_func', system_model.measurement)
-        setattr(node, 'meas', np.squeeze(measurement))
-
-        out_nodes.append(node)
-
-    setattr(out_nodes[0], 'prior', system_model.init_state)
-    return out_nodes
-
-
 class Node:
+    """
+    A single node of the factor graph. Consists of the marginal distribution and methods to update the marginal.
+    """
     def __init__(self, dim, index=0, prev_node=None, next_node=None, factor_init=None, marginal_init=None):
         self.next_node = next_node
         self.prev_node = prev_node
@@ -199,7 +64,7 @@ class Node:
         old_forward_factor = self.forward_factor
         try:
             prev_node = self.prev_node.copy()
-            back_cavity = prev_node.marginal / prev_node.back_factor
+            back_cavity = prev_node.marginal / (prev_node.back_factor ** (1 / self.power))
         except AttributeError:
             back_cavity = self.prior
 
@@ -236,6 +101,7 @@ class Node:
 
         try:
             next_node = self.next_node.copy()
+            next_fwd_cavity = next_node.marginal / (next_node.forward_factor ** (1 / self.power))
         except AttributeError:
             return
         # forward_cavity = next_node.marginal / next_node.forward_factor
@@ -243,7 +109,8 @@ class Node:
         try:
             state = proj_back(next_node.trans_func,
                               back_cavity,
-                              next_node.marginal)
+                              next_fwd_cavity,
+                              next_state=next_node.marginal)
             validate_covariance(state)
 
             self.back_factor, self.marginal = \
@@ -283,7 +150,82 @@ class Node:
         raise OverLoadError
 
 
-def build_nodes(N , dim, estimator=None, system=None):
+def node_estimator(nodes: List[Node], estimator: Estimator) -> List[Node]:
+    """
+    This function adds the moment matching method as attributes of the factor graph.
+    :nodes: Factor graph (built using build_nodes)
+    :estimator: Moment matching method (e.g. Taylor transformation)
+    :return: Updated factor graph
+    """
+    out_nodes = []
+
+    power = getattr(estimator, 'power', 1)
+    damping = getattr(estimator, 'damping', 1)
+
+    for node in nodes:
+        setattr(node, 'fwd_update', partial(node.fwd_update, proj_trans=estimator.proj_trans))
+        setattr(node, 'meas_update', partial(node.meas_update, proj_meas=estimator.proj_meas))
+        setattr(node, 'back_update', partial(node.back_update, proj_back=estimator.proj_back))
+
+        setattr(node, 'power', power)
+        setattr(node, 'damping', damping)
+
+        out_nodes.append(node)
+
+    return out_nodes
+
+
+def node_system(
+    nodes: List[Node],
+    system_model: DynamicSystemModel,
+    measurements: Union[np.ndarray, list],
+    farg_list: List[dict] = None
+    ) -> List[Node]:
+    """
+    This function adds the transition function, measurement function and observations 
+    as attributes of the factor graph.
+    :nodes: Factor graph (built using build_nodes)
+    :system_model: Dynamical system
+    :measurements: Observations y
+    :farg_list: kwargs for transition function
+    :return: Updated factor graph
+    """
+    out_nodes = []
+    N = len(measurements)
+
+    if farg_list is None:
+        farg_list = []
+        t = 0.0
+        for i in range(N):
+            f_kwargs = {'t': t, 'u': 0.0}
+            t += system_model.dt
+            farg_list.append(f_kwargs)
+
+    for node, measurement, f_kwarg in zip(nodes, measurements, farg_list):
+        setattr(node, 'trans_func', partial(system_model.transition, **f_kwarg))
+        setattr(node, 'meas_func', system_model.measurement)
+        setattr(node, 'meas', np.squeeze(measurement))
+
+        out_nodes.append(node)
+
+    setattr(out_nodes[0], 'prior', system_model.init_state)
+    return out_nodes
+
+
+def build_nodes(
+    N: int,
+    dim: int,
+    estimator: Estimator = None,
+    system: DynamicSystemModel = None
+    ) -> List[Node]:
+    """
+    This function builds the factor graph representation of a dynamical system (Figure 2).
+    :N: Number of timesteps
+    :dim: State dimension
+    :estimator: Method of moment matching (e.g. Taylor transformation)
+    :system: Dynamical system
+    :return: Factor graph representation of a dynamical system
+    """
     nodes = [Node(dim, index=i) for i in range(N)]
 
     for i, node in enumerate(nodes):
