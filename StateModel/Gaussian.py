@@ -113,13 +113,21 @@ class Gaussian:
         self._chol = None
 
         if mean_vec is not None:
+<<<<<<< HEAD
             self.mean = np.atleast_1d(mean_vec)
+=======
+            self.mean = mean_vec.reshape(-1,1)
+>>>>>>> master
             self.cov = cov_mat
             self._mode = 'moment'
 
         if shift_vec is not None:
             self.precision = precision_mat
+<<<<<<< HEAD
             self.shift = np.atleast_1d(shift_vec)
+=======
+            self.shift = shift_vec.reshape(-1,1)
+>>>>>>> master
             self._mode = 'natural'
 
             # TODO: Add type checks and asserts for mean and covariance
@@ -133,7 +141,7 @@ class Gaussian:
 
     @mean.setter
     def mean(self, mean):
-        self._mean = mean
+        self._mean = mean.reshape(-1,1)
 
     @property
     def dim(self):
@@ -175,7 +183,7 @@ class Gaussian:
 
     @shift.setter
     def shift(self, value):
-        self._shift = value
+        self._shift = value.reshape(-1,1)
 
     @property
     def chol_cov(self):
@@ -246,7 +254,16 @@ class Gaussian:
         return np.square(np.linalg.norm(self.mean - x))
 
     def sample(self, number_of_samples):
+<<<<<<< HEAD
         samples = np.random.multivariate_normal(mean=self.mean,
+=======
+
+        # from scipy.stats import multivariate_normal
+
+        # return multivariate_normal(mean=self.mean, cov=self.cov).rvs(number_of_samples)
+
+        samples = np.random.multivariate_normal(mean=self.mean.ravel(),
+>>>>>>> master
                                                 cov=self.cov,
                                                 size=number_of_samples)
 

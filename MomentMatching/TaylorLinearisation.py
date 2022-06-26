@@ -14,8 +14,11 @@
 
 import numpy as np
 <<<<<<< HEAD
+<<<<<<< HEAD
 from .MomentMatch import MappingTransform
 =======
+=======
+>>>>>>> master
 from MomentMatching.MomentMatch import MappingTransform
 from functools import partial
 >>>>>>> master
@@ -62,7 +65,11 @@ class TaylorTransform(MappingTransform):
         # frozen_func = partial(func, t=t, u=u, *args, **kwargs)
         J_t = self.numerical_jacobian(func, state.mean)
         # J_t = jacobian(func)(state.mean)
+<<<<<<< HEAD
         # J_t = np.reshape(J_t, [-1, state.cov.shape[1]])
+>>>>>>> master
+=======
+        # J_t = np.squeeze(J_t)
 >>>>>>> master
         mean = func(state.mean)
         mean = np.squeeze(mean)
