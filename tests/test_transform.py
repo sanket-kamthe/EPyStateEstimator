@@ -1,5 +1,5 @@
 import pytest
-import numpy as np
+import autograd.numpy as np
 from StateModel import Gaussian
 # from MomentMatching.newMomentMatch import UnscentedTransform, MonteCarloTransform, TaylorTransform
 from MomentMatching import UnscentedTransform, TaylorTransform, MonteCarloTransform
@@ -48,6 +48,7 @@ def distribution(dim):
     mean = np.random.randn(dim) * 0.0
     cov = np.eye(dim) * 0.25
     return Gaussian(mean, cov)
+
 
 def test_transforms(transform, func):
     state = distribution(dim)
