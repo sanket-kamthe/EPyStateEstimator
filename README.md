@@ -10,7 +10,7 @@ It turns out that this method generalises _any_ standard Gaussian smoother such 
 The aim of state estimation is to provide an estimate of a time-evolving latent state (given by a probability distribution) based on noisy observations of the dynamical system. This can be formulated mathematically using the state-space model:
 
 $$
-x_t = f_{t-1}(x_{t-1}) + w_t, \quad t = 1, \ldots, T, 
+x_t = f_{t-1}(x_{t-1}) + w_t, \quad t = 1, \ldots, T,
 $$
 
 $$
@@ -137,9 +137,9 @@ The video below displays the Hovmöller representation of a single simulation of
 </p>
 
 ## References
-[1] Thomas P Minka. Expectation Propagation for Approximate Bayesian Inference. In Proceedings of the
+[1] Thomas P. Minka. Expectation Propagation for Approximate Bayesian Inference. In Proceedings of the
 Conference on Uncertainty in Artificial Intelligence, 2001.
 
 [2] Thomas P. Minka. Power EP. Technical Report MSR-TR-2004-149, Microsoft Research, 2004.
 
-[3] Our paper.
+[3] Sanket Kamthe, So Takao, Shakir Mohamed, Marc P. Deisenroth. Iterative State Estimation in Non-linear Dynamical Systems Using Approximate Expectation Propagation. Transactions on Machine Learning Research, 2022.
