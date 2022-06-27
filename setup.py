@@ -6,7 +6,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 setuptools.setup(
     name="EPyStateEstimator",
     version="0.1",
-    author="Sanket Kamthe",
+    author="Sanket Kamthe, So Takao",
     description="Package for approximate inference in state estimation problems using Expectation Propagation",
     classifiers=[
         "Programming Language :: Python :: 3",

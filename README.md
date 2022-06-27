@@ -20,7 +20,7 @@ $$
 Here, $x_t$ is the latent state that we wish to estimate, with initial state distribution $x_0 \sim p(x_0)$ and transition function $f$ (the dynamical system that describe the evolution of the latent state). $y_t$ is the observation of $x_t$, obtained via an observation operator $h$. $w_t$ and $v_t$ are the model error and measurement error respectively, typically chosen to be Gaussians.
 
 <p align="center">
-  <img src="https://github.com/mpd37/pyStateEstimator/blob/finalise_code/Notebooks/figs/hmm.png" width="50%" height="50%"/>
+  <img src="https://github.com/sanket-kamthe/EPyStateEstimator/blob/finalise_code/Notebooks/figs/hmm.png" width="50%" height="50%"/>
 </p>
 
 <p align="center">
