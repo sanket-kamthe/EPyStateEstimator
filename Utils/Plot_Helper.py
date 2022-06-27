@@ -34,12 +34,17 @@ def plot_gaussian_node(data, ground_truth=None, figsize=None, ax=None, linewidth
     ax.set_facecolor('#EBEBEB')
     ax.grid(True, color='w', linestyle='-', linewidth=1)
     ax.set_axisbelow(True)
+    
     x_mean = np.array([x.marginal.mean for x in data])
+    x_mean = np.reshape(x_mean, (len(data), -1))
     x_sigma = np.array([np.sqrt(x.marginal.cov[0, :]) for x in data])
 
     upr = x_mean + 1.96 * x_sigma
     lwr = x_mean - 1.96 * x_sigma
+    
     time = np.arange(1, len(data)+1)
+   
+    
     ax.plot(time, x_mean, colors[0],  linewidth=linewidth, label='Prediction')
     ax.fill_between(time, lwr[:, 0], upr[:, 0], alpha=0.3, color=colors[0])
     if ground_truth is not None:

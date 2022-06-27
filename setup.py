@@ -4,8 +4,8 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="pyStateEstimator",
-    version="0.0.1",
+    name="EPyStateEstimator",
+    version="0.1",
     author="Sanket Kamthe",
     description="Package for approximate inference in state estimation problems using Expectation Propagation",
     classifiers=[
