@@ -133,7 +133,7 @@ class Gaussian:
 
     @mean.setter
     def mean(self, mean):
-        self._mean = mean.reshape(-1,1)
+        self._mean = mean
 
     @property
     def dim(self):
@@ -175,7 +175,7 @@ class Gaussian:
 
     @shift.setter
     def shift(self, value):
-        self._shift = value.reshape(-1,1)
+        self._shift = value
 
     @property
     def chol_cov(self):
